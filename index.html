@@ -744,25 +744,14 @@ function compartirAlbaran(v){
   var cliNom=v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'Cliente';
   var prod=v.productos?v.productos.nombre:'Producto';
   var fecha=v.fecha_entrega?new Date(v.fecha_entrega+'T12:00').toLocaleDateString('es-ES'):'a confirmar';
-  var texto='🛋️ *DECOTARA OUTLET*
-
-'+
-    'Hola '+cliNom+', te confirmamos tu pedido:
-
-'+
-    '📦 *'+prod+'*
-'+
-    '📅 Entrega: '+fecha+'
-'+
-    '🚚 '+( v.entrega||'Recogida')+ '
-'+
-    '💰 Total: '+fe_str(v.total)+'
-'+
-    (v.forma_pago?'💳 Pago: '+v.forma_pago+'
-':'')+
-    '
-Polígono Río Huerva, Av. del Rosario, Nave 1A, Cuarte de Huerva
-'+
+  var texto='🛋️ *DECOTARA OUTLET*\n\n'+
+    'Hola '+cliNom+', te confirmamos tu pedido:\n\n'+
+    '📦 *'+prod+'*\n'+
+    '📅 Entrega: '+fecha+'\n'+
+    '🚚 '+(v.entrega||'Recogida')+'\n'+
+    '💰 Total: '+fe_str(v.total)+'\n'+
+    (v.forma_pago?'💳 Pago: '+v.forma_pago+'\n':'')+
+    '\nPolígono Río Huerva, Av. del Rosario, Nave 1A, Cuarte de Huerva\n'+
     '¡Gracias por confiar en nosotros! 🏠';
   var url='https://wa.me/?text='+encodeURIComponent(texto);
   window.open(url,'_blank');
