@@ -736,7 +736,7 @@ function _agendaItemHTML(v,hoyStr,esEntregada){
     '<div style="display:flex;flex-direction:column;gap:4px">'+
       (!esEntregada?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff;width:32px;height:32px" title="Marcar como entregada" data-action="marcar-entregada" data-id="'+v.id+'">✅</button>':'')+
       '<button class="btn btn-sm bic" style="background:var(--blue);color:#fff;width:32px;height:32px" title="Albarán" data-action="albaran-agenda" data-id="'+v.id+'">📄</button>'+
-      (esTrans&&!esEntregada?'<button class="btn btn-sm bic" style="background:#25D366;color:#fff;width:32px;height:32px" title="WhatsApp" data-action="wa" data-id="'+v.id+'">💬</button>':'')+
+      
     '</div>'+
   '</div>';
 }
@@ -934,7 +934,7 @@ async function renderVentas(){
         '<td class="price">'+fe(totalCompra)+'</td>'+
         '<td>'+eb(v0.estado)+'</td>'+
         '<td>'+(grupo.length>1?'<span style="background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px">'+grupo.length+' prods</span>':'<span style="font-size:10px;color:var(--gray)">'+numArts+' ud.</span>')+'</td>'+
-        '<td><div style="display:flex;gap:3px" onclick="event.stopPropagation()">'+
+        '<td><div style="display:flex;gap:3px">'+
           '<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff;width:30px;height:30px;padding:0" title="Ver artículos de la compra" data-action="vergrupo" data-expand="'+expandId+'">👁</button>'+
           (grupo.length>1
             ?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff" title="Albarán PDF compra completa ('+albNum+')" data-action="pdfgrupo" data-key="'+key+'">🧾</button>'
@@ -1325,9 +1325,9 @@ document.addEventListener('DOMContentLoaded',function(){
   document.addEventListener('click',function(e){
     var atc=e.target.closest('.add-to-cart');
     if(atc){cartAddItem({id:atc.dataset.prodId,nombre:atc.dataset.prodNom,categoria:atc.dataset.prodCat,pvp:parseFloat(atc.dataset.prodPvp)});return;}
-    // Click on grouped row to expand/collapse
+    // Click on grouped row to expand/collapse (only if not inside an already-expanded sub-row)
     var expandRow=e.target.closest('[data-expand]');
-    if(expandRow&&!e.target.closest('[data-action]')){
+    if(expandRow&&!e.target.closest('[data-action]')&&!e.target.closest('tr[id^="exp_"]')){
       var expandId=expandRow.dataset.expand;
       var row=document.getElementById(expandId);
       if(row){
@@ -1375,18 +1375,7 @@ document.addEventListener('DOMContentLoaded',function(){
       generarAlbaran(vent,cli2,v0.fecha,dto,v0.vendedor||'',v0.forma_pago||'Efectivo',v0.entrega||'Recogida por el Cliente',v0.fecha_entrega||'',v0.notas||'',albNum);
       return;
     }
-    else if(a==='wa'){
-      // WhatsApp desde agenda
-      var vRows2=window._ventasCache||[];
-      // fetch fresh if needed
-      (async function(){
-        try{
-          var vv=await GET('/ventas?select=*,clientes(nombre,apellidos,ciudad,dni),productos(nombre,categoria)&id=eq.'+id);
-          if(vv.length)compartirAlbaran(vv[0]);
-        }catch(e){toast('Error: '+e.message);}
-      })();
-      return;
-    }
+
     else if(a==='marcar-entregada'){
       if(!confirm('¿Marcar esta orden como entregada?'))return;
       (async function(){
