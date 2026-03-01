@@ -485,7 +485,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <div class="fi"><label>Apellidos</label><input type="text" id="c_ape"></div>
     <div class="fi"><label>Teléfono</label><input type="tel" id="c_tel"></div>
     <div class="fi"><label>Email</label><input type="email" id="c_ema"></div>
-    <div class="fi"><label>DNI / NIE</label><input type="text" id="c_dni" placeholder="12345678A"></div>
+    <div class="fi"><label>DNI / NIE</label><input type="text" id="c_dni" placeholder="12345678A" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
     <div class="fi"><label>Ciudad</label><input type="text" id="c_ciu"></div>
     <div class="fi full"><label>Dirección</label><input type="text" id="c_dir"></div>
   </div>
