@@ -1107,6 +1107,10 @@ async function descontarStock(prodId,cantidad){
   try{var rows=await GET('/productos?select=id,stock&id=eq.'+prodId);if(rows.length){var nuevoStock=Math.max(0,(rows[0].stock||0)-cantidad);await PATCH('/productos?id=eq.'+prodId,{stock:nuevoStock});}}catch(e){console.warn('Error stock:',e.message);}
 }
 
+async function devolverStock(prodId,cantidad){
+  try{var rows=await GET('/productos?select=id,stock&id=eq.'+prodId);if(rows.length){var nuevoStock=(rows[0].stock||0)+cantidad;await PATCH('/productos?id=eq.'+prodId,{stock:nuevoStock});stockCache[prodId]=nuevoStock;}}catch(e){console.warn('Error devolviendo stock:',e.message);}
+}
+
 async function saveV(){
   var cId=document.getElementById('v_cli').value,fecha=document.getElementById('v_fecha').value,pId=document.getElementById('v_prod').value,cant=parseInt(document.getElementById('v_cant').value)||1,pvp=parseFloat(document.getElementById('v_pvp').value)||0,dto=parseFloat(document.getElementById('v_dto').value)||0,est=document.getElementById('v_est').value,notas=document.getElementById('v_not').value,vend=document.getElementById('v_vend').value,pago=document.getElementById('v_pago').value,entrega=document.getElementById('v_entrega').value,fechaEntrega=document.getElementById('v_fecha_entrega').value,total=+(cant*pvp*(1-dto/100)).toFixed(2);
   if(!cId||!fecha||!pId||!pvp){toast('Rellena los campos obligatorios');return;}
@@ -1404,7 +1408,27 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(a==='ev')openVM(id);
     else if(a==='ec')openCM(id);
     else if(a==='ep')openPM(id);
-    else if(a==='dv'){if(confirm('¿Eliminar esta venta?'))DEL('/ventas?id=eq.'+id).then(function(){toast('Eliminada');renderVentas();}).catch(function(e){toast('Error: '+e.message);});}
+    else if(a==='dv'){
+      if(confirm('¿Eliminar esta venta? Se devolverá el stock del producto.')){
+        (async function(){
+          try{
+            var vRows=window._ventasCache||[];
+            var vDel=vRows.find(function(x){return x.id===id;});
+            if(vDel&&vDel.producto_id&&vDel.cantidad){
+              await devolverStock(vDel.producto_id,vDel.cantidad);
+            } else {
+              // Fetch from DB if not in cache
+              var vv=await GET('/ventas?select=producto_id,cantidad&id=eq.'+id);
+              if(vv.length)await devolverStock(vv[0].producto_id,vv[0].cantidad);
+            }
+            await DEL('/ventas?id=eq.'+id);
+            await loadStockCache();
+            toast('✅ Venta eliminada y stock repuesto');
+            renderVentas();
+          }catch(e){toast('Error: '+e.message);}
+        })();
+      }
+    }
     else if(a==='dc'){if(confirm('¿Eliminar este cliente? Esta acción no se puede deshacer.'))DEL('/clientes?id=eq.'+id).then(function(){toast('Cliente eliminado ✓');renderClientes();}).catch(function(e){var msg=e.message||'';if(msg.indexOf('foreign')>-1||msg.indexOf('FK')>-1||msg.indexOf('ventas')>-1)toast('❌ No se puede eliminar: el cliente tiene ventas registradas. Elimina primero sus ventas.',6000);else toast('Error al eliminar: '+msg,5000);});}
     else if(a==='dp'){if(confirm('¿Eliminar este producto?'))DEL('/productos?id=eq.'+id).then(function(){toast('Eliminado');loadStockCache();if(curPage==='catalogo')renderCatalogo();else renderProductos();}).catch(function(e){toast('Error: '+e.message);});}
   });
