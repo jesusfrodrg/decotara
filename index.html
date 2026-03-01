@@ -878,7 +878,13 @@ async function initApp(){
   var cajafecha=document.getElementById('caja_fecha');
   if(cajafecha)cajafecha.value=new Date().toISOString().split('T')[0];
   try{
-    var r=await fetch(SB+'/productos?select=id&limit=1',{headers:SH});
+    // Timeout de 15s para no quedarse colgado en "Conectando"
+    var controller=new AbortController();
+    var toid=setTimeout(function(){controller.abort();},15000);
+    var r;
+    try{r=await fetch(SB+'/productos?select=id&limit=1',{headers:SH,signal:controller.signal});}
+    catch(fe){clearTimeout(toid);if(fe.name==='AbortError'){setConn(false);toast('Tiempo de espera agotado. Verifica tu conexión a internet.',12000);document.getElementById('ctxt').textContent='Timeout';return;}throw fe;}
+    clearTimeout(toid);
     var txt=await r.text();
     if(!r.ok){
       setConn(false);
