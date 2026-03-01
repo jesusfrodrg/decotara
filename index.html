@@ -762,7 +762,8 @@ function _agendaGrupoHTML(grupo,hoyStr,esEntregada){
     (v0.notas?'<div style="margin-top:6px;font-size:11px;color:#555;background:#fffbe6;border-radius:5px;padding:5px 8px">📝 '+v0.notas+'</div>':'')+
   '</div>';
 
-  return '<div class="entrega-item'+(esEntregada?' entregado':'')+(esHoy&&!esEntregada?' hoy':'')+(esPasado?' pasado':'')+'" data-id="'+v0.id+'" data-search="'+searchStr+'" data-agexpand="'+expandId+'" style="cursor:pointer">'+
+  return '<div class="entrega-item'+(esEntregada?' entregado':'')+(esHoy&&!esEntregada?' hoy':'')+(esPasado?' pasado':'')+'" data-id="'+v0.id+'" data-search="'+searchStr+'" style="cursor:pointer;display:flex;align-items:flex-start">'+
+    '<div style="display:flex;flex:1;align-items:flex-start" data-agexpand="'+expandId+'">'+
     '<div class="entrega-date-col"><div class="ed-day">'+dia+'</div><div class="ed-mon">'+mes+'</div></div>'+
     '<div class="entrega-info" style="flex:1">'+
       '<div style="display:flex;align-items:center;gap:6px">'+
@@ -784,10 +785,11 @@ function _agendaGrupoHTML(grupo,hoyStr,esEntregada){
       '</div>'+
       panelHTML+
     '</div>'+
-    '<div style="display:flex;flex-direction:column;gap:4px" onclick="event.stopPropagation()">'+
-      (!esEntregada?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff;width:32px;height:32px" title="Marcar TODA la compra como entregada" data-action="marcar-entregada-grupo" data-ids="'+grupo.map(function(v){return v.id;}).join(',')+'">✅</button>':'')+
-      (esEntregada?'<button class="btn btn-sm bic" style="background:#e67e22;color:#fff;width:32px;height:32px" title="Cancelar entrega (volver a pendiente)" data-action="cancelar-entrega-grupo" data-ids="'+grupo.map(function(v){return v.id;}).join(',')+'">↩️</button>':'')+
-      '<button class="btn btn-sm bic" style="background:var(--blue);color:#fff;width:32px;height:32px" title="Albarán PDF" data-action="albaran-agenda-grupo" data-key="'+albNum+'">📄</button>'+
+    '</div>'+
+    '<div style="display:flex;flex-direction:column;gap:4px">'+
+      (!esEntregada?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff;width:32px;height:32px" title="Marcar TODA la compra como entregada" data-action="marcar-entregada-grupo" data-ids="'+grupo.map(function(v){return v.id;}).join(',')+'" data-id="'+grupo[0].id+'">✅</button>':'')+
+      (esEntregada?'<button class="btn btn-sm bic" style="background:#e67e22;color:#fff;width:32px;height:32px" title="Cancelar entrega (volver a pendiente)" data-action="cancelar-entrega-grupo" data-ids="'+grupo.map(function(v){return v.id;}).join(',')+'" data-id="'+grupo[0].id+'">↩️</button>':'')+
+      '<button class="btn btn-sm bic" style="background:var(--blue);color:#fff;width:32px;height:32px" title="Albarán PDF" data-action="albaran-agenda-grupo" data-key="'+albNum+'" data-id="'+grupo[0].id+'">📄</button>'+
     '</div>'+
   '</div>';
 }
