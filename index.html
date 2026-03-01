@@ -873,7 +873,7 @@ async function renderVentas(){
   var q=(document.getElementById('vsearch').value||'').toLowerCase();
   var est=document.getElementById('vfest').value;
   try{
-    var dniField=window._dniOk?',dni':''; var url='/ventas?select=*,clientes(nombre,apellidos,ciudad,direccion'+dniField+'),productos(nombre,categoria)&order=created_at.desc';
+    var dniField=window._dniOk?',dni':''; var url='/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,direccion'+dniField+'),productos(nombre,categoria)&order=created_at.desc';
     if(est)url+='&estado=eq.'+encodeURIComponent(est);
     var rows=await GET(url);
     if(q)rows=rows.filter(function(v){
@@ -888,7 +888,8 @@ async function renderVentas(){
       if(!compras[key]){compras[key]=[];comprasOrder.push(key);}
       compras[key].push(v);
     });
-    // Renderizar UNA fila por compra (agrupada)
+    // Renderizar UNA fila por compra (agrupada) + fila expandible con artículos
+    var compraIdx=0;
     document.getElementById('vtbody').innerHTML=comprasOrder.length?comprasOrder.map(function(key){
       var grupo=compras[key];
       var v0=grupo[0];
@@ -896,26 +897,52 @@ async function renderVentas(){
       var numArts=grupo.reduce(function(s,v){return s+(v.cantidad||1);},0);
       var productosNombres=grupo.map(function(v){return (v.productos?v.productos.nombre:'?')+(v.cantidad>1?' x'+v.cantidad:'');}).join(', ');
       var primeraId=v0.id;
-      return '<tr>'+
+      var albNum=v0.albaran_num||('ALB-'+primeraId);
+      var expandId='exp_'+key.replace(/[^a-z0-9]/gi,'_');
+      // Fila expandible con artículos del grupo
+      var expandRow='<tr id="'+expandId+'" style="display:none"><td colspan="8" style="padding:0;background:#f8f9ff;border-bottom:2px solid var(--blue)">'+
+        '<div style="padding:10px 14px">'+
+        '<div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📦 Artículos de la compra · '+albNum+'</div>'+
+        '<table style="width:100%;border-collapse:collapse;font-size:12px">'+
+        '<thead><tr style="background:#eef0ff"><th style="padding:5px 8px;text-align:left;border-radius:4px 0 0 4px">Producto</th><th style="padding:5px 8px;text-align:center">Cantidad</th><th style="padding:5px 8px;text-align:right">PVP</th><th style="padding:5px 8px;text-align:right">Total</th><th style="padding:5px 8px;text-align:center;border-radius:0 4px 4px 0">Acciones</th></tr></thead>'+
+        '<tbody>'+
+        grupo.map(function(v){
+          return '<tr style="border-bottom:1px solid #e8eaf0">'+
+            '<td style="padding:6px 8px;font-weight:600">'+(v.productos?v.productos.nombre:'—')+'<span style="font-size:10px;color:var(--gray);font-weight:400;margin-left:4px">'+(v.productos?v.productos.categoria:'')+'</span></td>'+
+            '<td style="padding:6px 8px;text-align:center">'+v.cantidad+'</td>'+
+            '<td style="padding:6px 8px;text-align:right">'+fe(v.pvp)+'</td>'+
+            '<td style="padding:6px 8px;text-align:right;font-weight:700;color:var(--red)">'+fe(v.total)+'</td>'+
+            '<td style="padding:6px 8px;text-align:center"><div style="display:flex;gap:3px;justify-content:center">'+
+              '<button class="btn btn-sm bs2 bic" style="font-size:11px;padding:3px 7px" data-action="ev" data-id="'+v.id+'" title="Editar este artículo">✏️</button>'+
+              '<button class="btn btn-sm bd bic" style="font-size:11px;padding:3px 7px" data-action="dv" data-id="'+v.id+'" title="Eliminar este artículo">🗑</button>'+
+            '</div></td>'+
+          '</tr>';
+        }).join('')+
+        '</tbody></table>'+
+        '<div style="text-align:right;margin-top:8px;font-size:13px;font-weight:700;color:var(--red)">Total compra: '+fe(totalCompra)+(v0.descuento?'<span style="font-size:10px;color:var(--gray);font-weight:400;margin-left:6px">(-'+v0.descuento+'%)</span>':'')+'</div>'+
+        '</div>'+
+      '</td></tr>';
+      return '<tr style="cursor:pointer" data-expand="'+expandId+'">'+
         '<td><b style="color:var(--blue)">'+primeraId+'</b>'+
-          (grupo.length>1?'<div style="font-size:9px;color:var(--gray);margin-top:1px">+'+(grupo.length-1)+' más</div>':'')+
+          '<div style="font-size:9px;color:var(--gray);margin-top:1px">'+albNum+'</div>'+
         '</td>'+
         '<td>'+fD(v0.fecha)+'</td>'+
         '<td><div>'+(v0.clientes?v0.clientes.nombre+' '+v0.clientes.apellidos:'—')+'</div>'+
           (window._dniOk&&v0.clientes&&v0.clientes.dni?'<div style="font-size:10px;color:var(--gray)">DNI: '+v0.clientes.dni+'</div>':'')+
         '</td>'+
-        '<td><div style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+productosNombres+'">'+productosNombres+'</div></td>'+
+        '<td><div style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+productosNombres+'">'+productosNombres+'</div></td>'+
         '<td class="price">'+fe(totalCompra)+'</td>'+
         '<td>'+eb(v0.estado)+'</td>'+
         '<td>'+(grupo.length>1?'<span style="background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px">'+grupo.length+' prods</span>':'<span style="font-size:10px;color:var(--gray)">'+numArts+' ud.</span>')+'</td>'+
-        '<td><div style="display:flex;gap:3px">'+
+        '<td><div style="display:flex;gap:3px" onclick="event.stopPropagation()">'+
+          '<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff;width:30px;height:30px;padding:0" title="Ver artículos de la compra" data-action="vergrupo" data-expand="'+expandId+'">👁</button>'+
           (grupo.length>1
-            ?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff" title="Albarán PDF compra completa" data-action="pdfgrupo" data-key="'+key+'">🧾</button>'
+            ?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff" title="Albarán PDF compra completa ('+albNum+')" data-action="pdfgrupo" data-key="'+key+'">🧾</button>'
             :'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdf" data-id="'+v0.id+'">📄</button>')+
           '<button class="btn btn-sm bs2 bic" data-action="ev" data-id="'+v0.id+'">✏️</button>'+
           '<button class="btn btn-sm bd bic" data-action="dv" data-id="'+v0.id+'">🗑</button>'+
         '</div></td>'+
-      '</tr>';
+      '</tr>'+expandRow;
     }).join(''):EM(8,'🧾','Sin ventas');
     window._ventasCache=rows;
     window._comprasCache=compras;
@@ -1134,7 +1161,7 @@ async function saveCart(){
       n++;var item=cart[i];
       var total=+(item.pvp*item.qty*(1-dto/100)).toFixed(2);
       var nid='VEN-'+String(n).padStart(4,'0');
-      var venta={id:nid,cliente_id:cId,fecha:fecha,producto_id:item.id,cantidad:item.qty,pvp:item.pvp,descuento:dto,estado:'Completada',notas:notas,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaEntrega||null};
+      var venta={id:nid,cliente_id:cId,fecha:fecha,producto_id:item.id,cantidad:item.qty,pvp:item.pvp,descuento:dto,estado:'Completada',notas:notas,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaEntrega||null,albaran_num:numAlbaran};
       await POST('/ventas',venta);
       await descontarStock(item.id,item.qty);
       stockCache[item.id]=Math.max(0,(stockCache[item.id]||0)-item.qty);
@@ -1298,6 +1325,19 @@ document.addEventListener('DOMContentLoaded',function(){
   document.addEventListener('click',function(e){
     var atc=e.target.closest('.add-to-cart');
     if(atc){cartAddItem({id:atc.dataset.prodId,nombre:atc.dataset.prodNom,categoria:atc.dataset.prodCat,pvp:parseFloat(atc.dataset.prodPvp)});return;}
+    // Click on grouped row to expand/collapse
+    var expandRow=e.target.closest('[data-expand]');
+    if(expandRow&&!e.target.closest('[data-action]')){
+      var expandId=expandRow.dataset.expand;
+      var row=document.getElementById(expandId);
+      if(row){
+        var isOpen=row.style.display!=='none';
+        row.style.display=isOpen?'none':'table-row';
+        var eyeBtn=expandRow.querySelector('[data-action="vergrupo"]');
+        if(eyeBtn){eyeBtn.style.background=isOpen?'#7c3aed':'#4c1d95';eyeBtn.title=isOpen?'Ver artículos de la compra':'Ocultar artículos';}
+      }
+      return;
+    }
     var btn=e.target.closest('[data-action]');
     if(!btn)return;
     var a=btn.dataset.action,id=btn.dataset.id;
@@ -1307,6 +1347,17 @@ document.addEventListener('DOMContentLoaded',function(){
       var cli2={nombre:(v.clientes?v.clientes.nombre:''),apellidos:(v.clientes?v.clientes.apellidos:''),dni:(v.clientes?v.clientes.dni:''),ciudad:(v.clientes?v.clientes.ciudad:''),direccion:(v.clientes?v.clientes.direccion:'')};
       var vent=[{prod_nombre:v.productos?v.productos.nombre:'Producto',prod_cat:v.productos?v.productos.categoria:'',cantidad:v.cantidad,pvp:v.pvp,total:v.total}];
       generarAlbaran(vent,cli2,v.fecha,v.descuento||0,v.vendedor||'',v.forma_pago||'Efectivo',v.entrega||'Recogida por el Cliente',v.fecha_entrega||'',v.notas||'','ALB-'+id);
+      return;
+    }
+    if(a==='vergrupo'){
+      var expandId=btn.dataset.expand;
+      var row=document.getElementById(expandId);
+      if(row){
+        var isOpen=row.style.display!=='none';
+        row.style.display=isOpen?'none':'table-row';
+        btn.style.background=isOpen?'#7c3aed':'#4c1d95';
+        btn.title=isOpen?'Ver artículos de la compra':'Ocultar artículos';
+      }
       return;
     }
     if(a==='pdfgrupo'){
@@ -1320,7 +1371,7 @@ document.addEventListener('DOMContentLoaded',function(){
       var dto=v0.descuento||0;
       var totalGrupo=grupo.reduce(function(s,v){return s+Number(v.total||0);},0);
       // Recalculate each item total without discount for subtotal
-      var albNum='ALB-'+grupo.map(function(v){return v.id;}).join('-').slice(0,20);
+      var albNum=grupo[0].albaran_num||('ALB-'+grupo.map(function(v){return v.id;}).join('-').slice(0,20));
       generarAlbaran(vent,cli2,v0.fecha,dto,v0.vendedor||'',v0.forma_pago||'Efectivo',v0.entrega||'Recogida por el Cliente',v0.fecha_entrega||'',v0.notas||'',albNum);
       return;
     }
