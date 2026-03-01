@@ -229,6 +229,13 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 .agenda-tabs{display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid var(--xlgray);background:var(--xlgray)}
 .ag-tab{flex:1;padding:7px;border-radius:var(--r-sm);font-size:11px;font-weight:700;border:1.5px solid var(--lgray);background:var(--white);cursor:pointer;font-family:'Barlow',sans-serif;color:var(--gray);text-align:center;transition:all .15s}
 .ag-tab.active{background:var(--red);color:#fff;border-color:var(--red)}
+.entrega-item.entregado{opacity:.7;background:#F6FBF7;border-left:3px solid var(--green)}
+.entregado-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:800;padding:2px 7px;border-radius:4px;background:#E8F5EE;color:#2E7D52;border:1px solid #b8ddc8}
+.agenda-search{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--xlgray);background:#fff}
+.agenda-search input{flex:1;border:1.5px solid var(--lgray);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:'Barlow',sans-serif;outline:none;color:var(--black)}
+.agenda-search input:focus{border-color:var(--red)}
+.agenda-search-icon{font-size:15px;color:var(--gray)}
+.ag-section-title{padding:10px 16px 6px;font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;background:var(--xlgray);border-bottom:1px solid var(--lgray)}
 </style>
 </head>
 <body>
@@ -395,7 +402,14 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
         <button class="ag-tab" data-agfilt="semana">Esta semana</button>
         <button class="ag-tab" data-agfilt="todas">Todas</button>
       </div>
+      <div class="agenda-search">
+        <span class="agenda-search-icon">🔍</span>
+        <input type="text" id="agenda_buscar" placeholder="Buscar por albarán, nombre o DNI/NIE…" oninput="filtrarAgenda()">
+      </div>
+      <div class="ag-section-title" id="ag-pend-title" style="display:none">📋 Pendientes de entrega</div>
       <div id="agenda_body"><div class="ldr"><span class="spin"></span></div></div>
+      <div class="ag-section-title" id="ag-ent-title" style="display:none">✅ Órdenes entregadas</div>
+      <div id="agenda_entregadas" style="display:none"></div>
     </div>
   </div>
 
@@ -693,47 +707,98 @@ function generarCajaPDF(){
 
 // ══════ AGENDA ENTREGAS ══════
 var agFiltro='proximas';
+var _agendaCache=[];var _entregadasCache=[];
+
+function _agendaItemHTML(v,hoyStr,esEntregada){
+  var fe_d=v.fecha_entrega?new Date(v.fecha_entrega+'T12:00'):null;
+  var esHoy=v.fecha_entrega===hoyStr;
+  var esPasado=v.fecha_entrega&&v.fecha_entrega<hoyStr&&!esEntregada;
+  var dia=fe_d?fe_d.getDate():'?';
+  var mes=fe_d?fe_d.toLocaleDateString('es-ES',{month:'short'}).toUpperCase():'—';
+  var esTrans=v.entrega==='Transporte y Montaje';
+  var cliNom=v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—';
+  var ciudad=v.clientes&&v.clientes.ciudad?v.clientes.ciudad:'';
+  var dni=window._dniOk&&v.clientes&&v.clientes.dni?v.clientes.dni:'';
+  var albNum='ALB-'+v.id;
+  return '<div class="entrega-item'+(esEntregada?' entregado':'')+(esHoy&&!esEntregada?' hoy':'')+(esPasado?' pasado':'')+'" data-id="'+v.id+'" data-search="'+[albNum,cliNom.toLowerCase(),dni.toLowerCase()].join('|')+'">'+
+    '<div class="entrega-date-col"><div class="ed-day">'+dia+'</div><div class="ed-mon">'+mes+'</div></div>'+
+    '<div class="entrega-info">'+
+      '<div class="ei-client">'+cliNom+(dni?' <span style="font-size:10px;color:var(--gray);font-weight:500">'+dni+'</span>':'')+'</div>'+
+      '<div class="ei-prod">'+(v.productos?v.productos.nombre:'—')+(ciudad?' — '+ciudad:'')+'</div>'+
+      '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">'+
+        '<span class="ei-tipo '+(esTrans?'trans':'recog')+'">'+(esTrans?'🚚 Transporte':'🚶 Recogida')+'</span>'+
+        (esEntregada?'<span class="entregado-badge">✅ Entregada</span>':'')+
+        (esHoy&&!esEntregada?'<span style="background:#FFD700;color:#111;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px">HOY</span>':'')+
+        (esPasado?'<span style="background:var(--red-soft);color:var(--red);font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px">PENDIENTE</span>':'')+
+      '</div>'+
+      '<div class="entrega-vend"><span style="font-size:10px;color:var(--gray)">'+albNum+'</span>'+(v.vendedor?'&nbsp;·&nbsp;'+v.vendedor:'')+'&nbsp;&nbsp;'+fe_str(v.total)+'</div>'+
+    '</div>'+
+    '<div style="display:flex;flex-direction:column;gap:4px">'+
+      (!esEntregada?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff;width:32px;height:32px" title="Marcar como entregada" data-action="marcar-entregada" data-id="'+v.id+'">✅</button>':'')+
+      '<button class="btn btn-sm bic" style="background:var(--blue);color:#fff;width:32px;height:32px" title="Albarán" data-action="albaran-agenda" data-id="'+v.id+'">📄</button>'+
+      (esTrans&&!esEntregada?'<button class="btn btn-sm bic" style="background:#25D366;color:#fff;width:32px;height:32px" title="WhatsApp" data-action="wa" data-id="'+v.id+'">💬</button>':'')+
+    '</div>'+
+  '</div>';
+}
+
+function filtrarAgenda(){
+  var q=(document.getElementById('agenda_buscar').value||'').toLowerCase().trim();
+  function aplicarFiltro(containerId){
+    var items=document.querySelectorAll('#'+containerId+' .entrega-item');
+    items.forEach(function(el){
+      if(!q){el.style.display='';return;}
+      var s=(el.dataset.search||'').toLowerCase();
+      el.style.display=(s.indexOf(q)>=0)?'':'none';
+    });
+  }
+  aplicarFiltro('agenda_body');
+  aplicarFiltro('agenda_entregadas');
+}
+
 async function renderAgenda(){
   document.getElementById('agenda_body').innerHTML='<div class="ldr"><span class="spin"></span></div>';
+  document.getElementById('agenda_entregadas').style.display='none';
+  document.getElementById('ag-pend-title').style.display='none';
+  document.getElementById('ag-ent-title').style.display='none';
+  // limpiar búsqueda al recargar
+  if(document.getElementById('agenda_buscar'))document.getElementById('agenda_buscar').value='';
   try{
     var hoy=new Date();
     var hoyStr=hoy.toISOString().split('T')[0];
     var finSem=new Date(hoy);finSem.setDate(hoy.getDate()+6);
     var finSemStr=finSem.toISOString().split('T')[0];
-    var url;
-    var dniF2=window._dniOk?',dni':''; if(agFiltro==='hoy')url='/ventas?select=*,clientes(nombre,apellidos,ciudad'+dniF2+'),productos(nombre,categoria)&fecha_entrega=eq.'+hoyStr+'&estado=neq.Cancelada&order=fecha_entrega.asc';
-    else if(agFiltro==='semana')url='/ventas?select=*,clientes(nombre,apellidos,ciudad'+dniF2+'),productos(nombre,categoria)&fecha_entrega=gte.'+hoyStr+'&fecha_entrega=lte.'+finSemStr+'&estado=neq.Cancelada&order=fecha_entrega.asc';
-    else if(agFiltro==='todas')url='/ventas?select=*,clientes(nombre,apellidos,ciudad'+dniF2+'),productos(nombre,categoria)&fecha_entrega=not.is.null&estado=neq.Cancelada&order=fecha_entrega.asc';
-    else url='/ventas?select=*,clientes(nombre,apellidos,ciudad'+dniF2+'),productos(nombre,categoria)&fecha_entrega=gte.'+hoyStr+'&estado=neq.Cancelada&order=fecha_entrega.asc';
+    var url,urlEnt;
+    var dniF2=window._dniOk?',dni':'';
+    var base='*,clientes(nombre,apellidos,ciudad'+dniF2+'),productos(nombre,categoria)';
+    if(agFiltro==='hoy'){
+      url='/ventas?select='+base+'&fecha_entrega=eq.'+hoyStr+'&estado=neq.Cancelada&entregado=is.null&order=fecha_entrega.asc';
+      urlEnt='/ventas?select='+base+'&fecha_entrega=eq.'+hoyStr+'&estado=neq.Cancelada&entregado=eq.true&order=fecha_entrega.asc';
+    }else if(agFiltro==='semana'){
+      url='/ventas?select='+base+'&fecha_entrega=gte.'+hoyStr+'&fecha_entrega=lte.'+finSemStr+'&estado=neq.Cancelada&entregado=is.null&order=fecha_entrega.asc';
+      urlEnt='/ventas?select='+base+'&fecha_entrega=gte.'+hoyStr+'&fecha_entrega=lte.'+finSemStr+'&estado=neq.Cancelada&entregado=eq.true&order=fecha_entrega.asc';
+    }else if(agFiltro==='todas'){
+      url='/ventas?select='+base+'&fecha_entrega=not.is.null&estado=neq.Cancelada&entregado=is.null&order=fecha_entrega.asc';
+      urlEnt='/ventas?select='+base+'&fecha_entrega=not.is.null&estado=neq.Cancelada&entregado=eq.true&order=fecha_entrega.desc';
+    }else{
+      url='/ventas?select='+base+'&fecha_entrega=gte.'+hoyStr+'&estado=neq.Cancelada&entregado=is.null&order=fecha_entrega.asc';
+      urlEnt='/ventas?select='+base+'&fecha_entrega=gte.'+hoyStr+'&estado=neq.Cancelada&entregado=eq.true&order=fecha_entrega.desc';
+    }
     var rows=await GET(url);
-    if(!rows.length){document.getElementById('agenda_body').innerHTML='<div class="empty"><div class="empty-i">📅</div>No hay entregas en este período</div>';return;}
-    document.getElementById('agenda_body').innerHTML=rows.map(function(v){
-      var fe_d=v.fecha_entrega?new Date(v.fecha_entrega+'T12:00'):null;
-      var esHoy=v.fecha_entrega===hoyStr;
-      var esPasado=v.fecha_entrega&&v.fecha_entrega<hoyStr;
-      var dia=fe_d?fe_d.getDate():'?';
-      var mes=fe_d?fe_d.toLocaleDateString('es-ES',{month:'short'}).toUpperCase():'—';
-      var esTrans=v.entrega==='Transporte y Montaje';
-      var cliNom=v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—';
-      var ciudad=v.clientes&&v.clientes.ciudad?v.clientes.ciudad:'';
-      return '<div class="entrega-item'+(esHoy?' hoy':'')+(esPasado?' pasado':'')+'">'+
-        '<div class="entrega-date-col"><div class="ed-day">'+dia+'</div><div class="ed-mon">'+mes+'</div></div>'+
-        '<div class="entrega-info">'+
-          '<div class="ei-client">'+cliNom+(window._dniOk&&v.clientes&&v.clientes.dni?' <span style="font-size:10px;color:var(--gray);font-weight:500">'+v.clientes.dni+'</span>':'')+'</div>'+
-          '<div class="ei-prod">'+(v.productos?v.productos.nombre:'—')+(ciudad?' — '+ciudad:'')+'</div>'+
-          '<div style="display:flex;gap:6px;align-items:center;margin-top:4px">'+
-            '<span class="ei-tipo '+(esTrans?'trans':'recog')+'">'+(esTrans?'🚚 Transporte':'🚶 Recogida')+'</span>'+
-            (esHoy?'<span style="background:#FFD700;color:#111;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px">HOY</span>':'')+
-            (esPasado?'<span style="background:var(--red-soft);color:var(--red);font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px">PENDIENTE</span>':'')+
-          '</div>'+
-          '<div class="entrega-vend">'+(v.vendedor?'Vendedor: '+v.vendedor:'')+'&nbsp;&nbsp;'+fe_str(v.total)+'</div>'+
-        '</div>'+
-        '<div style="display:flex;flex-direction:column;gap:4px">'+
-          '<button class="btn btn-sm bic" style="background:var(--blue);color:#fff;width:32px;height:32px" title="Albarán" data-action="albaran-agenda" data-id="'+v.id+'">📄</button>'+
-          (esTrans?'<button class="btn btn-sm bic" style="background:#25D366;color:#fff;width:32px;height:32px" title="WhatsApp" data-action="wa" data-id="'+v.id+'">💬</button>':'')+
-        '</div>'+
-      '</div>';
-    }).join('');
+    var rowsEnt=await GET(urlEnt).catch(function(){return [];});
+    _agendaCache=rows;_entregadasCache=rowsEnt;
+    // Pendientes
+    if(!rows.length){
+      document.getElementById('agenda_body').innerHTML='<div class="empty"><div class="empty-i">📅</div>No hay entregas pendientes en este período</div>';
+    }else{
+      document.getElementById('ag-pend-title').style.display='';
+      document.getElementById('agenda_body').innerHTML=rows.map(function(v){return _agendaItemHTML(v,hoyStr,false);}).join('');
+    }
+    // Entregadas
+    if(rowsEnt.length){
+      document.getElementById('ag-ent-title').style.display='';
+      document.getElementById('agenda_entregadas').style.display='';
+      document.getElementById('agenda_entregadas').innerHTML=rowsEnt.map(function(v){return _agendaItemHTML(v,hoyStr,true);}).join('');
+    }
   }catch(e){document.getElementById('agenda_body').innerHTML='<div class="empty"><div class="empty-i">⚠️</div>Error: '+e.message+'</div>';}
 }
 function fe_str(v){return Number(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR';}
@@ -1254,6 +1319,17 @@ document.addEventListener('DOMContentLoaded',function(){
         try{
           var vv=await GET('/ventas?select=*,clientes(nombre,apellidos,ciudad,dni),productos(nombre,categoria)&id=eq.'+id);
           if(vv.length)compartirAlbaran(vv[0]);
+        }catch(e){toast('Error: '+e.message);}
+      })();
+      return;
+    }
+    else if(a==='marcar-entregada'){
+      if(!confirm('¿Marcar esta orden como entregada?'))return;
+      (async function(){
+        try{
+          await PATCH('/ventas?id=eq.'+id,{entregado:true});
+          toast('✅ Orden marcada como entregada');
+          renderAgenda();
         }catch(e){toast('Error: '+e.message);}
       })();
       return;
