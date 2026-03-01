@@ -762,7 +762,7 @@ function _agendaGrupoHTML(grupo,hoyStr,esEntregada){
     (v0.notas?'<div style="margin-top:6px;font-size:11px;color:#555;background:#fffbe6;border-radius:5px;padding:5px 8px">📝 '+v0.notas+'</div>':'')+
   '</div>';
 
-  return '<div class="entrega-item'+(esEntregada?' entregado':'')+(esHoy&&!esEntregada?' hoy':'')+(esPasado?' pasado':'')+'" data-id="'+v0.id+'" data-search="'+searchStr+'" style="cursor:pointer" onclick="(function(el){var p=el.querySelector('#'+expandId+'');if(p){var open=p.style.display!=='none';p.style.display=open?'none':'block';el.querySelector('.ag-toggle-btn').textContent=open?'▼':'▲';}})(this)">'+
+  return '<div class="entrega-item'+(esEntregada?' entregado':'')+(esHoy&&!esEntregada?' hoy':'')+(esPasado?' pasado':'')+'" data-id="'+v0.id+'" data-search="'+searchStr+'" data-agexpand="'+expandId+'" style="cursor:pointer">'+
     '<div class="entrega-date-col"><div class="ed-day">'+dia+'</div><div class="ed-mon">'+mes+'</div></div>'+
     '<div class="entrega-info" style="flex:1">'+
       '<div style="display:flex;align-items:center;gap:6px">'+
@@ -1458,6 +1458,13 @@ document.addEventListener('DOMContentLoaded',function(){
   document.addEventListener('click',function(e){
     var atc=e.target.closest('.add-to-cart');
     if(atc){cartAddItem({id:atc.dataset.prodId,nombre:atc.dataset.prodNom,categoria:atc.dataset.prodCat,pvp:parseFloat(atc.dataset.prodPvp)});return;}
+    var agItem=e.target.closest('[data-agexpand]');
+    if(agItem&&!e.target.closest('[data-action]')){
+      var agId=agItem.dataset.agexpand;
+      var panel=document.getElementById(agId);
+      if(panel){var open=panel.style.display!=='none';panel.style.display=open?'none':'block';var tbtn=agItem.querySelector('.ag-toggle-btn');if(tbtn)tbtn.textContent=open?'▼':'▲';}
+      return;
+    }
     // Click on grouped row to expand/collapse (only if not inside an already-expanded sub-row)
     var expandRow=e.target.closest('[data-expand]');
     if(expandRow&&!e.target.closest('[data-action]')&&!e.target.closest('tr[id^="exp_"]')){
