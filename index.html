@@ -709,34 +709,84 @@ function generarCajaPDF(){
 var agFiltro='proximas';
 var _agendaCache=[];var _entregadasCache=[];
 
-function _agendaItemHTML(v,hoyStr,esEntregada){
-  var fe_d=v.fecha_entrega?new Date(v.fecha_entrega+'T12:00'):null;
-  var esHoy=v.fecha_entrega===hoyStr;
-  var esPasado=v.fecha_entrega&&v.fecha_entrega<hoyStr&&!esEntregada;
+function _agruparAgenda(rows){
+  // Group by albaran_num if exists, else by cliente_id+fecha_entrega
+  var grupos={};var orden=[];
+  rows.forEach(function(v){
+    var key=v.albaran_num||(v.cliente_id+'_'+v.fecha_entrega);
+    if(!grupos[key]){grupos[key]=[];orden.push(key);}
+    grupos[key].push(v);
+  });
+  return {grupos:grupos,orden:orden};
+}
+
+function _agendaGrupoHTML(grupo,hoyStr,esEntregada){
+  var v0=grupo[0];
+  var fe_d=v0.fecha_entrega?new Date(v0.fecha_entrega+'T12:00'):null;
+  var esHoy=v0.fecha_entrega===hoyStr;
+  var esPasado=v0.fecha_entrega&&v0.fecha_entrega<hoyStr&&!esEntregada;
   var dia=fe_d?fe_d.getDate():'?';
   var mes=fe_d?fe_d.toLocaleDateString('es-ES',{month:'short'}).toUpperCase():'—';
-  var esTrans=v.entrega==='Transporte y Montaje';
-  var cliNom=v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—';
-  var ciudad=v.clientes&&v.clientes.ciudad?v.clientes.ciudad:'';
-  var dni=window._dniOk&&v.clientes&&v.clientes.dni?v.clientes.dni:'';
-  var albNum='ALB-'+v.id;
-  return '<div class="entrega-item'+(esEntregada?' entregado':'')+(esHoy&&!esEntregada?' hoy':'')+(esPasado?' pasado':'')+'" data-id="'+v.id+'" data-search="'+[albNum,cliNom.toLowerCase(),dni.toLowerCase()].join('|')+'">'+
+  var esTrans=v0.entrega==='Transporte y Montaje';
+  var cliNom=v0.clientes?v0.clientes.nombre+' '+v0.clientes.apellidos:'—';
+  var ciudad=v0.clientes&&v0.clientes.ciudad?v0.clientes.ciudad:'';
+  var dni=window._dniOk&&v0.clientes&&v0.clientes.dni?v0.clientes.dni:'';
+  var albNum=v0.albaran_num||('ALB-'+v0.id);
+  var totalGrupo=grupo.reduce(function(s,v){return s+Number(v.total||0);},0);
+  var multiProd=grupo.length>1;
+  var expandId='agexp_'+albNum.replace(/[^a-z0-9]/gi,'_');
+  var searchStr=[albNum,cliNom.toLowerCase(),dni.toLowerCase()].join('|');
+
+  // Panel expandible con artículos
+  var panelHTML='<div id="'+expandId+'" style="display:none;margin-top:10px;border-top:1px solid #e0e4f0;padding-top:10px">'+
+    '<div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">'+
+      (esTrans?'🚚 Lo que lleva el transportista':'🚶 Lo que recoge el cliente')+' · '+albNum+
+    '</div>'+
+    '<div style="display:flex;flex-direction:column;gap:5px">'+
+    grupo.map(function(v,i){
+      return '<div style="background:#f4f6ff;border-radius:6px;padding:7px 10px;display:flex;align-items:center;gap:8px">'+
+        '<div style="flex:1">'+
+          '<div style="font-weight:700;font-size:13px">'+(v.productos?v.productos.nombre:'—')+'</div>'+
+          '<div style="font-size:11px;color:var(--gray)">'+(v.productos?v.productos.categoria:'')+(v.cantidad>1?' &nbsp;·&nbsp; Cantidad: <b>'+v.cantidad+'</b>':'')+'</div>'+
+        '</div>'+
+        '<div style="text-align:right;min-width:60px">'+
+          '<div style="font-weight:700;color:var(--red);font-size:13px">'+fe_str(v.total)+'</div>'+
+        '</div>'+
+      '</div>';
+    }).join('')+
+    '</div>'+
+    '<div style="text-align:right;margin-top:8px;font-size:13px;font-weight:700;color:var(--red)">'+
+      'Total: '+fe_str(totalGrupo)+
+      (v0.descuento?'<span style="font-size:10px;color:var(--gray);font-weight:400;margin-left:6px">(-'+v0.descuento+'%)</span>':'')+
+    '</div>'+
+    (v0.notas?'<div style="margin-top:6px;font-size:11px;color:#555;background:#fffbe6;border-radius:5px;padding:5px 8px">📝 '+v0.notas+'</div>':'')+
+  '</div>';
+
+  return '<div class="entrega-item'+(esEntregada?' entregado':'')+(esHoy&&!esEntregada?' hoy':'')+(esPasado?' pasado':'')+'" data-id="'+v0.id+'" data-search="'+searchStr+'" style="cursor:pointer" onclick="(function(el){var p=el.querySelector('#'+expandId+'');if(p){var open=p.style.display!=='none';p.style.display=open?'none':'block';el.querySelector('.ag-toggle-btn').textContent=open?'▼':'▲';}})(this)">'+
     '<div class="entrega-date-col"><div class="ed-day">'+dia+'</div><div class="ed-mon">'+mes+'</div></div>'+
-    '<div class="entrega-info">'+
-      '<div class="ei-client">'+cliNom+(dni?' <span style="font-size:10px;color:var(--gray);font-weight:500">'+dni+'</span>':'')+'</div>'+
-      '<div class="ei-prod">'+(v.productos?v.productos.nombre:'—')+(ciudad?' — '+ciudad:'')+'</div>'+
+    '<div class="entrega-info" style="flex:1">'+
+      '<div style="display:flex;align-items:center;gap:6px">'+
+        '<div class="ei-client">'+cliNom+(dni?' <span style="font-size:10px;color:var(--gray);font-weight:500">'+dni+'</span>':'')+'</div>'+
+        (multiProd?'<span style="background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:700;padding:1px 7px;border-radius:5px">'+grupo.length+' arts</span>':'')+
+      '</div>'+
+      '<div class="ei-prod">'+(multiProd?grupo.map(function(v){return v.productos?v.productos.nombre:'—';}).join(', '):(v0.productos?v0.productos.nombre:'—'))+(ciudad?' — '+ciudad:'')+'</div>'+
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">'+
         '<span class="ei-tipo '+(esTrans?'trans':'recog')+'">'+(esTrans?'🚚 Transporte':'🚶 Recogida')+'</span>'+
         (esEntregada?'<span class="entregado-badge">✅ Entregada</span>':'')+
         (esHoy&&!esEntregada?'<span style="background:#FFD700;color:#111;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px">HOY</span>':'')+
         (esPasado?'<span style="background:var(--red-soft);color:var(--red);font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px">PENDIENTE</span>':'')+
       '</div>'+
-      '<div class="entrega-vend"><span style="font-size:10px;color:var(--gray)">'+albNum+'</span>'+(v.vendedor?'&nbsp;·&nbsp;'+v.vendedor:'')+'&nbsp;&nbsp;'+fe_str(v.total)+'</div>'+
+      '<div class="entrega-vend">'+
+        '<span style="font-size:10px;color:var(--blue);font-weight:600">'+albNum+'</span>'+
+        (v0.vendedor?'&nbsp;·&nbsp;<span style="font-size:10px;color:var(--gray)">'+v0.vendedor+'</span>':'')+
+        '&nbsp;&nbsp;<b>'+fe_str(totalGrupo)+'</b>'+
+        ' <span class="ag-toggle-btn" style="font-size:10px;color:var(--blue);margin-left:4px">▼</span>'+
+      '</div>'+
+      panelHTML+
     '</div>'+
-    '<div style="display:flex;flex-direction:column;gap:4px">'+
-      (!esEntregada?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff;width:32px;height:32px" title="Marcar como entregada" data-action="marcar-entregada" data-id="'+v.id+'">✅</button>':'')+
-      '<button class="btn btn-sm bic" style="background:var(--blue);color:#fff;width:32px;height:32px" title="Albarán" data-action="albaran-agenda" data-id="'+v.id+'">📄</button>'+
-      
+    '<div style="display:flex;flex-direction:column;gap:4px" onclick="event.stopPropagation()">'+
+      (!esEntregada?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff;width:32px;height:32px" title="Marcar TODA la compra como entregada" data-action="marcar-entregada-grupo" data-ids="'+grupo.map(function(v){return v.id;}).join(',')+'">✅</button>':'')+
+      '<button class="btn btn-sm bic" style="background:var(--blue);color:#fff;width:32px;height:32px" title="Albarán PDF" data-action="albaran-agenda-grupo" data-key="'+albNum+'">📄</button>'+
     '</div>'+
   '</div>';
 }
@@ -769,7 +819,7 @@ async function renderAgenda(){
     var finSemStr=finSem.toISOString().split('T')[0];
     var url,urlEnt;
     var dniF2=window._dniOk?',dni':'';
-    var base='*,clientes(nombre,apellidos,ciudad'+dniF2+'),productos(nombre,categoria)';
+    var base='*,albaran_num,clientes(nombre,apellidos,ciudad'+dniF2+'),productos(nombre,categoria)';
     if(agFiltro==='hoy'){
       url='/ventas?select='+base+'&fecha_entrega=eq.'+hoyStr+'&estado=neq.Cancelada&entregado=is.null&order=fecha_entrega.asc';
       urlEnt='/ventas?select='+base+'&fecha_entrega=eq.'+hoyStr+'&estado=neq.Cancelada&entregado=eq.true&order=fecha_entrega.asc';
@@ -791,13 +841,15 @@ async function renderAgenda(){
       document.getElementById('agenda_body').innerHTML='<div class="empty"><div class="empty-i">📅</div>No hay entregas pendientes en este período</div>';
     }else{
       document.getElementById('ag-pend-title').style.display='';
-      document.getElementById('agenda_body').innerHTML=rows.map(function(v){return _agendaItemHTML(v,hoyStr,false);}).join('');
+      var ag=_agruparAgenda(rows);
+      document.getElementById('agenda_body').innerHTML=ag.orden.map(function(k){return _agendaGrupoHTML(ag.grupos[k],hoyStr,false);}).join('');
     }
     // Entregadas
     if(rowsEnt.length){
       document.getElementById('ag-ent-title').style.display='';
       document.getElementById('agenda_entregadas').style.display='';
-      document.getElementById('agenda_entregadas').innerHTML=rowsEnt.map(function(v){return _agendaItemHTML(v,hoyStr,true);}).join('');
+      var agEnt=_agruparAgenda(rowsEnt);
+      document.getElementById('agenda_entregadas').innerHTML=agEnt.orden.map(function(k){return _agendaGrupoHTML(agEnt.grupos[k],hoyStr,true);}).join('');
     }
   }catch(e){document.getElementById('agenda_body').innerHTML='<div class="empty"><div class="empty-i">⚠️</div>Error: '+e.message+'</div>';}
 }
@@ -849,7 +901,7 @@ async function initApp(){
 
 async function renderDash(){
   try{
-    var all=await GET('/ventas?select=*,clientes(nombre,apellidos),productos(nombre,categoria)&order=created_at.desc');
+    var all=await GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos),productos(nombre,categoria)&order=created_at.desc');
     var comp=all.filter(function(v){return v.estado==='Completada';});
     var tot=comp.reduce(function(s,v){return s+Number(v.total||0);},0);
     var num=comp.length;
@@ -865,7 +917,28 @@ async function renderDash(){
     comp.forEach(function(v){var pid=v.producto_id;if(!pid)return;if(!pm[pid])pm[pid]={n:v.productos?v.productos.nombre:pid,c:v.productos?v.productos.categoria:'',t:0,u:0};pm[pid].t+=Number(v.total||0);pm[pid].u+=v.cantidad||0;});
     var top=Object.values(pm).sort(function(a,b){return b.t-a.t;}).slice(0,5);
     document.getElementById('ctop5').innerHTML=top.length?top.map(function(x,i){return '<div class="rr"><div class="rn">'+(i+1)+'</div><div class="ri"><div class="rna">'+x.n+'</div><div class="rc">'+x.c+' · '+x.u+' uds.</div></div><div class="ra">'+fe(x.t)+'</div></div>';}).join(''):'<div class="empty"><div class="empty-i">📦</div>Sin ventas aún</div>';
-    document.getElementById('dtbody').innerHTML=all.slice(0,7).map(function(v){return '<tr><td><b style="color:var(--blue)">'+v.id+'</b></td><td>'+fD(v.fecha)+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(v.productos?v.productos.nombre:'—')+'</td><td class="price">'+fe(v.total)+'</td><td>'+eb(v.estado)+'</td></tr>';}).join('')||EM(6,'🧾','Sin ventas aún');
+    // Agrupar las últimas ventas por albarán (igual que en ventas)
+    var dashGrupos={};var dashOrden=[];
+    all.forEach(function(v){
+      var key=v.albaran_num||(v.cliente_id+'_'+v.fecha+'_'+(v.vendedor||''));
+      if(!dashGrupos[key]){dashGrupos[key]=[];dashOrden.push(key);}
+      dashGrupos[key].push(v);
+    });
+    var dashRows=dashOrden.slice(0,7).map(function(key){
+      var g=dashGrupos[key];var v0=g[0];
+      var tot=g.reduce(function(s,v){return s+Number(v.total||0);},0);
+      var albNum=v0.albaran_num||('ALB-'+v0.id);
+      var prods=g.map(function(v){return v.productos?v.productos.nombre:'—';}).join(', ');
+      return '<tr>'+
+        '<td><b style="color:var(--blue)">'+albNum+'</b>'+(g.length>1?'<div style="font-size:9px;color:var(--gray)">'+g.length+' arts</div>':'')+'</td>'+
+        '<td>'+fD(v0.fecha)+'</td>'+
+        '<td>'+(v0.clientes?v0.clientes.nombre+' '+v0.clientes.apellidos:'—')+'</td>'+
+        '<td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+prods+'">'+prods+'</td>'+
+        '<td class="price">'+fe(tot)+'</td>'+
+        '<td>'+eb(v0.estado)+'</td>'+
+      '</tr>';
+    }).join('');
+    document.getElementById('dtbody').innerHTML=dashRows||EM(6,'🧾','Sin ventas aún');
   }catch(e){toast('Error: '+e.message);}
 }
 
@@ -1157,10 +1230,18 @@ async function saveCart(){
   if(!cart.length){toast('El carrito está vacío');return;}
   var btn=document.getElementById('btnSCart');btn.disabled=true;btn.textContent='Guardando...';
   try{
-    var last=await GET('/ventas?select=id&order=created_at.desc&limit=1');
-    var n=last.length?parseInt((last[0].id||'VEN-0000').replace('VEN-',''))||0:0;
+    // Número de albarán basado en el último ALB existente (no en VEN para no saltar números)
+    var lastAlb=await GET('/ventas?select=albaran_num&albaran_num=not.is.null&order=created_at.desc&limit=1');
+    var nAlb=0;
+    if(lastAlb.length&&lastAlb[0].albaran_num){
+      var m=lastAlb[0].albaran_num.match(/ALB-(\d+)/);
+      if(m)nAlb=parseInt(m[1])||0;
+    }
+    var numAlbaran='ALB-'+String(nAlb+1).padStart(4,'0');
+    // Número VEN sigue siendo secuencial por artículo
+    var lastVen=await GET('/ventas?select=id&order=created_at.desc&limit=1');
+    var n=lastVen.length?parseInt((lastVen[0].id||'VEN-0000').replace('VEN-',''))||0:0;
     var ventasGuardadas=[];
-    var numAlbaran='ALB-'+String(n+1).padStart(4,'0');
     for(var i=0;i<cart.length;i++){
       n++;var item=cart[i];
       var total=+(item.pvp*item.qty*(1-dto/100)).toFixed(2);
@@ -1380,27 +1461,38 @@ document.addEventListener('DOMContentLoaded',function(){
       return;
     }
 
-    else if(a==='marcar-entregada'){
-      if(!confirm('¿Marcar esta orden como entregada?'))return;
+    else if(a==='marcar-entregada'||a==='marcar-entregada-grupo'){
+      var ids=btn.dataset.ids?btn.dataset.ids.split(','):[id];
+      if(!confirm('¿Marcar '+(ids.length>1?'los '+ids.length+' artículos':'esta orden')+' como entregada?'))return;
       (async function(){
         try{
-          await PATCH('/ventas?id=eq.'+id,{entregado:true});
-          toast('✅ Orden marcada como entregada');
+          for(var i=0;i<ids.length;i++){
+            await PATCH('/ventas?id=eq.'+ids[i],{entregado:true});
+          }
+          toast('✅ '+(ids.length>1?'Compra completa marcada':'Orden marcada')+' como entregada');
           renderAgenda();
         }catch(e){toast('Error: '+e.message);}
       })();
       return;
     }
-    else if(a==='albaran-agenda'){
-      // PDF desde agenda
+    else if(a==='albaran-agenda'||a==='albaran-agenda-grupo'){
+      var albKey=btn.dataset.key||null;
       (async function(){
         try{
-          var vv=await GET('/ventas?select=*,clientes(nombre,apellidos,ciudad,direccion,dni),productos(nombre,categoria)&id=eq.'+id);
+          var vv;
+          if(albKey&&albKey!==('ALB-'+id)){
+            // Group albaran: fetch all ventas with same albaran_num
+            vv=await GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,direccion,dni),productos(nombre,categoria)&albaran_num=eq.'+encodeURIComponent(albKey));
+          }
+          if(!vv||!vv.length){
+            vv=await GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,direccion,dni),productos(nombre,categoria)&id=eq.'+id);
+          }
           if(!vv.length){toast('Venta no encontrada');return;}
-          var v=vv[0];
-          var cli2={nombre:(v.clientes?v.clientes.nombre:''),apellidos:(v.clientes?v.clientes.apellidos:''),dni:(v.clientes?v.clientes.dni:''),ciudad:(v.clientes?v.clientes.ciudad:''),direccion:(v.clientes?v.clientes.direccion:'')};
-          var vent=[{prod_nombre:v.productos?v.productos.nombre:'Producto',prod_cat:v.productos?v.productos.categoria:'',cantidad:v.cantidad,pvp:v.pvp,total:v.total}];
-          generarAlbaran(vent,cli2,v.fecha,v.descuento||0,v.vendedor||'',v.forma_pago||'Efectivo',v.entrega||'Recogida por el Cliente',v.fecha_entrega||'',v.notas||'','ALB-'+id);
+          var v0=vv[0];
+          var cli2={nombre:(v0.clientes?v0.clientes.nombre:''),apellidos:(v0.clientes?v0.clientes.apellidos:''),dni:(v0.clientes?v0.clientes.dni:''),ciudad:(v0.clientes?v0.clientes.ciudad:''),direccion:(v0.clientes?v0.clientes.direccion:'')};
+          var vent=vv.map(function(v){return {prod_nombre:v.productos?v.productos.nombre:'Producto',prod_cat:v.productos?v.productos.categoria:'',cantidad:v.cantidad,pvp:v.pvp,total:v.total};});
+          var albNum=v0.albaran_num||('ALB-'+v0.id);
+          generarAlbaran(vent,cli2,v0.fecha,v0.descuento||0,v0.vendedor||'',v0.forma_pago||'Efectivo',v0.entrega||'Recogida por el Cliente',v0.fecha_entrega||'',v0.notas||'',albNum);
         }catch(e){toast('Error: '+e.message);}
       })();
       return;
