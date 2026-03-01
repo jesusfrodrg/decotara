@@ -966,7 +966,13 @@ async function renderDash(){
       '</tr>';
     }).join('');
     document.getElementById('dtbody').innerHTML=dashRows||EM(6,'🧾','Sin ventas aún');
-  }catch(e){toast('Error: '+e.message);}
+  }catch(e){
+    var errHtml='<div style="color:#C8372D;font-size:12px;padding:12px;text-align:center">⚠️ '+e.message+'</div>';
+    var cc=document.getElementById('cchart');if(cc)cc.innerHTML=errHtml;
+    var ct5=document.getElementById('ctop5');if(ct5)ct5.innerHTML=errHtml;
+    var db=document.getElementById('dtbody');if(db)db.innerHTML='<tr><td colspan="6" style="color:#C8372D;text-align:center;padding:12px;font-size:12px">⚠️ '+e.message+'</td></tr>';
+    console.error('renderDash:',e);
+  }
 }
 
 async function renderVentas(){
