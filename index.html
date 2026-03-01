@@ -881,32 +881,39 @@ async function renderVentas(){
       var cliNom=(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'');
       return (cliNom+' '+(v.productos?v.productos.nombre:'')+' '+v.id+' '+cliDni).toLowerCase().indexOf(q)>-1;
     });
-    // Agrupar por albarán (fecha+cliente+vendedor mismo día = misma compra)
-    var compras={};
+    // Agrupar por compra (fecha+cliente+vendedor mismo día = misma compra = mismo albarán)
+    var compras={};var comprasOrder=[];
     rows.forEach(function(v){
       var key=(v.cliente_id||'')+'_'+(v.fecha||'')+'_'+(v.vendedor||'');
-      if(!compras[key])compras[key]=[];
+      if(!compras[key]){compras[key]=[];comprasOrder.push(key);}
       compras[key].push(v);
     });
-    document.getElementById('vtbody').innerHTML=rows.length?rows.map(function(v){
-      var key=(v.cliente_id||'')+'_'+(v.fecha||'')+'_'+(v.vendedor||'');
-      var numEnGrupo=compras[key].length;
+    // Renderizar UNA fila por compra (agrupada)
+    document.getElementById('vtbody').innerHTML=comprasOrder.length?comprasOrder.map(function(key){
+      var grupo=compras[key];
+      var v0=grupo[0];
+      var totalCompra=grupo.reduce(function(s,v){return s+Number(v.total||0);},0);
+      var numArts=grupo.reduce(function(s,v){return s+(v.cantidad||1);},0);
+      var productosNombres=grupo.map(function(v){return (v.productos?v.productos.nombre:'?')+(v.cantidad>1?' x'+v.cantidad:'');}).join(', ');
+      var primeraId=v0.id;
       return '<tr>'+
-        '<td><b style="color:var(--blue)">'+v.id+'</b></td>'+
-        '<td>'+fD(v.fecha)+'</td>'+
-        '<td><div>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</div>'+
-          (window._dniOk&&v.clientes&&v.clientes.dni?'<div style="font-size:10px;color:var(--gray)">DNI: '+v.clientes.dni+'</div>':'')+
+        '<td><b style="color:var(--blue)">'+primeraId+'</b>'+
+          (grupo.length>1?'<div style="font-size:9px;color:var(--gray);margin-top:1px">+'+(grupo.length-1)+' más</div>':'')+
         '</td>'+
-        '<td>'+(v.productos?v.productos.nombre:'—')+'</td>'+
-        '<td class="price">'+fe(v.total)+'</td>'+
-        '<td>'+eb(v.estado)+'</td>'+
-        '<td>'+(numEnGrupo>1?'<span style="background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px">'+numEnGrupo+' arts.</span>':'<span style="font-size:10px;color:var(--gray)">—</span>')+'</td>'+
+        '<td>'+fD(v0.fecha)+'</td>'+
+        '<td><div>'+(v0.clientes?v0.clientes.nombre+' '+v0.clientes.apellidos:'—')+'</div>'+
+          (window._dniOk&&v0.clientes&&v0.clientes.dni?'<div style="font-size:10px;color:var(--gray)">DNI: '+v0.clientes.dni+'</div>':'')+
+        '</td>'+
+        '<td><div style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+productosNombres+'">'+productosNombres+'</div></td>'+
+        '<td class="price">'+fe(totalCompra)+'</td>'+
+        '<td>'+eb(v0.estado)+'</td>'+
+        '<td>'+(grupo.length>1?'<span style="background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px">'+grupo.length+' prods</span>':'<span style="font-size:10px;color:var(--gray)">'+numArts+' ud.</span>')+'</td>'+
         '<td><div style="display:flex;gap:3px">'+
-          (numEnGrupo>1
-            ?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff" title="PDF compra completa ('+numEnGrupo+' artículos)" data-action="pdfgrupo" data-key="'+key+'">🧾</button>'
-            :'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdf" data-id="'+v.id+'">📄</button>')+
-          '<button class="btn btn-sm bs2 bic" data-action="ev" data-id="'+v.id+'">✏️</button>'+
-          '<button class="btn btn-sm bd bic" data-action="dv" data-id="'+v.id+'">🗑</button>'+
+          (grupo.length>1
+            ?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff" title="Albarán PDF compra completa" data-action="pdfgrupo" data-key="'+key+'">🧾</button>'
+            :'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdf" data-id="'+v0.id+'">📄</button>')+
+          '<button class="btn btn-sm bs2 bic" data-action="ev" data-id="'+v0.id+'">✏️</button>'+
+          '<button class="btn btn-sm bd bic" data-action="dv" data-id="'+v0.id+'">🗑</button>'+
         '</div></td>'+
       '</tr>';
     }).join(''):EM(8,'🧾','Sin ventas');
@@ -1162,6 +1169,12 @@ async function saveC(){
   try{
     if(ceditId){await PATCH('/clientes?id=eq.'+ceditId,payload);toast('Cliente actualizado ✓');closeM('cm');renderClientes();}
     else{
+      // Verificar DNI duplicado
+      if(window._dniOk&&document.getElementById('c_dni').value.trim()){
+        var dniVal=document.getElementById('c_dni').value.trim();
+        var existing=await GET('/clientes?select=id,nombre,apellidos&dni=eq.'+encodeURIComponent(dniVal)+'&limit=1');
+        if(existing.length){toast('⚠️ Ya se encuentra registrada esa persona ('+existing[0].nombre+' '+existing[0].apellidos+' / '+existing[0].id+')',6000);btn.disabled=false;btn.textContent='Guardar';return;}
+      }
       var todos=await GET('/clientes?select=id&order=created_at.desc');
       var maxN=0;todos.forEach(function(c){var nv=parseInt((c.id||'').replace('CLI-',''))||0;if(nv>maxN)maxN=nv;});
       var nid='CLI-'+String(maxN+1).padStart(3,'0');
@@ -1352,7 +1365,7 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(a==='ec')openCM(id);
     else if(a==='ep')openPM(id);
     else if(a==='dv'){if(confirm('¿Eliminar esta venta?'))DEL('/ventas?id=eq.'+id).then(function(){toast('Eliminada');renderVentas();}).catch(function(e){toast('Error: '+e.message);});}
-    else if(a==='dc'){if(confirm('¿Eliminar este cliente?'))DEL('/clientes?id=eq.'+id).then(function(){toast('Eliminado');renderClientes();}).catch(function(e){toast('Error: '+e.message);});}
+    else if(a==='dc'){if(confirm('¿Eliminar este cliente? Esta acción no se puede deshacer.'))DEL('/clientes?id=eq.'+id).then(function(){toast('Cliente eliminado ✓');renderClientes();}).catch(function(e){var msg=e.message||'';if(msg.indexOf('foreign')>-1||msg.indexOf('FK')>-1||msg.indexOf('ventas')>-1)toast('❌ No se puede eliminar: el cliente tiene ventas registradas. Elimina primero sus ventas.',6000);else toast('Error al eliminar: '+msg,5000);});}
     else if(a==='dp'){if(confirm('¿Eliminar este producto?'))DEL('/productos?id=eq.'+id).then(function(){toast('Eliminado');loadStockCache();if(curPage==='catalogo')renderCatalogo();else renderProductos();}).catch(function(e){toast('Error: '+e.message);});}
   });
   initApp();
