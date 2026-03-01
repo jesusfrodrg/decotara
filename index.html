@@ -786,6 +786,7 @@ function _agendaGrupoHTML(grupo,hoyStr,esEntregada){
     '</div>'+
     '<div style="display:flex;flex-direction:column;gap:4px" onclick="event.stopPropagation()">'+
       (!esEntregada?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff;width:32px;height:32px" title="Marcar TODA la compra como entregada" data-action="marcar-entregada-grupo" data-ids="'+grupo.map(function(v){return v.id;}).join(',')+'">✅</button>':'')+
+      (esEntregada?'<button class="btn btn-sm bic" style="background:#e67e22;color:#fff;width:32px;height:32px" title="Cancelar entrega (volver a pendiente)" data-action="cancelar-entrega-grupo" data-ids="'+grupo.map(function(v){return v.id;}).join(',')+'">↩️</button>':'')+
       '<button class="btn btn-sm bic" style="background:var(--blue);color:#fff;width:32px;height:32px" title="Albarán PDF" data-action="albaran-agenda-grupo" data-key="'+albNum+'">📄</button>'+
     '</div>'+
   '</div>';
@@ -1516,6 +1517,20 @@ document.addEventListener('DOMContentLoaded',function(){
       return;
     }
 
+    else if(a==='cancelar-entrega-grupo'){
+      var ids=btn.dataset.ids?btn.dataset.ids.split(','):[id];
+      if(!confirm('¿Cancelar la entrega y volver a pendiente?'))return;
+      (async function(){
+        try{
+          for(var i=0;i<ids.length;i++){
+            await PATCH('/ventas?id=eq.'+ids[i],{entregado:false});
+          }
+          toast('↩️ Entrega cancelada, vuelve a pendientes');
+          renderAgenda();
+        }catch(e){toast('Error: '+e.message);}
+      })();
+      return;
+    }
     else if(a==='marcar-entregada'||a==='marcar-entregada-grupo'){
       var ids=btn.dataset.ids?btn.dataset.ids.split(','):[id];
       if(!confirm('¿Marcar '+(ids.length>1?'los '+ids.length+' artículos':'esta orden')+' como entregada?'))return;
