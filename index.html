@@ -874,22 +874,46 @@ function compartirAlbaran(v){
   window.open(url,'_blank');
 }
 
+function showConnError(msg){
+  setConn(false);
+  var el=document.getElementById('ctxt');
+  if(el){el.textContent=msg.slice(0,30);}
+  // Mostrar error grande y permanente en el dashboard
+  var dash=document.getElementById('page-dashboard');
+  if(dash){
+    dash.innerHTML='<div style="padding:40px;text-align:center;">'
+      +'<div style="font-size:48px;margin-bottom:16px;">⚠️</div>'
+      +'<div style="font-size:18px;font-weight:700;color:#C8372D;margin-bottom:12px;">Error de conexión</div>'
+      +'<div style="font-size:14px;color:#333;background:#fff3f3;border:1px solid #C8372D;border-radius:8px;padding:16px;max-width:500px;margin:0 auto;word-break:break-all;">'+msg+'</div>'
+      +'<button onclick="location.reload()" style="margin-top:20px;background:#C8372D;color:#fff;border:none;padding:10px 28px;border-radius:7px;font-size:14px;cursor:pointer;font-weight:700;">🔄 Reintentar</button>'
+      +'</div>';
+  }
+  console.error('CONN ERROR:', msg);
+}
+
 async function initApp(){
   var cajafecha=document.getElementById('caja_fecha');
   if(cajafecha)cajafecha.value=new Date().toISOString().split('T')[0];
   try{
-    // Timeout de 15s para no quedarse colgado en "Conectando"
+    // Timeout de 8s
     var controller=new AbortController();
-    var toid=setTimeout(function(){controller.abort();},15000);
+    var toid=setTimeout(function(){controller.abort();},8000);
     var r;
-    try{r=await fetch(SB+'/productos?select=id&limit=1',{headers:SH,signal:controller.signal});}
-    catch(fe){clearTimeout(toid);if(fe.name==='AbortError'){setConn(false);toast('Tiempo de espera agotado. Verifica tu conexión a internet.',12000);document.getElementById('ctxt').textContent='Timeout';return;}throw fe;}
+    try{
+      r=await fetch(SB+'/productos?select=id&limit=1',{headers:SH,signal:controller.signal});
+    }catch(fe){
+      clearTimeout(toid);
+      if(fe.name==='AbortError'){
+        showConnError('Tiempo de espera agotado (8s). Verifica tu conexión a internet o que Supabase esté activo.');
+      }else{
+        showConnError('Error de red: '+fe.message);
+      }
+      return;
+    }
     clearTimeout(toid);
     var txt=await r.text();
     if(!r.ok){
-      setConn(false);
-      toast('Supabase error '+r.status+': '+txt.slice(0,300),12000);
-      document.getElementById('ctxt').textContent='Error '+r.status;
+      showConnError('Supabase respondió con error '+r.status+': '+txt.slice(0,400));
       return;
     }
     setConn(true);
@@ -898,10 +922,7 @@ async function initApp(){
     await loadStockCache();
     renderDash();
   }catch(e){
-    setConn(false);
-    toast('Error: '+e.message,12000);
-    document.getElementById('ctxt').textContent='Error JS';
-    console.error('initApp error:',e);
+    showConnError('Error inesperado: '+e.message);
   }
 }
 
