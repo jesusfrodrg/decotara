@@ -1524,8 +1524,14 @@ document.addEventListener('DOMContentLoaded',function(){
       if(!confirm('¿Cancelar la entrega y volver a pendiente?'))return;
       (async function(){
         try{
+          // Comprobar si la fecha_entrega ya pasó para actualizarla a hoy
+          var hoyCancel=new Date().toISOString().split('T')[0];
+          var vCheck=await GET('/ventas?select=fecha_entrega&id=eq.'+ids[0]);
+          var fechaEnt=vCheck.length?vCheck[0].fecha_entrega:'';
+          var patchData={entregado:null};
+          if(fechaEnt&&fechaEnt<hoyCancel){patchData.fecha_entrega=hoyCancel;}
           for(var i=0;i<ids.length;i++){
-            await PATCH('/ventas?id=eq.'+ids[i],{entregado:false});
+            await PATCH('/ventas?id=eq.'+ids[i],patchData);
           }
           toast('↩️ Entrega cancelada, vuelve a pendientes');
           renderAgenda();
