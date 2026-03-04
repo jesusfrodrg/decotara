@@ -976,7 +976,9 @@ async function renderDash(){
       GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos),productos(nombre,categoria)&order=created_at.desc&limit=80')
     ]);
     var all=ultimas;
-    // Stats del mes usan allMes (datos completos del mes)
+    // comp = ventas completadas de ultimas (tienen datos de productos para gráficos)
+    var comp=all.filter(function(v){return v.estado==='Completada';});
+    // Stats del mes usan allMes (datos completos del mes, precisos)
     var tot=allMes.reduce(function(s,v){return s+Number(v.total||0);},0);
     var num=allMes.length;
     document.getElementById('k1').textContent=fe(tot);
