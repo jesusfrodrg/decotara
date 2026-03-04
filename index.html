@@ -441,7 +441,28 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   <div id="cart-footer" style="display:none">
     <div class="cart-total"><span class="ct-label">Total carrito</span><span class="ct-val" id="cart-total-val">0 EUR</span></div>
     <div class="fg" style="margin-bottom:10px">
-      <div class="fi full"><label>Cliente</label><select id="cart_cli"></select></div>
+      <div class="fi full">
+        <label>Cliente</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="cart_cli" style="flex:1"></select>
+          <button type="button" onclick="toggleNuevoCliInline('cart')" id="btn_nc_cart" class="btn bp" style="white-space:nowrap;padding:0 12px;height:36px;font-size:12px;flex-shrink:0">+ Nuevo</button>
+        </div>
+        <div id="nc_inline_cart" style="display:none;background:#f4f6ff;border:1.5px solid var(--blue);border-radius:10px;padding:12px;margin-top:8px">
+          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">➕ Registrar nuevo cliente</div>
+          <div class="fg" style="gap:8px">
+            <div class="fi"><label style="font-size:11px">Nombre *</label><input type="text" id="nc_cart_nom" placeholder="Nombre"></div>
+            <div class="fi"><label style="font-size:11px">Apellidos *</label><input type="text" id="nc_cart_ape" placeholder="Apellidos"></div>
+            <div class="fi"><label style="font-size:11px">DNI/NIF</label><input type="text" id="nc_cart_dni" placeholder="DNI" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+            <div class="fi"><label style="font-size:11px">Teléfono</label><input type="text" id="nc_cart_tel" placeholder="Teléfono"></div>
+            <div class="fi"><label style="font-size:11px">Ciudad</label><input type="text" id="nc_cart_ciu" placeholder="Ciudad"></div>
+            <div class="fi full"><label style="font-size:11px">Dirección</label><input type="text" id="nc_cart_dir" placeholder="Dirección"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button type="button" onclick="toggleNuevoCliInline('cart')" class="btn bs2" style="flex:1;font-size:12px">Cancelar</button>
+            <button type="button" onclick="guardarNuevoCliInline('cart')" class="btn bp" style="flex:2;font-size:12px" id="btn_nc_cart_save">✅ Guardar cliente</button>
+          </div>
+        </div>
+      </div>
       <div class="fi"><label>Vendedor</label><select id="cart_vend"><option value="">Seleccionar...</option><option>Jaime</option><option>Samanta</option><option>Diana</option></select></div>
       <div class="fi"><label>Forma de pago</label><select id="cart_pago"><option value="Efectivo">💵 Efectivo</option><option value="Tarjeta">💳 Tarjeta</option><option value="Transferencia">🏦 Transferencia</option><option value="Efectivo + Tarjeta">💵+💳 Efectivo y Tarjeta</option><option value="Efectivo + Transferencia">💵+🏦 Efectivo y Transferencia</option></select></div>
       <div class="fi"><label>Entrega</label><select id="cart_entrega"><option value="Recogida por el Cliente">🚶 Recogida por el Cliente</option><option value="Transporte y Montaje">🚚 Transporte y Montaje</option></select></div>
@@ -459,9 +480,46 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   <div class="drag-handle"></div>
   <div class="modal-header"><div class="modal-stripe"></div><div class="mt" id="vm-t">Nueva venta</div></div>
   <div class="fg">
-    <div class="fi"><label>Cliente</label><select id="v_cli"></select></div>
+    <div class="fi full">
+      <label>Cliente</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="v_cli" style="flex:1"></select>
+        <button type="button" onclick="toggleNuevoCliInline('vm')" id="btn_nc_vm" class="btn bp" style="white-space:nowrap;padding:0 12px;height:36px;font-size:12px;flex-shrink:0">+ Nuevo</button>
+      </div>
+      <div id="nc_inline_vm" style="display:none;background:#f4f6ff;border:1.5px solid var(--blue);border-radius:10px;padding:12px;margin-top:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">➕ Registrar nuevo cliente</div>
+        <div class="fg" style="gap:8px">
+          <div class="fi"><label style="font-size:11px">Nombre *</label><input type="text" id="nc_vm_nom" placeholder="Nombre"></div>
+          <div class="fi"><label style="font-size:11px">Apellidos *</label><input type="text" id="nc_vm_ape" placeholder="Apellidos"></div>
+          <div class="fi"><label style="font-size:11px">DNI/NIF</label><input type="text" id="nc_vm_dni" placeholder="DNI" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+          <div class="fi"><label style="font-size:11px">Teléfono</label><input type="text" id="nc_vm_tel" placeholder="Teléfono"></div>
+          <div class="fi"><label style="font-size:11px">Ciudad</label><input type="text" id="nc_vm_ciu" placeholder="Ciudad"></div>
+          <div class="fi full"><label style="font-size:11px">Dirección</label><input type="text" id="nc_vm_dir" placeholder="Dirección"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button type="button" onclick="toggleNuevoCliInline('vm')" class="btn bs2" style="flex:1;font-size:12px">Cancelar</button>
+          <button type="button" onclick="guardarNuevoCliInline('vm')" class="btn bp" style="flex:2;font-size:12px" id="btn_nc_vm_save">✅ Guardar cliente</button>
+        </div>
+      </div>
+    </div>
     <div class="fi"><label>Fecha</label><input type="date" id="v_fecha"></div>
-    <div class="fi full"><label>Producto</label><select id="v_prod"></select></div>
+    <div class="fi full">
+      <label>Producto</label>
+      <select id="v_prod" onchange="toggleOtrosVM()"></select>
+      <div id="v_otros_wrap" style="display:none;margin-top:6px">
+        <input type="text" id="v_otros_nombre" placeholder="Escribe el nombre del artículo..." style="width:100%;box-sizing:border-box">
+        <select id="v_otros_cat" style="width:100%;margin-top:4px;box-sizing:border-box">
+          <option value="Otros">Otros</option>
+          <option value="Sofa">Sofá</option>
+          <option value="Canape">Canapé</option>
+          <option value="Colchon">Colchón</option>
+          <option value="Sillon">Sillón</option>
+          <option value="Comedor">Comedor</option>
+          <option value="Dormitorio">Dormitorio</option>
+          <option value="Auxiliar">Auxiliar</option>
+        </select>
+      </div>
+    </div>
     <div class="fi"><label>Cantidad</label><input type="number" id="v_cant" min="1" value="1"></div>
     <div class="fi"><label>PVP euros</label><input type="number" id="v_pvp" step="0.01"></div>
     <div class="fi"><label>Descuento %</label><input type="number" id="v_dto" min="0" max="100" value="0"></div>
@@ -810,6 +868,72 @@ function _agendaGrupoHTML(grupo,hoyStr,esEntregada){
       '<button class="btn btn-sm bic" style="background:var(--blue);color:#fff;width:32px;height:32px" title="Albarán PDF" data-action="albaran-agenda-grupo" data-key="'+albNum+'" data-id="'+grupo[0].id+'">📄</button>'+
     '</div>'+
   '</div>';
+}
+
+// ── NUEVO CLIENTE INLINE (desde modales de venta) ─────────────────
+// ── OPCIÓN OTROS EN MODAL DE VENTA ────────────────────────────────
+function toggleOtrosVM(){
+  var sel=document.getElementById('v_prod');
+  var wrap=document.getElementById('v_otros_wrap');
+  if(!sel||!wrap)return;
+  if(sel.value==='__otros__'){
+    wrap.style.display='block';
+    document.getElementById('v_pvp').value='';
+    document.getElementById('v_tot').value='';
+  } else {
+    wrap.style.display='none';
+  }
+}
+
+function toggleNuevoCliInline(ctx){
+  var panel=document.getElementById('nc_inline_'+ctx);
+  var isOpen=panel.style.display!=='none';
+  panel.style.display=isOpen?'none':'block';
+  var btn=document.getElementById('btn_nc_'+ctx);
+  if(btn)btn.textContent=isOpen?'+ Nuevo':'✕ Cancelar';
+  if(!isOpen){
+    // Limpiar campos al abrir
+    ['nom','ape','dni','tel','ciu','dir'].forEach(function(f){
+      var el=document.getElementById('nc_'+ctx+'_'+f);
+      if(el)el.value='';
+    });
+    setTimeout(function(){var el=document.getElementById('nc_'+ctx+'_nom');if(el)el.focus();},50);
+  }
+}
+
+async function guardarNuevoCliInline(ctx){
+  var nom=(document.getElementById('nc_'+ctx+'_nom').value||'').trim();
+  var ape=(document.getElementById('nc_'+ctx+'_ape').value||'').trim();
+  if(!nom||!ape){toast('Nombre y apellidos son obligatorios');return;}
+  var dni=(document.getElementById('nc_'+ctx+'_dni').value||'').trim();
+  var tel=(document.getElementById('nc_'+ctx+'_tel').value||'').trim();
+  var ciu=(document.getElementById('nc_'+ctx+'_ciu').value||'').trim();
+  var dir=(document.getElementById('nc_'+ctx+'_dir').value||'').trim();
+  var btn=document.getElementById('btn_nc_'+ctx+'_save');
+  btn.disabled=true;btn.textContent='Guardando...';
+  try{
+    // Verificar DNI duplicado si se rellenó
+    if(dni&&window._dniOk){
+      var ex=await GET('/clientes?select=id,nombre,apellidos&dni=eq.'+encodeURIComponent(dni)+'&limit=1');
+      if(ex.length){toast('⚠️ Ya existe un cliente con ese DNI: '+ex[0].nombre+' '+ex[0].apellidos);btn.disabled=false;btn.textContent='✅ Guardar cliente';return;}
+    }
+    // Obtener próximo ID
+    var todos=await GET('/clientes?select=id&order=created_at.desc&limit=1');
+    var lastId=todos.length?(parseInt((todos[0].id||'CLI-0000').replace('CLI-',''))||0):0;
+    var newId='CLI-'+String(lastId+1).padStart(4,'0');
+    var payload={id:newId,nombre:nom,apellidos:ape,telefono:tel||null,ciudad:ciu||null,direccion:dir||null};
+    if(dni&&window._dniOk)payload.dni=dni;
+    await POST('/clientes',payload);
+    // Actualizar selector con el nuevo cliente seleccionado
+    invalidarCacheClientes();
+    var cl=await getCachedClientes(true);
+    var sel=document.getElementById(ctx==='cart'?'cart_cli':'v_cli');
+    sel.innerHTML='<option value="">Seleccionar...</option>'+cl.map(function(c){return '<option value="'+c.id+'"'+(c.id===newId?' selected':'')+'>'+c.nombre+' '+c.apellidos+'</option>';}).join('');
+    // Cerrar el panel
+    toggleNuevoCliInline(ctx);
+    toast('✅ Cliente '+nom+' '+ape+' registrado y seleccionado');
+  }catch(e){toast('Error: '+e.message);}
+  finally{btn.disabled=false;btn.textContent='✅ Guardar cliente';}
 }
 
 function filtrarAgenda(){
@@ -1265,7 +1389,7 @@ async function openVM(id){
   document.getElementById('vm-t').textContent=id?'Editar venta':'Nueva venta';
   var [cl,pr]=await Promise.all([getCachedClientes(),getCachedProductos()]);
   document.getElementById('v_cli').innerHTML='<option value="">Seleccionar...</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.nombre+' '+c.apellidos+'</option>';}).join('');
-  document.getElementById('v_prod').innerHTML='<option value="">Seleccionar...</option>'+pr.map(function(p){return '<option value="'+p.id+'" data-pvp="'+p.pvp+'">['+p.categoria+'] '+p.nombre+'</option>';}).join('');
+  document.getElementById('v_prod').innerHTML='<option value="">Seleccionar...</option>'+pr.map(function(p){return '<option value="'+p.id+'" data-pvp="'+p.pvp+'">['+p.categoria+'] '+p.nombre+'</option>';}).join('')+'<option value="__otros__">➕ Otros (escribir artículo)</option>';toggleOtrosVM();
   if(id){var rows=await GET('/ventas?select=*&id=eq.'+id);var v=rows[0];if(v){document.getElementById('v_cli').value=v.cliente_id||'';document.getElementById('v_fecha').value=v.fecha||'';document.getElementById('v_prod').value=v.producto_id||'';document.getElementById('v_cant').value=v.cantidad||1;document.getElementById('v_pvp').value=v.pvp||'';document.getElementById('v_dto').value=v.descuento||0;document.getElementById('v_est').value=v.estado||'Completada';document.getElementById('v_not').value=v.notas||'';document.getElementById('v_vend').value=v.vendedor||'';document.getElementById('v_pago').value=v.forma_pago||'Efectivo';document.getElementById('v_entrega').value=v.entrega||'Recogida por el Cliente';document.getElementById('v_fecha_entrega').value=v.fecha_entrega||'';calcT();}}
   else{['v_pvp','v_tot','v_not','v_fecha_entrega'].forEach(function(f){document.getElementById(f).value='';});document.getElementById('v_cli').value='';document.getElementById('v_prod').value='';document.getElementById('v_fecha').value=new Date().toISOString().split('T')[0];document.getElementById('v_cant').value=1;document.getElementById('v_dto').value=0;document.getElementById('v_est').value='Completada';document.getElementById('v_vend').value='';document.getElementById('v_pago').value='Efectivo';document.getElementById('v_entrega').value='Recogida por el Cliente';}
   openM('vm');
@@ -1288,8 +1412,17 @@ async function devolverStock(prodId,cantidad){
 }
 
 async function saveV(){
-  var cId=document.getElementById('v_cli').value,fecha=document.getElementById('v_fecha').value,pId=document.getElementById('v_prod').value,cant=parseInt(document.getElementById('v_cant').value)||1,pvp=parseFloat(document.getElementById('v_pvp').value)||0,dto=parseFloat(document.getElementById('v_dto').value)||0,est=document.getElementById('v_est').value,notas=document.getElementById('v_not').value,vend=document.getElementById('v_vend').value,pago=document.getElementById('v_pago').value,entrega=document.getElementById('v_entrega').value,fechaEntrega=document.getElementById('v_fecha_entrega').value,total=+(cant*pvp*(1-dto/100)).toFixed(2);
-  if(!cId||!fecha||!pId||!pvp){toast('Rellena los campos obligatorios');return;}
+  var pIdRaw=document.getElementById('v_prod').value;
+  var esOtros=(pIdRaw==='__otros__');
+  var otrosNombre=(document.getElementById('v_otros_nombre')||{}).value||'';
+  var otrosCat=(document.getElementById('v_otros_cat')||{}).value||'Otros';
+  if(esOtros&&!otrosNombre.trim()){toast('Escribe el nombre del artículo');return;}
+  var cId=document.getElementById('v_cli').value,fecha=document.getElementById('v_fecha').value,pId=esOtros?null:pIdRaw,cant=parseInt(document.getElementById('v_cant').value)||1,pvp=parseFloat(document.getElementById('v_pvp').value)||0,dto=parseFloat(document.getElementById('v_dto').value)||0,est=document.getElementById('v_est').value,notas=document.getElementById('v_not').value,vend=document.getElementById('v_vend').value,pago=document.getElementById('v_pago').value,entrega=document.getElementById('v_entrega').value,fechaEntrega=document.getElementById('v_fecha_entrega').value,total=+(cant*pvp*(1-dto/100)).toFixed(2);
+  if(!cId||!fecha||(!esOtros&&!pId)||!pvp){toast('Rellena los campos obligatorios');return;}
+  // Si es Otros, crear producto efímero con nombre personalizado
+  var prodIdFinal=pId;
+  var notasOtros=esOtros?('['+otrosCat+'] '+otrosNombre.trim()+(notas?'\n'+notas:'')):notas;
+  if(esOtros)notas=notasOtros;
   var btn=document.getElementById('btnSV');btn.disabled=true;btn.textContent='Guardando...';
   try{
     if(veditId){await PATCH('/ventas?id=eq.'+veditId,{cliente_id:cId,fecha:fecha,producto_id:pId,cantidad:cant,pvp:pvp,descuento:dto,estado:est,notas:notas,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaEntrega||null});toast('Venta actualizada ✓');}
@@ -1299,10 +1432,10 @@ async function saveV(){
       var nid='VEN-'+String(n+1).padStart(4,'0');
       await POST('/ventas',{id:nid,cliente_id:cId,fecha:fecha,producto_id:pId,cantidad:cant,pvp:pvp,descuento:dto,estado:est,notas:notas,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaEntrega||null});
       await descontarStock(pId,cant);
-      stockCache[pId]=Math.max(0,(stockCache[pId]||0)-cant);
+      if(pId)stockCache[pId]=Math.max(0,(stockCache[pId]||0)-cant);
       // Actualizar alertas
       stockAlerts=stockAlerts.filter(function(a){return a.id!==pId;});
-      if(stockCache[pId]<=3){
+      if(pId&&stockCache[pId]<=3){
         var pRows=await GET('/productos?select=id,nombre,categoria,stock&id=eq.'+pId);
         if(pRows.length)stockAlerts.push(pRows[0]);
       }
@@ -1508,7 +1641,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('rptFecha').addEventListener('click',function(){var d=document.getElementById('rpt_desde').value,h=document.getElementById('rpt_hasta').value;if(!d){toast('Selecciona una fecha desde');return;}generarReporte('custom',d,h||d);});
   document.getElementById('rptDescargar').addEventListener('click',descargarCSV);
   document.getElementById('rptPDF').addEventListener('click',descargarReportePDF);
-  document.getElementById('v_prod').addEventListener('change',function(){var o=this.options[this.selectedIndex];if(o&&o.dataset.pvp)document.getElementById('v_pvp').value=o.dataset.pvp;calcT();});
+  document.getElementById('v_prod').addEventListener('change',function(){toggleOtrosVM();var o=this.options[this.selectedIndex];if(o&&o.dataset.pvp)document.getElementById('v_pvp').value=o.dataset.pvp;calcT();});
   ['v_cant','v_pvp','v_dto'].forEach(function(id){document.getElementById(id).addEventListener('input',calcT);});
   ['p_pvp','p_cos'].forEach(function(id){document.getElementById(id).addEventListener('input',calcM);});
   document.getElementById('vsearch').addEventListener('input',renderVentas);
