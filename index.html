@@ -532,6 +532,24 @@ var POST=function(p,b){return api(p,{method:'POST',body:JSON.stringify(b)});};
 var PATCH=function(p,b){return api(p,{method:'PATCH',body:JSON.stringify(b)});};
 var DEL=function(p){return api(p,{method:'DELETE'});};
 
+// ── CACHÉ GLOBAL ──────────────────────────────
+var _cliCache=null,_cliCacheTs=0;
+var _prodCache=null,_prodCacheTs=0;
+var CACHE_TTL=60000; // 60 segundos
+
+async function getCachedClientes(force){
+  if(!force&&_cliCache&&(Date.now()-_cliCacheTs)<CACHE_TTL)return _cliCache;
+  _cliCache=await GET('/clientes?select=id,nombre,apellidos,ciudad,direccion,dni,telefono,email&order=nombre.asc');
+  _cliCacheTs=Date.now();return _cliCache;
+}
+async function getCachedProductos(force){
+  if(!force&&_prodCache&&(Date.now()-_prodCacheTs)<CACHE_TTL)return _prodCache;
+  _prodCache=await GET('/productos?select=id,nombre,categoria,pvp,stock&order=nombre.asc');
+  _prodCacheTs=Date.now();return _prodCache;
+}
+function invalidarCacheProductos(){_prodCache=null;_prodCacheTs=0;}
+function invalidarCacheClientes(){_cliCache=null;_cliCacheTs=0;}
+
 // CACHE STOCK + ALERTAS
 var stockCache={};
 var stockAlerts=[];
@@ -836,8 +854,8 @@ async function renderAgenda(){
       url='/ventas?select='+base+'&fecha_entrega=gte.'+hoyStr+'&estado=neq.Cancelada&entregado=is.null&order=fecha_entrega.asc';
       urlEnt='/ventas?select='+base+'&fecha_entrega=gte.'+hoyStr+'&estado=neq.Cancelada&entregado=eq.true&order=fecha_entrega.desc';
     }
-    var rows=await GET(url);
-    var rowsEnt=await GET(urlEnt).catch(function(){return [];});
+    // Cargar pendientes y entregadas en paralelo
+    var [rows,rowsEnt]=await Promise.all([GET(url),GET(urlEnt).catch(function(){return [];})]);
     _agendaCache=rows;_entregadasCache=rowsEnt;
     // Pendientes
     if(!rows.length){
@@ -930,10 +948,15 @@ async function initApp(){
       return;
     }
     setConn(true);
-    dbgLog('Conectado OK. Cargando datos...');
-    try{await GET('/clientes?select=dni&limit=1');window._dniOk=true;}catch(e2){window._dniOk=false;}
-    try{await GET('/ventas?select=forma_pago&limit=1');window._pagoOk=true;}catch(e3){window._pagoOk=false;}
-    await loadStockCache();
+    dbgLog('Conectado OK. Cargando datos en paralelo...');
+    // Todos los checks y precarga de caches en paralelo
+    await Promise.all([
+      GET('/clientes?select=dni&limit=1').then(function(){window._dniOk=true;}).catch(function(){window._dniOk=false;}),
+      GET('/ventas?select=forma_pago&limit=1').then(function(){window._pagoOk=true;}).catch(function(){window._pagoOk=false;}),
+      loadStockCache(),
+      getCachedClientes(),
+      getCachedProductos()
+    ]);
     dbgLog('Datos cargados. Renderizando...');
     await renderDash();
     dbgLog('OK - todo cargado ✓');
@@ -946,10 +969,16 @@ async function initApp(){
 
 async function renderDash(){
   try{
-    var all=await GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos),productos(nombre,categoria)&order=created_at.desc');
-    var comp=all.filter(function(v){return v.estado==='Completada';});
-    var tot=comp.reduce(function(s,v){return s+Number(v.total||0);},0);
-    var num=comp.length;
+    // Stats del mes actual (no toda la historia)
+    var hoyD=new Date(),primerDia=new Date(hoyD.getFullYear(),hoyD.getMonth(),1).toISOString().split('T')[0];
+    var [allMes,ultimas]=await Promise.all([
+      GET('/ventas?select=id,total,estado,albaran_num,created_at&estado=eq.Completada&fecha=gte.'+primerDia+'&order=created_at.desc'),
+      GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos),productos(nombre,categoria)&order=created_at.desc&limit=80')
+    ]);
+    var all=ultimas;
+    // Stats del mes usan allMes (datos completos del mes)
+    var tot=allMes.reduce(function(s,v){return s+Number(v.total||0);},0);
+    var num=allMes.length;
     document.getElementById('k1').textContent=fe(tot);
     document.getElementById('k2').textContent=num;
     document.getElementById('k3').textContent=fe(num?tot/num:0);
@@ -999,6 +1028,13 @@ async function renderVentas(){
   try{
     var dniField=window._dniOk?',dni':''; var url='/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,direccion'+dniField+'),productos(nombre,categoria)&order=created_at.desc';
     if(est)url+='&estado=eq.'+encodeURIComponent(est);
+    // Si hay búsqueda de texto, aplicar filtros server-side
+    if(q&&q.length>=2){
+      // Buscar por nombre cliente o id numérico
+      if(/^\d+$/.test(q)){url+='&id=eq.'+q;}
+    }
+    // Limitar a 150 registros más recientes (suficiente para ver en pantalla)
+    if(!q)url+='&limit=150';
     var rows=await GET(url);
     if(q)rows=rows.filter(function(v){
       var cliDni=(window._dniOk&&v.clientes&&v.clientes.dni)||'';
@@ -1097,6 +1133,7 @@ async function renderCatalogo(){
 async function renderClientes(){
   var q=(document.getElementById('clisearch').value||'').toLowerCase();
   try{
+    // Usar cache global para evitar llamada al servidor
     var url='/clientes?select='+(window._dniOk?'*':'id,nombre,apellidos,telefono,email,ciudad,direccion,fecha_alta')+'&order=nombre.asc';
     if(q)url+='&nombre=ilike.*'+encodeURIComponent(q)+'*';
     var data=await GET(url);
@@ -1107,9 +1144,15 @@ async function renderClientes(){
 async function renderProductos(){
   var q=(document.getElementById('prodsearch').value||'').toLowerCase();
   try{
-    var url='/productos?select=*&order=id.asc';
-    if(q)url+='&nombre=ilike.*'+encodeURIComponent(q)+'*';
-    var data=await GET(url);
+    var data;
+    if(!q){
+      // Sin búsqueda: usar cache (0 llamadas al servidor)
+      data=await getCachedProductos();
+      data=[...data].sort(function(a,b){return (a.id||'').localeCompare(b.id||'');});
+    }else{
+      // Con búsqueda: ir al servidor con filtro
+      data=await GET('/productos?select=*&order=id.asc&nombre=ilike.*'+encodeURIComponent(q)+'*');
+    }
     document.getElementById('prodtbody').innerHTML=data.length?data.map(function(p){return '<tr><td><b style="color:var(--blue)">'+p.id+'</b></td><td>'+p.nombre+'</td><td>'+cb(p.categoria)+'</td><td class="price">'+fe(p.pvp)+'</td><td class="'+sc(p.stock||0)+'">'+(p.stock||0)+'</td><td><div style="display:flex;gap:3px"><button class="btn btn-sm bs2 bic" data-action="ep" data-id="'+p.id+'">✏️</button><button class="btn btn-sm bd bic" data-action="dp" data-id="'+p.id+'">🗑</button></div></td></tr>';}).join(''):EM(6,'📦','Sin productos');
   }catch(e){toast('Error: '+e.message);}
 }
@@ -1218,8 +1261,7 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
 async function openVM(id){
   veditId=id||null;
   document.getElementById('vm-t').textContent=id?'Editar venta':'Nueva venta';
-  var cl=await GET('/clientes?select=id,nombre,apellidos&order=nombre.asc');
-  var pr=await GET('/productos?select=id,nombre,categoria,pvp&order=nombre.asc');
+  var [cl,pr]=await Promise.all([getCachedClientes(),getCachedProductos()]);
   document.getElementById('v_cli').innerHTML='<option value="">Seleccionar...</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.nombre+' '+c.apellidos+'</option>';}).join('');
   document.getElementById('v_prod').innerHTML='<option value="">Seleccionar...</option>'+pr.map(function(p){return '<option value="'+p.id+'" data-pvp="'+p.pvp+'">['+p.categoria+'] '+p.nombre+'</option>';}).join('');
   if(id){var rows=await GET('/ventas?select=*&id=eq.'+id);var v=rows[0];if(v){document.getElementById('v_cli').value=v.cliente_id||'';document.getElementById('v_fecha').value=v.fecha||'';document.getElementById('v_prod').value=v.producto_id||'';document.getElementById('v_cant').value=v.cantidad||1;document.getElementById('v_pvp').value=v.pvp||'';document.getElementById('v_dto').value=v.descuento||0;document.getElementById('v_est').value=v.estado||'Completada';document.getElementById('v_not').value=v.notas||'';document.getElementById('v_vend').value=v.vendedor||'';document.getElementById('v_pago').value=v.forma_pago||'Efectivo';document.getElementById('v_entrega').value=v.entrega||'Recogida por el Cliente';document.getElementById('v_fecha_entrega').value=v.fecha_entrega||'';calcT();}}
@@ -1228,11 +1270,19 @@ async function openVM(id){
 }
 function calcT(){var q=parseFloat(document.getElementById('v_cant').value)||0,p=parseFloat(document.getElementById('v_pvp').value)||0,d=parseFloat(document.getElementById('v_dto').value)||0,t=q*p*(1-d/100);document.getElementById('v_tot').value=t>0?fe(t):'';}
 async function descontarStock(prodId,cantidad){
-  try{var rows=await GET('/productos?select=id,stock&id=eq.'+prodId);if(rows.length){var nuevoStock=Math.max(0,(rows[0].stock||0)-cantidad);await PATCH('/productos?id=eq.'+prodId,{stock:nuevoStock});}}catch(e){console.warn('Error stock:',e.message);}
+  try{
+    // Usar cache local si está disponible para evitar GET
+    var stockActual=(stockCache[prodId]!==undefined)?stockCache[prodId]:null;
+    if(stockActual===null){var rows=await GET('/productos?select=id,stock&id=eq.'+prodId);stockActual=rows.length?(rows[0].stock||0):0;}
+    var ns=Math.max(0,stockActual-cantidad);
+    await PATCH('/productos?id=eq.'+prodId,{stock:ns});
+    stockCache[prodId]=ns;
+    invalidarCacheProductos();
+  }catch(e){console.warn('Error stock:',e.message);}
 }
 
 async function devolverStock(prodId,cantidad){
-  try{var rows=await GET('/productos?select=id,stock&id=eq.'+prodId);if(rows.length){var nuevoStock=(rows[0].stock||0)+cantidad;await PATCH('/productos?id=eq.'+prodId,{stock:nuevoStock});stockCache[prodId]=nuevoStock;}}catch(e){console.warn('Error devolviendo stock:',e.message);}
+  try{var rows=await GET('/productos?select=id,stock&id=eq.'+prodId);if(rows.length){var nuevoStock=(rows[0].stock||0)+cantidad;await PATCH('/productos?id=eq.'+prodId,{stock:nuevoStock});stockCache[prodId]=nuevoStock;invalidarCacheProductos();}}catch(e){console.warn('Error devolviendo stock:',e.message);}
 }
 
 async function saveV(){
@@ -1281,31 +1331,38 @@ async function saveCart(){
   if(!cart.length){toast('El carrito está vacío');return;}
   var btn=document.getElementById('btnSCart');btn.disabled=true;btn.textContent='Guardando...';
   try{
-    // Número de albarán basado en el último ALB existente (no en VEN para no saltar números)
-    var lastAlb=await GET('/ventas?select=albaran_num&albaran_num=not.is.null&order=created_at.desc&limit=1');
+    // Obtener número ALB y VEN en paralelo
+    var [lastAlb,lastVen]=await Promise.all([
+      GET('/ventas?select=albaran_num&albaran_num=not.is.null&order=created_at.desc&limit=1'),
+      GET('/ventas?select=id&order=created_at.desc&limit=1')
+    ]);
     var nAlb=0;
     if(lastAlb.length&&lastAlb[0].albaran_num){
       var m=lastAlb[0].albaran_num.match(/ALB-(\d+)/);
       if(m)nAlb=parseInt(m[1])||0;
     }
     var numAlbaran='ALB-'+String(nAlb+1).padStart(4,'0');
-    // Número VEN sigue siendo secuencial por artículo
-    var lastVen=await GET('/ventas?select=id&order=created_at.desc&limit=1');
     var n=lastVen.length?parseInt((lastVen[0].id||'VEN-0000').replace('VEN-',''))||0:0;
-    var ventasGuardadas=[];
-    for(var i=0;i<cart.length;i++){
-      n++;var item=cart[i];
+    // Preparar todas las ventas
+    var ventasPayload=cart.map(function(item,i){
       var total=+(item.pvp*item.qty*(1-dto/100)).toFixed(2);
-      var nid='VEN-'+String(n).padStart(4,'0');
-      var venta={id:nid,cliente_id:cId,fecha:fecha,producto_id:item.id,cantidad:item.qty,pvp:item.pvp,descuento:dto,estado:'Completada',notas:notas,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaEntrega||null,albaran_num:numAlbaran};
-      await POST('/ventas',venta);
-      await descontarStock(item.id,item.qty);
+      var nid='VEN-'+String(n+i+1).padStart(4,'0');
+      return {id:nid,cliente_id:cId,fecha:fecha,producto_id:item.id,cantidad:item.qty,pvp:item.pvp,descuento:dto,estado:'Completada',notas:notas,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaEntrega||null,albaran_num:numAlbaran};
+    });
+    // Guardar todas las ventas en paralelo
+    await Promise.all(ventasPayload.map(function(v){return POST('/ventas',v);}));
+    // Descontar stock de todos los productos en paralelo
+    await Promise.all(cart.map(function(item){
       stockCache[item.id]=Math.max(0,(stockCache[item.id]||0)-item.qty);
-      ventasGuardadas.push(Object.assign({},venta,{prod_nombre:item.nombre,prod_cat:item.categoria}));
-    }
-    // Recargar alertas tras venta
-    await loadStockCache();
-    var cliRows=await GET('/clientes?select=*&id=eq.'+cId);
+      return descontarStock(item.id,item.qty);
+    }));
+    var ventasGuardadas=ventasPayload.map(function(v,i){return Object.assign({},v,{prod_nombre:cart[i].nombre,prod_cat:cart[i].categoria});});
+    // Recargar alertas y cliente en paralelo
+    var [,cliRows]=await Promise.all([
+      loadStockCache(),
+      GET('/clientes?select=*&id=eq.'+cId)
+    ]);
+    invalidarCacheClientes();
     var cli=cliRows.length?cliRows[0]:{nombre:'',apellidos:'',ciudad:'',direccion:''};
     generarAlbaran(ventasGuardadas,cli,fecha,dto,vend,pago,entrega,fechaEntrega,notas,numAlbaran);
     toast('Venta registrada: '+cart.length+' producto(s) ✓');
@@ -1330,7 +1387,7 @@ async function saveC(){
   var payload={nombre:nombre,apellidos:apellidos,...(window._dniOk&&document.getElementById('c_dni').value?{dni:document.getElementById('c_dni').value}:{}),telefono:document.getElementById('c_tel').value||null,email:document.getElementById('c_ema').value||null,ciudad:document.getElementById('c_ciu').value||null,direccion:document.getElementById('c_dir').value||null};
   var btn=document.getElementById('btnSC');btn.disabled=true;btn.textContent='Guardando...';
   try{
-    if(ceditId){await PATCH('/clientes?id=eq.'+ceditId,payload);toast('Cliente actualizado ✓');closeM('cm');renderClientes();}
+    if(ceditId){await PATCH('/clientes?id=eq.'+ceditId,payload);toast('Cliente actualizado ✓');closeM('cm');invalidarCacheClientes();renderClientes();}
     else{
       // Verificar DNI duplicado
       if(window._dniOk&&document.getElementById('c_dni').value.trim()){
@@ -1362,7 +1419,7 @@ async function saveP(){
   var payload={nombre:nombre,categoria:cat,descripcion:document.getElementById('p_des').value,pvp:pvp,coste:parseFloat(document.getElementById('p_cos').value)||0,stock:parseInt(document.getElementById('p_sto').value)||0};
   var btn=document.getElementById('btnSP');btn.disabled=true;btn.textContent='Guardando...';
   try{
-    if(peditId){await PATCH('/productos?id=eq.'+peditId,payload);toast('Producto actualizado ✓');}
+    if(peditId){await PATCH('/productos?id=eq.'+peditId,payload);toast('Producto actualizado ✓');invalidarCacheProductos();}
     else{
       var pfx={Sofa:'SOF-',Canape:'CAN-',Colchon:'COL-',Otros:'OTR-'}[cat]||'PRO-';
       var ex=await GET('/productos?select=id&categoria=eq.'+encodeURIComponent(cat)+'&order=id.desc&limit=1');
