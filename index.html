@@ -28,7 +28,7 @@
   --r:12px;--r-sm:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Barlow',sans-serif;background:var(--offwhite);color:var(--black);padding-bottom:calc(72px + env(safe-area-inset-bottom));min-height:100dvh;min-height:100vh}
+body{font-family:'Barlow',sans-serif;background:var(--offwhite);color:var(--black);padding-bottom:calc(72px + env(safe-area-inset-bottom,0px));min-height:100vh;overflow-x:hidden}
 
 /* TOPBAR */
 .topbar{background:linear-gradient(135deg,#B02820 0%,#C8372D 50%,#D94038 100%);padding:0 16px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 16px rgba(176,40,32,.45)}
@@ -260,102 +260,86 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
    FULLSCREEN + RESPONSIVE - TODOS LOS DISPOSITIVOS
 ══════════════════════════════════════════════ */
 
-/* Reset completo para ocupar pantalla entera */
 *,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{
-  margin:0;padding:0;
+
+html{
   width:100%;height:100%;
-  min-height:100dvh; /* dynamic viewport height - evita el salto en móvil */
-  overflow-x:hidden;
 }
 body{
-  padding-bottom:calc(72px + env(safe-area-inset-bottom)); /* respeta el notch inferior */
-  padding-top:env(safe-area-inset-top);
+  width:100%;
+  min-height:100vh;
+  overflow-x:hidden;
+  /* Espacio para topbar (60px) + bottom nav (72px) + safe areas del notch */
+  padding-top:0; /* topbar es sticky, no fixed */
+  padding-bottom:calc(72px + env(safe-area-inset-bottom,0px));
 }
 
-/* TOPBAR ocupa todo el ancho y respeta el notch superior */
+/* TOPBAR: ancho completo, respeta notch lateral en iPhone */
 .topbar{
-  padding-left:max(16px, env(safe-area-inset-left));
-  padding-right:max(16px, env(safe-area-inset-right));
   width:100%;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
 }
 
-/* BOTTOM NAV respeta el área segura en iPhone con notch */
+/* BOTTOM NAV: ancho completo, respeta notch inferior */
 .bnav{
-  padding-bottom:env(safe-area-inset-bottom);
-  left:0;right:0;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  left:0;right:0;width:100%;
 }
 
-/* CONTENIDO: máximo 900px centrado en tablets/desktop, 100% en móvil */
+/* CONTENIDO: ocupa todo el ancho en móvil, centrado en desktop */
 .content{
-  padding:16px;
+  padding:14px 16px;
   width:100%;
-  max-width:960px;
+  max-width:1024px;
   margin:0 auto;
-  box-sizing:border-box;
 }
 
-/* MODALES: pantalla completa en móvil, centrado en desktop */
-/* .mo and .modal already defined above */
-
-/* GRID DE TARJETAS - responsive automático */
+/* KPI GRID: 2 columnas en móvil, 4 en tablet/desktop */
 .kpi-grid{
-  display:grid;
   grid-template-columns:repeat(2,1fr);
-  gap:12px;
-  margin-bottom:18px;
 }
-@media(min-width:600px){
-  .kpi-grid{grid-template-columns:repeat(4,1fr);}
+@media(min-width:640px){
+  .kpi-grid{grid-template-columns:repeat(4,1fr);gap:16px;}
 }
 
-/* TABLAS responsive: scroll horizontal en móvil */
-.pb{
-  overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
-  border-radius:12px;
-}
-table{min-width:500px;width:100%;}
+/* TABLAS: scroll horizontal en móvil */
+.pb{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.pb table{min-width:480px;}
 
-/* FORMULARIOS: 2 columnas en móvil, 3 en desktop */
-.fg{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
+/* FORMULARIOS: 2 cols en móvil, 3 en desktop */
+.fg{grid-template-columns:1fr 1fr;}
 @media(min-width:640px){
   .fg{grid-template-columns:repeat(3,1fr);}
 }
 
-/* Catálogo grid responsive */
+/* MODALES: bottom sheet en móvil, centrado en desktop */
+.mo{align-items:flex-end;justify-content:center;}
+.modal{
+  width:100%;
+  max-width:720px;
+  max-height:93svh;
+  max-height:93vh;
+}
+@media(min-width:700px){
+  .mo{align-items:center;}
+  .modal{border-radius:16px;margin-bottom:0;}
+}
+
+/* Catálogo VM grid responsive */
 #vm_prod_grid{
   grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
 }
 @media(min-width:480px){
   #vm_prod_grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
 }
-@media(min-width:768px){
-  #vm_prod_grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));}
-}
 
-/* DESKTOP: layout de 2 columnas para dashboard */
+/* DESKTOP layout más amplio */
 @media(min-width:768px){
-  .content{padding:24px;}
-  .kpi-grid{grid-template-columns:repeat(4,1fr);gap:16px;}
-  .modal{border-radius:16px;margin-bottom:0;margin:auto;}
-  .mo{align-items:center;}
-  table{min-width:unset;}
+  .content{padding:20px 24px;}
 }
-
-/* Texto y botones escalan bien */
-@media(min-width:768px){
-  .bn span{font-size:11px;}
-  .sec-hd .sec-title{font-size:18px;}
-}
-
-/* Barra diagnóstico no tape el topbar en desktop */
-@media(min-width:768px){
-  #dbg-bar{top:0;font-size:13px;}
+@media(min-width:1024px){
+  .content{padding:24px 32px;}
 }
 </style>
 <style>body{font-family:Arial,sans-serif;padding:24px;color:#1A1A1A;max-width:900px;margin:0 auto}.header{display:flex;align-items:center;gap:16px;margin-bottom:24px;border-bottom:3px solid #C8372D;padding-bottom:16px}.logo{width:56px;height:56px;background:#C8372D;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}.brand h1{margin:0;font-size:22px;color:#C8372D;letter-spacing:2px}.brand p{margin:2px 0 0;font-size:11px;color:#888;letter-spacing:3px;text-transform:uppercase}.rpt-title{font-size:16px;font-weight:700;color:#1A1A1A;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:20px}th{background:#C8372D;color:#fff;padding:8px 6px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px}td{padding:7px 6px;border-bottom:1px solid #eee}tr:nth-child(even) td{background:#fafafa}.total-box{background:#1A1A1A;color:#fff;padding:14px 18px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}.total-label{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase}.total-val{font-size:22px;font-weight:700;color:#FFD700}.footer{text-align:center;font-size:10px;color:#bbb;margin-top:24px}@media print{button{display:none!important}}</style>
@@ -386,9 +370,7 @@ table{min-width:500px;width:100%;}
 </style>
 </head>
 <body>
-<div id="dbg-bar" style="position:fixed;top:0;left:0;right:0;background:#C8372D;color:#fff;font-size:13px;font-family:monospace;padding:8px 14px;z-index:99999;text-align:center;font-weight:bold;">
-  ⏳ v3.0 Cargando... Si ves esto más de 15s hay un problema de conexión
-</div>
+<div id="dbg-bar" style="display:none;position:fixed;top:60px;left:0;right:0;background:rgba(0,0,0,.85);color:#fff;font-size:12px;font-family:monospace;padding:7px 14px;z-index:99999;text-align:center;"></div>
 
 <!-- TOPBAR -->
 <div class="topbar">
@@ -1472,7 +1454,7 @@ async function initApp(){
 
   // Usar la barra ya creada en el HTML
   var dbg=document.getElementById('dbg-bar');
-  if(dbg){dbg.style.cssText='position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,.85);color:#fff;font-size:12px;font-family:monospace;padding:8px 14px;z-index:99999;word-break:break-all;text-align:center;';}
+  if(dbg){dbg.style.display='block';}
   function dbgLog(msg,ok){
     var bar=document.getElementById('dbg-bar');
     if(bar)bar.innerHTML=(ok===true?'✅ ':ok===false?'❌ ':'⏳ ')+msg;
