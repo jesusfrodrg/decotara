@@ -1299,15 +1299,22 @@ function compartirAlbaran(v){
 function showConnError(msg){
   setConn(false);
   var el=document.getElementById('ctxt');
-  if(el){el.textContent=msg.slice(0,30);}
-  // Mostrar error grande y permanente en el dashboard
+  if(el){el.textContent='Error';}
   var dash=document.getElementById('page-dashboard');
   if(dash){
-    dash.innerHTML='<div style="padding:40px;text-align:center;">'
-      +'<div style="font-size:48px;margin-bottom:16px;">⚠️</div>'
-      +'<div style="font-size:18px;font-weight:700;color:#C8372D;margin-bottom:12px;">Error de conexión</div>'
-      +'<div style="font-size:14px;color:#333;background:#fff3f3;border:1px solid #C8372D;border-radius:8px;padding:16px;max-width:500px;margin:0 auto;word-break:break-all;">'+msg+'</div>'
-      +'<button onclick="location.reload()" style="margin-top:20px;background:#C8372D;color:#fff;border:none;padding:10px 28px;border-radius:7px;font-size:14px;cursor:pointer;font-weight:700;">🔄 Reintentar</button>'
+    var lines=msg.replace(/\n/g,'<br>');
+    dash.innerHTML=
+      '<div style="padding:32px 20px;text-align:center;max-width:500px;margin:0 auto">'
+      +'<div style="font-size:52px;margin-bottom:12px">🔌</div>'
+      +'<div style="font-size:17px;font-weight:800;color:#C8372D;margin-bottom:14px">Sin conexión a Supabase</div>'
+      +'<div style="font-size:13px;color:#444;background:#fff3f3;border:1.5px solid #C8372D;border-radius:10px;padding:14px 16px;text-align:left;line-height:1.7;margin-bottom:18px">'+lines+'</div>'
+      +'<div style="font-size:12px;color:#666;background:#f0f4ff;border-radius:8px;padding:12px 14px;text-align:left;line-height:1.8;margin-bottom:18px">'
+      +'<b>Pasos para solucionar:</b><br>'
+      +'1️⃣ Abre <a href="https://supabase.com" target="_blank" style="color:#1A5FA8">supabase.com</a> y comprueba que tu proyecto está <b>activo</b><br>'
+      +'2️⃣ Si dice "Paused" → haz clic en <b>Restore project</b><br>'
+      +'3️⃣ Espera 1-2 min y pulsa <b>Reintentar</b>'
+      +'</div>'
+      +'<button onclick="location.reload()" style="background:#C8372D;color:#fff;border:none;padding:12px 32px;border-radius:8px;font-size:15px;cursor:pointer;font-weight:700;width:100%">🔄 Reintentar conexión</button>'
       +'</div>';
   }
   console.error('CONN ERROR:', msg);
@@ -1316,41 +1323,68 @@ function showConnError(msg){
 async function initApp(){
   var cajafecha=document.getElementById('caja_fecha');
   if(cajafecha)cajafecha.value=new Date().toISOString().split('T')[0];
-  // DIAGNÓSTICO VISIBLE - versión 2.1
+
+  // Barra de estado de conexión visible en pantalla
   var dbg=document.createElement('div');
   dbg.id='dbg-bar';
-  dbg.style.cssText='position:fixed;bottom:80px;left:0;right:0;background:#222;color:#0f0;font-size:11px;font-family:monospace;padding:6px 10px;z-index:9999;word-break:break-all;';
-  dbg.textContent='v2.1 Iniciando...';
+  dbg.style.cssText='position:fixed;top:58px;left:0;right:0;background:rgba(0,0,0,.82);color:#fff;font-size:12px;font-family:monospace;padding:7px 14px;z-index:9999;word-break:break-all;display:flex;align-items:center;gap:8px;';
+  dbg.innerHTML='<span id="dbg-spin" style="display:inline-block;animation:spin .7s linear infinite;font-size:16px">⏳</span><span id="dbg-txt">Conectando a Supabase...</span>';
   document.body.appendChild(dbg);
-  function dbgLog(msg){dbg.textContent='v2.1 '+msg;console.log('DBG:',msg);}
+  function dbgLog(msg,ok){
+    var t=document.getElementById('dbg-txt');var s=document.getElementById('dbg-spin');
+    if(t)t.textContent=msg;
+    if(s)s.textContent=ok===true?'✅':ok===false?'❌':'⏳';
+    console.log('DBG:',msg);
+  }
+
   try{
-    dbgLog('Conectando a Supabase...');
-    var controller=new AbortController();
-    var toid=setTimeout(function(){controller.abort();},8000);
+    dbgLog('Probando conexión con Supabase...');
     var r;
     try{
-      r=await fetch(SB+'/productos?select=id&limit=1',{headers:SH,signal:controller.signal});
+      // Timeout de 15s — suficiente para redes lentas
+      var ctrl=new AbortController();
+      var tid=setTimeout(function(){ctrl.abort();},15000);
+      r=await fetch(SB+'/productos?select=id&limit=1',{headers:SH,signal:ctrl.signal});
+      clearTimeout(tid);
     }catch(fe){
-      clearTimeout(toid);
       if(fe.name==='AbortError'){
-        dbgLog('TIMEOUT 8s');
-        showConnError('Tiempo de espera agotado (8s). Verifica tu conexión a internet o que Supabase esté activo.');
+        dbgLog('Sin respuesta tras 15s. Comprueba tu WiFi/datos.',false);
+        showConnError('⏱ Tiempo de espera agotado (15s).
+
+Posibles causas:
+• Sin conexión a internet
+• Supabase pausado por inactividad (entra en supabase.com y reactívalo)
+• La API key expiró');
       }else{
-        dbgLog('RED ERROR: '+fe.message);
-        showConnError('Error de red: '+fe.message);
+        dbgLog('Error de red: '+fe.message,false);
+        showConnError('🌐 Error de red: '+fe.message+'
+
+Comprueba tu conexión a internet.');
       }
       return;
     }
-    clearTimeout(toid);
+
     var txt=await r.text();
-    dbgLog('HTTP '+r.status+' resp: '+txt.slice(0,80));
-    if(!r.ok){
-      showConnError('Supabase respondió con error '+r.status+': '+txt.slice(0,400));
+    dbgLog('Respuesta HTTP '+r.status);
+
+    if(r.status===401||r.status===403){
+      dbgLog('API key inválida o expirada ('+r.status+')',false);
+      showConnError('🔑 Error de autenticación ('+r.status+').
+
+La API key de Supabase puede haber expirado.
+Entra en supabase.com → Settings → API y copia la nueva anon key.');
       return;
     }
+    if(!r.ok){
+      dbgLog('Error Supabase '+r.status+': '+txt.slice(0,60),false);
+      showConnError('⚠️ Supabase respondió con error '+r.status+':
+'+txt.slice(0,300));
+      return;
+    }
+
     setConn(true);
-    dbgLog('Conectado OK. Cargando datos en paralelo...');
-    // Todos los checks y precarga de caches en paralelo
+    dbgLog('Conectado ✓ — Cargando datos...',true);
+
     await Promise.all([
       GET('/clientes?select=dni&limit=1').then(function(){window._dniOk=true;}).catch(function(){window._dniOk=false;}),
       GET('/ventas?select=forma_pago&limit=1').then(function(){window._pagoOk=true;}).catch(function(){window._pagoOk=false;}),
@@ -1358,13 +1392,14 @@ async function initApp(){
       getCachedClientes(),
       getCachedProductos()
     ]);
-    dbgLog('Datos cargados. Renderizando...');
+
+    dbgLog('Todo cargado ✓',true);
     await renderDash();
-    dbgLog('OK - todo cargado ✓');
-    setTimeout(function(){var d=document.getElementById('dbg-bar');if(d)d.remove();},5000);
+    setTimeout(function(){var d=document.getElementById('dbg-bar');if(d){d.style.transition='opacity .5s';d.style.opacity='0';setTimeout(function(){d.remove();},500);}},3000);
+
   }catch(e){
-    dbgLog('ERROR: '+e.message);
-    showConnError('Error inesperado: '+e.message);
+    dbgLog('Error inesperado: '+e.message,false);
+    showConnError('💥 Error inesperado: '+e.message);
   }
 }
 
