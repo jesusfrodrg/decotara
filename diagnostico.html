@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagnóstico DECOTARA</title>
+<style>
+  body{font-family:monospace;background:#111;color:#0f0;padding:16px;font-size:13px}
+  h2{color:#fff;font-family:sans-serif}
+  .ok{color:#4ADE80} .err{color:#FF6B6B} .warn{color:#FCD34D}
+  .box{background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:12px;margin:10px 0;word-break:break-all}
+  button{background:#C8372D;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-size:14px;cursor:pointer;margin:8px 4px}
+</style>
+</head>
+<body>
+<h2>🔌 Diagnóstico Supabase - DECOTARA</h2>
+<div class="box">
+  <b>URL:</b> https://bxdmjucyggsyriocrmou.supabase.co/rest/v1<br>
+  <b>KEY (inicio):</b> eyJhbGciOiJIUzI1NiIsInR5cCI6Ik...
+</div>
+<div id="log"></div>
+<button onclick="runTest()">▶ Iniciar test</button>
+<button onclick="location.reload()">🔄 Repetir</button>
+
+<script>
+var SB = 'https://bxdmjucyggsyriocrmou.supabase.co/rest/v1';
+var SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4ZG1qdWN5Z2dzeXJpb2NybW91Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5Njc1NzAsImV4cCI6MjA4NzU0MzU3MH0.UcC4trYYqh21Viwf0BZ-aHgPRQWRM4deN5K1lNnw4Og';
+var SH = {'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
+
+function log(msg, type) {
+  var d = document.createElement('div');
+  d.className = 'box ' + (type||'');
+  d.innerHTML = msg;
+  document.getElementById('log').appendChild(d);
+  console.log(msg);
+}
+
+async function runTest() {
+  document.getElementById('log').innerHTML = '';
+  log('⏳ Iniciando diagnóstico...');
+  
+  // Test 1: Fetch básico
+  log('🔍 Test 1: Conexión básica a Supabase...');
+  try {
+    var t0 = Date.now();
+    var r = await fetch(SB + '/productos?select=id&limit=1', {
+      headers: SH
+    });
+    var ms = Date.now() - t0;
+    var txt = await r.text();
+    if (r.ok) {
+      log('✅ <b>CONEXIÓN OK</b> — HTTP ' + r.status + ' en ' + ms + 'ms<br>Respuesta: ' + txt.slice(0,100), 'ok');
+    } else {
+      log('❌ <b>ERROR HTTP ' + r.status + '</b> en ' + ms + 'ms<br>Respuesta: ' + txt.slice(0,300), 'err');
+    }
+  } catch(e) {
+    log('❌ <b>ERROR DE RED:</b> ' + e.name + ': ' + e.message + '<br><br>' +
+        (e.message.includes('CORS') ? '⚠️ Problema de CORS — Supabase bloquea peticiones desde este dominio' : 
+         e.message.includes('fetch') ? '⚠️ Sin acceso a internet o DNS fallido' : ''), 'err');
+  }
+
+  // Test 2: CORS preflight
+  log('🔍 Test 2: Verificando cabeceras CORS...');
+  try {
+    var r2 = await fetch(SB + '/productos?select=id&limit=1', {
+      method: 'OPTIONS',
+      headers: {'Origin': window.location.origin, 'Access-Control-Request-Method': 'GET'}
+    });
+    log('ℹ️ OPTIONS respondió: HTTP ' + r2.status + '<br>Origin enviado: ' + window.location.origin, r2.ok ? '' : 'warn');
+  } catch(e) {
+    log('⚠️ OPTIONS falló: ' + e.message, 'warn');
+  }
+
+  // Test 3: Internet básico
+  log('🔍 Test 3: Verificando acceso a internet...');
+  try {
+    var r3 = await fetch('https://httpbin.org/get', {signal: AbortSignal.timeout(5000)});
+    log('✅ Internet funciona (httpbin.org OK)', 'ok');
+  } catch(e) {
+    log('❌ Sin acceso a internet: ' + e.message, 'err');
+  }
+
+  // Test 4: GitHub Pages URL
+  log('ℹ️ URL actual: ' + window.location.href);
+  log('ℹ️ Navegador: ' + navigator.userAgent.slice(0,80));
+  log('✅ <b>Diagnóstico completado</b> — Comparte esta pantalla', 'ok');
+}
+
+// Auto-run
+runTest();
+</script>
+</body>
+</html>
