@@ -1056,7 +1056,7 @@ async function nextVentaId(){
 var vmLineas = []; // [{id, nombre, cat, pvp, qty, esOtro}]
 var vmProductos = []; // cache productos para el modal
 
-function renderVMCatalog(){
+async function renderVMCatalog(){
   var q=(document.getElementById('vm_prod_search').value||'').toLowerCase();
   var cat=document.getElementById('vm_prod_cat').value;
   var grid=document.getElementById('vm_prod_grid');
