@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DECOTARA OUTLET</title>
@@ -250,6 +253,9 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 </style>
 </head>
 <body>
+<div id="dbg-bar" style="position:fixed;top:0;left:0;right:0;background:#C8372D;color:#fff;font-size:13px;font-family:monospace;padding:8px 14px;z-index:99999;text-align:center;font-weight:bold;">
+  ⏳ v3.0 Cargando... Si ves esto más de 15s hay un problema de conexión
+</div>
 
 <!-- TOPBAR -->
 <div class="topbar">
@@ -1324,16 +1330,12 @@ async function initApp(){
   var cajafecha=document.getElementById('caja_fecha');
   if(cajafecha)cajafecha.value=new Date().toISOString().split('T')[0];
 
-  // Barra de estado de conexión visible en pantalla
-  var dbg=document.createElement('div');
-  dbg.id='dbg-bar';
-  dbg.style.cssText='position:fixed;top:58px;left:0;right:0;background:rgba(0,0,0,.82);color:#fff;font-size:12px;font-family:monospace;padding:7px 14px;z-index:9999;word-break:break-all;display:flex;align-items:center;gap:8px;';
-  dbg.innerHTML='<span id="dbg-spin" style="display:inline-block;animation:spin .7s linear infinite;font-size:16px">⏳</span><span id="dbg-txt">Conectando a Supabase...</span>';
-  document.body.appendChild(dbg);
+  // Usar la barra ya creada en el HTML
+  var dbg=document.getElementById('dbg-bar');
+  if(dbg){dbg.style.cssText='position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,.85);color:#fff;font-size:12px;font-family:monospace;padding:8px 14px;z-index:99999;word-break:break-all;text-align:center;';}
   function dbgLog(msg,ok){
-    var t=document.getElementById('dbg-txt');var s=document.getElementById('dbg-spin');
-    if(t)t.textContent=msg;
-    if(s)s.textContent=ok===true?'✅':ok===false?'❌':'⏳';
+    var bar=document.getElementById('dbg-bar');
+    if(bar)bar.innerHTML=(ok===true?'✅ ':ok===false?'❌ ':'⏳ ')+msg;
     console.log('DBG:',msg);
   }
 
