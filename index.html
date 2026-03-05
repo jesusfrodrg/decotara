@@ -1052,7 +1052,7 @@ function _agendaGrupoHTML(grupo,hoyStr,esEntregada){
   var cliNom=v0.clientes?v0.clientes.nombre+' '+v0.clientes.apellidos:'—';
   var ciudad=v0.clientes&&v0.clientes.ciudad?v0.clientes.ciudad:'';
   var dni=window._dniOk&&v0.clientes&&v0.clientes.dni?v0.clientes.dni:'';
-  var albNum=v0.albaran_num||('ALB-'+v0.id);
+  var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?('ALB-'+m[1]):'ALB-'+v0.id;})();
   var totalGrupo=grupo.reduce(function(s,v){return s+Number(v.total||0);},0);
   var multiProd=grupo.length>1;
   var expandId='agexp_'+albNum.replace(/[^a-z0-9]/gi,'_');
@@ -1520,7 +1520,7 @@ async function renderDash(){
     var dashRows=dashOrden.slice(0,7).map(function(key){
       var g=dashGrupos[key];var v0=g[0];
       var tot=g.reduce(function(s,v){return s+Number(v.total||0);},0);
-      var albNum=v0.albaran_num||('ALB-'+v0.id);
+      var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?('ALB-'+m[1]):'ALB-'+v0.id;})();
       var prods=g.map(function(v){return v.productos?v.productos.nombre:'—';}).join(', ');
       return '<tr>'+
         '<td><b style="color:var(--blue)">'+albNum+'</b>'+(g.length>1?'<div style="font-size:9px;color:var(--gray)">'+g.length+' arts</div>':'')+'</td>'+
@@ -2177,7 +2177,7 @@ document.addEventListener('DOMContentLoaded',function(){
       var dto=v0.descuento||0;
       var totalGrupo=grupo.reduce(function(s,v){return s+Number(v.total||0);},0);
       // Recalculate each item total without discount for subtotal
-      var albNum=grupo[0].albaran_num||('ALB-'+grupo[0].id);
+      var albNum=grupo[0].albaran_num||(function(){var m=(grupo[0].id||'').match(/VEN-(\d+)/);return m?('ALB-'+m[1]):'ALB-'+grupo[0].id;})();
       generarAlbaran(vent,cli2,v0.fecha,dto,v0.vendedor||'',v0.forma_pago||'Efectivo',v0.entrega||'Recogida por el Cliente',v0.fecha_entrega||'',v0.notas||'',albNum);
       return;
     }
@@ -2232,7 +2232,7 @@ document.addEventListener('DOMContentLoaded',function(){
           var v0=vv[0];
           var cli2={nombre:(v0.clientes?v0.clientes.nombre:''),apellidos:(v0.clientes?v0.clientes.apellidos:''),dni:(v0.clientes?v0.clientes.dni:''),ciudad:(v0.clientes?v0.clientes.ciudad:''),direccion:(v0.clientes?v0.clientes.direccion:'')};
           var vent=vv.map(function(v){return {prod_nombre:v.productos?v.productos.nombre:'Producto',prod_cat:v.productos?v.productos.categoria:'',cantidad:v.cantidad,pvp:v.pvp,total:v.total};});
-          var albNum=v0.albaran_num||('ALB-'+v0.id);
+          var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?('ALB-'+m[1]):'ALB-'+v0.id;})();
           generarAlbaran(vent,cli2,v0.fecha,v0.descuento||0,v0.vendedor||'',v0.forma_pago||'Efectivo',v0.entrega||'Recogida por el Cliente',v0.fecha_entrega||'',v0.notas||'',albNum);
         }catch(e){toast('Error: '+e.message);}
       })();
