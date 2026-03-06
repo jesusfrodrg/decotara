@@ -1242,7 +1242,7 @@ async function renderCaja(){
     document.getElementById('caja_body').innerHTML=rows.length?rows.map(function(v){
       return '<tr><td><b style="color:var(--blue)">'+v.id+'</b></td>'+
         '<td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td>'+
-        '<td>'+(v.productos?v.productos.nombre:'—')+'</td>'+
+        '<td>'+(getProdNombre(v))+'</td>'+
         '<td><span style="font-size:11px;font-weight:600">'+(v.forma_pago||'Efectivo')+'</span></td>'+
         '<td><b>'+(v.vendedor||'—')+'</b></td>'+
         '<td class="price">'+fe(v.total)+'</td></tr>';
@@ -1261,7 +1261,7 @@ function generarCajaPDF(){
   var filas=d.rows.map(function(v,i){
     var estado=v.estado||'Completada';
     var badgeCls=estado==='Completada'?'badge-comp':estado==='Pendiente'?'badge-pend':'badge-canc';
-    var productos=v.lineas&&v.lineas.length?v.lineas.map(function(l){return l.nombre+(l.qty>1?' ×'+l.qty:'');}).join(', '):(v.productos?v.productos.nombre:'—');
+    var productos=v.lineas&&v.lineas.length?v.lineas.map(function(l){return l.nombre+(l.qty>1?' ×'+l.qty:'');}).join(', '):(getProdNombre(v));
     return '<tr>'
       +'<td><span style="font-weight:700;color:#C8372D">'+v.id+'</span></td>'
       +'<td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td>'
@@ -1386,8 +1386,8 @@ function _agendaGrupoHTML(grupo,hoyStr,esEntregada){
     grupo.map(function(v,i){
       return '<div style="background:#f4f6ff;border-radius:6px;padding:7px 10px;display:flex;align-items:center;gap:8px">'+
         '<div style="flex:1">'+
-          '<div style="font-weight:700;font-size:13px">'+(v.productos?v.productos.nombre:'—')+'</div>'+
-          '<div style="font-size:11px;color:var(--gray)">'+(v.productos?v.productos.categoria:'')+(v.cantidad>1?' &nbsp;·&nbsp; Cantidad: <b>'+v.cantidad+'</b>':'')+'</div>'+
+          '<div style="font-weight:700;font-size:13px">'+(getProdNombre(v))+'</div>'+
+          '<div style="font-size:11px;color:var(--gray)">'+(getProdCat(v))+(v.cantidad>1?' &nbsp;·&nbsp; Cantidad: <b>'+v.cantidad+'</b>':'')+'</div>'+
         '</div>'+
         '<div style="text-align:right;min-width:60px">'+
           '<div style="font-weight:700;color:var(--red);font-size:13px">'+fe_str(v.total)+'</div>'+
@@ -1410,7 +1410,7 @@ function _agendaGrupoHTML(grupo,hoyStr,esEntregada){
         '<div class="ei-client">'+cliNom+(dni?' <span style="font-size:10px;color:var(--gray);font-weight:500">'+dni+'</span>':'')+'</div>'+
         (multiProd?'<span style="background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:700;padding:1px 7px;border-radius:5px">'+grupo.length+' arts</span>':'')+
       '</div>'+
-      '<div class="ei-prod">'+(multiProd?grupo.map(function(v){return v.productos?v.productos.nombre:'—';}).join(', '):(v0.productos?v0.productos.nombre:'—'))+(ciudad?' — '+ciudad:'')+'</div>'+
+      '<div class="ei-prod">'+(multiProd?grupo.map(function(v){return getProdNombre(v);}).join(', '):(getProdNombre(v0)))+(ciudad?' — '+ciudad:'')+'</div>'+
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">'+
         '<span class="ei-tipo '+(esTrans?'trans':'recog')+'">'+(esTrans?'🚚 Transporte':'🚶 Recogida')+'</span>'+
         (esEntregada?'<span class="entregado-badge">✅ Entregada</span>':'')+
@@ -1498,6 +1498,25 @@ async function renderVMCatalog(){
 }
 
 function escHtml(s){return (s||'').replace(/'/g,"&#39;").replace(/"/g,"&quot;");}
+
+// Obtiene el nombre del producto de una venta:
+// - Si tiene productos (join), usa ese nombre
+// - Si es artículo personalizado (producto_id null), extrae el nombre desde notas
+//   (el nombre se guarda como primera línea de notas, antes de \n)
+function getProdNombre(v, fallback){
+  if(v.productos && v.productos.nombre) return v.productos.nombre;
+  if(!v.producto_id && v.notas){
+    // El nombre del artículo personalizado es la primera línea de notas
+    var primera = (v.notas||'').split('\n')[0].trim();
+    if(primera) return primera;
+  }
+  return fallback||'—';
+}
+function getProdCat(v){
+  if(v.productos && v.productos.categoria) return v.productos.categoria;
+  if(!v.producto_id) return 'Personalizado';
+  return '';
+}
 
 function toggleVMProduct(id,nom,cat,pvp){
   var existing=vmLineas.findIndex(function(l){return l.id===id;});
@@ -1723,7 +1742,7 @@ function fe_str(v){return Number(v||0).toLocaleString('es-ES',{minimumFractionDi
 function compartirAlbaran(v){
   // Genera texto resumen para WhatsApp
   var cliNom=v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'Cliente';
-  var prod=v.productos?v.productos.nombre:'Producto';
+  var prod=getProdNombre(v,'Producto');
   var fecha=v.fecha_entrega?new Date(v.fecha_entrega+'T12:00').toLocaleDateString('es-ES'):'a confirmar';
   var texto='🛋️ *DECOTARA OUTLET*\n\n'+
     'Hola '+cliNom+', te confirmamos tu pedido:\n\n'+
@@ -1850,7 +1869,7 @@ async function renderDash(){
     var mx=Math.max.apply(null,ct.concat([1]));
     document.getElementById('cchart').innerHTML=cats.map(function(c,i){return '<div class="chart-bar"><div class="cb-label">'+c+'</div><div class="cb-track"><div class="cb-fill" style="width:'+(ct[i]/mx*100).toFixed(1)+'%;background:'+fills[i]+'">'+(ct[i]>50?fe(ct[i]):'')+'</div></div></div>';}).join('');
     var pm={};
-    comp.forEach(function(v){var pid=v.producto_id;if(!pid)return;if(!pm[pid])pm[pid]={n:v.productos?v.productos.nombre:pid,c:v.productos?v.productos.categoria:'',t:0,u:0};pm[pid].t+=Number(v.total||0);pm[pid].u+=v.cantidad||0;});
+    comp.forEach(function(v){var pid=v.producto_id;if(!pid)return;if(!pm[pid])pm[pid]={n:v.productos?v.productos.nombre:pid,c:getProdCat(v),t:0,u:0};pm[pid].t+=Number(v.total||0);pm[pid].u+=v.cantidad||0;});
     var top=Object.values(pm).sort(function(a,b){return b.t-a.t;}).slice(0,5);
     document.getElementById('ctop5').innerHTML=top.length?top.map(function(x,i){return '<div class="rr"><div class="rn">'+(i+1)+'</div><div class="ri"><div class="rna">'+x.n+'</div><div class="rc">'+x.c+' · '+x.u+' uds.</div></div><div class="ra">'+fe(x.t)+'</div></div>';}).join(''):'<div class="empty"><div class="empty-i">📦</div>Sin ventas aún</div>';
     // Agrupar las últimas ventas por albarán (igual que en ventas)
@@ -1864,7 +1883,7 @@ async function renderDash(){
       var g=dashGrupos[key];var v0=g[0];
       var tot=g.reduce(function(s,v){return s+Number(v.total||0);},0);
       var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?('ALB-'+m[1]):'ALB-'+v0.id;})();
-      var prods=g.map(function(v){return v.productos?v.productos.nombre:'—';}).join(', ');
+      var prods=g.map(function(v){return getProdNombre(v);}).join(', ');
       return '<tr>'+
         '<td><b style="color:var(--blue)">'+albNum+'</b>'+(g.length>1?'<div style="font-size:9px;color:var(--gray)">'+g.length+' arts</div>':'')+'</td>'+
         '<td>'+fD(v0.fecha)+'</td>'+
@@ -1901,7 +1920,7 @@ async function renderVentas(){
     if(q)rows=rows.filter(function(v){
       var cliDni=(window._dniOk&&v.clientes&&v.clientes.dni)||'';
       var cliNom=(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'');
-      return (cliNom+' '+(v.productos?v.productos.nombre:'')+' '+v.id+' '+cliDni).toLowerCase().indexOf(q)>-1;
+      return (cliNom+' '+(getProdNombre(v,''))+' '+v.id+' '+cliDni).toLowerCase().indexOf(q)>-1;
     });
     // Agrupar por compra (fecha+cliente+vendedor mismo día = misma compra = mismo albarán)
     var compras={};var comprasOrder=[];
@@ -1917,7 +1936,7 @@ async function renderVentas(){
       var v0=grupo[0];
       var totalCompra=grupo.reduce(function(s,v){return s+Number(v.total||0);},0);
       var numArts=grupo.reduce(function(s,v){return s+(v.cantidad||1);},0);
-      var productosNombres=grupo.map(function(v){return (v.productos?v.productos.nombre:'?')+(v.cantidad>1?' x'+v.cantidad:'');}).join(', ');
+      var productosNombres=grupo.map(function(v){return (getProdNombre(v))+(v.cantidad>1?' x'+v.cantidad:'');}).join(', ');
       var primeraId=v0.id;
       var albNum=v0.albaran_num||('ALB-'+primeraId);
       var expandId='exp_'+key.replace(/[^a-z0-9]/gi,'_');
@@ -1930,7 +1949,7 @@ async function renderVentas(){
         '<tbody>'+
         grupo.map(function(v){
           return '<tr style="border-bottom:1px solid #e8eaf0">'+
-            '<td style="padding:6px 8px;font-weight:600">'+(v.productos?v.productos.nombre:'—')+'<span style="font-size:10px;color:var(--gray);font-weight:400;margin-left:4px">'+(v.productos?v.productos.categoria:'')+'</span></td>'+
+            '<td style="padding:6px 8px;font-weight:600">'+(getProdNombre(v))+'<span style="font-size:10px;color:var(--gray);font-weight:400;margin-left:4px">'+(getProdCat(v))+'</span></td>'+
             '<td style="padding:6px 8px;text-align:center">'+v.cantidad+'</td>'+
             '<td style="padding:6px 8px;text-align:right">'+fe(v.pvp)+'</td>'+
             '<td style="padding:6px 8px;text-align:right;font-weight:700;color:var(--red)">'+fe(v.total)+'</td>'+
@@ -2036,7 +2055,7 @@ async function generarReporte(tipo,desdeParam,hastaParam){
     rptData=await GET(url);
     var tot=rptData.reduce(function(s,v){return s+Number(v.total||0);},0);
     document.getElementById('rpt-total').textContent=fe(tot);
-    document.getElementById('rpt-body').innerHTML=rptData.length?rptData.map(function(v){return '<tr><td><b>'+v.id+'</b></td><td>'+fD(v.fecha)+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(v.productos?v.productos.nombre:'—')+'</td><td>'+v.cantidad+'</td><td><b>'+(v.vendedor||'—')+'</b></td><td class="price">'+fe(v.total)+'</td><td>'+eb(v.estado)+'</td></tr>';}).join(''):EM(8,'📋','Sin ventas en este periodo');
+    document.getElementById('rpt-body').innerHTML=rptData.length?rptData.map(function(v){return '<tr><td><b>'+v.id+'</b></td><td>'+fD(v.fecha)+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(getProdNombre(v))+'</td><td>'+v.cantidad+'</td><td><b>'+(v.vendedor||'—')+'</b></td><td class="price">'+fe(v.total)+'</td><td>'+eb(v.estado)+'</td></tr>';}).join(''):EM(8,'📋','Sin ventas en este periodo');
     document.getElementById('rpt-preview').scrollIntoView({behavior:'smooth'});
   }catch(e){toast('Error: '+e.message);}
 }
@@ -2044,7 +2063,7 @@ async function generarReporte(tipo,desdeParam,hastaParam){
 function descargarReportePDF(){
   if(!rptData.length){toast('No hay datos para el PDF');return;}
   var tot=rptData.reduce(function(s,v){return s+Number(v.total||0);},0);
-  var filas=rptData.map(function(v){return '<tr><td>'+v.id+'</td><td>'+fD(v.fecha)+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(v.productos?v.productos.nombre:'—')+'</td><td style="text-align:center">'+v.cantidad+'</td><td>'+(v.vendedor||'—')+'</td><td style="text-align:right">'+fe(v.total)+'</td><td>'+v.estado+'</td></tr>';}).join('');
+  var filas=rptData.map(function(v){return '<tr><td>'+v.id+'</td><td>'+fD(v.fecha)+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(getProdNombre(v))+'</td><td style="text-align:center">'+v.cantidad+'</td><td>'+(v.vendedor||'—')+'</td><td style="text-align:right">'+fe(v.total)+'</td><td>'+v.estado+'</td></tr>';}).join('');
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+rptTitleStr+'</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:13px;max-width:900px;margin:0 auto}.top-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:3px solid #C8372D;margin-bottom:20px}.brand-block{display:flex;align-items:center;gap:14px}.logo-img{width:52px;height:52px;border-radius:50%;object-fit:cover}.brand-name{font-size:24px;font-weight:900;color:#C8372D;letter-spacing:3px;line-height:1}.brand-sub{font-size:10px;color:#888;letter-spacing:4px;text-transform:uppercase;margin-top:2px}.doc-meta{text-align:right;font-size:11px;color:#666}.doc-meta b{font-size:15px;color:#1A1A1A;display:block;font-weight:800}.empresa-info{font-size:11px;color:#888;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid #eee}.doc-title{font-size:26px;font-weight:800;color:#1A1A1A;margin-bottom:4px}.doc-period{font-size:13px;color:#666;margin-bottom:18px}table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12px}thead tr{background:#C8372D;color:#fff}th{padding:9px 10px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.4px}th.r,td.r{text-align:right}th.c,td.c{text-align:center}td{padding:8px 10px;border-bottom:1px solid #eee}tr:nth-child(even) td{background:#fafafa}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}.scard{background:#f5f5f5;border-radius:6px;padding:14px;border-left:4px solid #C8372D}.scard-val{font-size:22px;font-weight:900;color:#1A1A1A}.scard-lbl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}.total-bar{background:#C8372D;color:#fff;padding:12px 16px;border-radius:6px;display:flex;justify-content:space-between;font-size:16px;font-weight:800;margin-bottom:20px}.section-title{font-size:13px;font-weight:800;color:#C8372D;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid #C8372D;padding-bottom:5px;margin-bottom:14px}.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700}.badge-comp{background:#E8F5EE;color:#2E7D52}.badge-pend{background:#FEF3C7;color:#92400E}.badge-canc{background:#FEE2E2;color:#991B1B}.footer{text-align:center;font-size:10px;color:#bbb;margin-top:24px;border-top:1px solid #eee;padding-top:12px}.print-btn{display:block;margin:20px auto 0;background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:7px;font-size:14px;cursor:pointer;font-weight:700;letter-spacing:.3px}@media print{.print-btn{display:none!important}body{padding:16px}}</style></head><body><div class="top-header"><div class="brand-block"><img class="logo-img" src="'+window._LOGO_B64+'" alt="DECOTARA"><div><div class="brand-name">DECOTARA</div><div class="brand-sub">OUTLET</div></div></div><div class="doc-meta"><div class="doc-meta-title">'+rptTitleStr+'</div></div></div><div class="empresa-info">DECOTARA OUTLET &nbsp;&middot;&nbsp; Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza &nbsp;&middot;&nbsp; DECOTARAOUTLET@gmail.com</div><table><thead><tr><th>N</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Cant.</th><th>Vendedor</th><th>Total</th><th>Estado</th></tr></thead><tbody>'+filas+'</tbody></table><div class="total-box"><span class="total-label">Total del periodo</span><span class="total-val">'+fe(tot)+'</span></div><div class="footer">DECOTARA OUTLET &nbsp;·&nbsp; Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza &nbsp;·&nbsp; DECOTARAOUTLET@gmail.com &nbsp;·&nbsp; Generado el '+new Date().toLocaleDateString('es-ES')+'</div><br><center><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:10px 28px;border-radius:7px;font-size:14px;cursor:pointer;font-weight:700;margin-top:10px">Imprimir / Guardar como PDF</button></center></body></html>';
   var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
 }
@@ -2052,7 +2071,7 @@ function descargarReportePDF(){
 function descargarCSV(){
   if(!rptData.length){toast('No hay datos para descargar');return;}
   var rows=[['ID','Fecha','Cliente','Producto','Cantidad','PVP','Descuento','Total','Vendedor','Estado','Notas']];
-  rptData.forEach(function(v){rows.push([v.id,v.fecha,(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:''),(v.productos?v.productos.nombre:''),v.cantidad,v.pvp,v.descuento,v.total,(v.vendedor||''),v.estado,v.notas||'']);});
+  rptData.forEach(function(v){rows.push([v.id,v.fecha,(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:''),(getProdNombre(v,'')),v.cantidad,v.pvp,v.descuento,v.total,(v.vendedor||''),v.estado,v.notas||'']);});
   var csv=rows.map(function(r){return r.map(function(c){return '"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
   var url=URL.createObjectURL(blob);
@@ -2074,7 +2093,7 @@ async function generarReporteVendedor(vendedor,desdeParam,hastaParam){
     var tot=rptData.reduce(function(s,v){return s+Number(v.total||0);},0);
     var numVentas=rptData.filter(function(v){return v.estado==='Completada';}).length;
     document.getElementById('rpt-total').textContent=fe(tot);
-    document.getElementById('rpt-body').innerHTML=rptData.length?rptData.map(function(v){return '<tr><td><b>'+v.id+'</b></td><td>'+fD(v.fecha)+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(v.productos?v.productos.nombre:'—')+'</td><td>'+v.cantidad+'</td><td><b style="color:var(--red)">'+vendedor+'</b></td><td class="price">'+fe(v.total)+'</td><td>'+eb(v.estado)+'</td></tr>';}).join(''):EM(8,'🏷️','Sin ventas en este periodo');
+    document.getElementById('rpt-body').innerHTML=rptData.length?rptData.map(function(v){return '<tr><td><b>'+v.id+'</b></td><td>'+fD(v.fecha)+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(getProdNombre(v))+'</td><td>'+v.cantidad+'</td><td><b style="color:var(--red)">'+vendedor+'</b></td><td class="price">'+fe(v.total)+'</td><td>'+eb(v.estado)+'</td></tr>';}).join(''):EM(8,'🏷️','Sin ventas en este periodo');
     document.getElementById('rpt-preview').scrollIntoView({behavior:'smooth'});
   }catch(e){toast('Error: '+e.message);}
 }
@@ -2496,7 +2515,7 @@ document.addEventListener('DOMContentLoaded',function(){
       var vRows=window._ventasCache||[];var v=vRows.find(function(x){return x.id===id;});
       if(!v){toast('Recarga la página de ventas');return;}
       var cli2={nombre:(v.clientes?v.clientes.nombre:''),apellidos:(v.clientes?v.clientes.apellidos:''),dni:(v.clientes?v.clientes.dni:''),ciudad:(v.clientes?v.clientes.ciudad:''),direccion:(v.clientes?v.clientes.direccion:'')};
-      var vent=[{prod_nombre:v.productos?v.productos.nombre:'Producto',prod_cat:v.productos?v.productos.categoria:'',cantidad:v.cantidad,pvp:v.pvp,total:v.total}];
+      var vent=[{prod_nombre:getProdNombre(v,'Producto'),prod_cat:getProdCat(v),cantidad:v.cantidad,pvp:v.pvp,total:v.total}];
       generarAlbaran(vent,cli2,v.fecha,v.descuento||0,v.vendedor||'',v.forma_pago||'Efectivo',v.entrega||'Recogida por el Cliente',v.fecha_entrega||'',v.notas||'','ALB-'+id);
       return;
     }
@@ -2518,7 +2537,7 @@ document.addEventListener('DOMContentLoaded',function(){
       if(!grupo.length){toast('Datos no disponibles, recarga ventas');return;}
       var v0=grupo[0];
       var cli2={nombre:(v0.clientes?v0.clientes.nombre:''),apellidos:(v0.clientes?v0.clientes.apellidos:''),dni:(v0.clientes?v0.clientes.dni:''),ciudad:(v0.clientes?v0.clientes.ciudad:''),direccion:(v0.clientes?v0.clientes.direccion:'')};
-      var vent=grupo.map(function(v){return {prod_nombre:v.productos?v.productos.nombre:'Producto',prod_cat:v.productos?v.productos.categoria:'',cantidad:v.cantidad,pvp:v.pvp,total:v.total};});
+      var vent=grupo.map(function(v){return {prod_nombre:getProdNombre(v,'Producto'),prod_cat:getProdCat(v),cantidad:v.cantidad,pvp:v.pvp,total:v.total};});
       var dto=v0.descuento||0;
       var totalGrupo=grupo.reduce(function(s,v){return s+Number(v.total||0);},0);
       // Recalculate each item total without discount for subtotal
@@ -2576,7 +2595,7 @@ document.addEventListener('DOMContentLoaded',function(){
           if(!vv.length){toast('Venta no encontrada');return;}
           var v0=vv[0];
           var cli2={nombre:(v0.clientes?v0.clientes.nombre:''),apellidos:(v0.clientes?v0.clientes.apellidos:''),dni:(v0.clientes?v0.clientes.dni:''),ciudad:(v0.clientes?v0.clientes.ciudad:''),direccion:(v0.clientes?v0.clientes.direccion:'')};
-          var vent=vv.map(function(v){return {prod_nombre:v.productos?v.productos.nombre:'Producto',prod_cat:v.productos?v.productos.categoria:'',cantidad:v.cantidad,pvp:v.pvp,total:v.total};});
+          var vent=vv.map(function(v){return {prod_nombre:getProdNombre(v,'Producto'),prod_cat:getProdCat(v),cantidad:v.cantidad,pvp:v.pvp,total:v.total};});
           var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?('ALB-'+m[1]):'ALB-'+v0.id;})();
           generarAlbaran(vent,cli2,v0.fecha,v0.descuento||0,v0.vendedor||'',v0.forma_pago||'Efectivo',v0.entrega||'Recogida por el Cliente',v0.fecha_entrega||'',v0.notas||'',albNum);
         }catch(e){toast('Error: '+e.message);}
