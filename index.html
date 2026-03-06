@@ -828,7 +828,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
           <div class="fg" style="gap:8px">
             <div class="fi"><label style="font-size:11px">Nombre *</label><input type="text" id="nc_cart_nom" placeholder="Nombre"></div>
             <div class="fi"><label style="font-size:11px">Apellidos *</label><input type="text" id="nc_cart_ape" placeholder="Apellidos"></div>
-            <div class="fi"><label style="font-size:11px">DNI/NIF</label><input type="text" id="nc_cart_dni" placeholder="DNI" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+            <div class="fi"><label style="font-size:11px">DNI/NIF <span style="color:var(--red)">*</span></label><input type="text" id="nc_cart_dni" placeholder="DNI" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
             <div class="fi"><label style="font-size:11px">Teléfono</label><input type="text" id="nc_cart_tel" placeholder="Teléfono"></div>
             <div class="fi"><label style="font-size:11px">Ciudad</label><input type="text" id="nc_cart_ciu" placeholder="Ciudad"></div>
             <div class="fi full"><label style="font-size:11px">Dirección</label><input type="text" id="nc_cart_dir" placeholder="Dirección"></div>
@@ -868,7 +868,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
         <div class="fg" style="gap:8px">
           <div class="fi"><label style="font-size:11px">Nombre *</label><input type="text" id="nc_vm_nom" placeholder="Nombre"></div>
           <div class="fi"><label style="font-size:11px">Apellidos *</label><input type="text" id="nc_vm_ape" placeholder="Apellidos"></div>
-          <div class="fi"><label style="font-size:11px">DNI/NIF</label><input type="text" id="nc_vm_dni" placeholder="DNI" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+          <div class="fi"><label style="font-size:11px">DNI/NIF <span style="color:var(--red)">*</span></label><input type="text" id="nc_vm_dni" placeholder="DNI" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
           <div class="fi"><label style="font-size:11px">Teléfono</label><input type="text" id="nc_vm_tel" placeholder="Teléfono"></div>
           <div class="fi"><label style="font-size:11px">Ciudad</label><input type="text" id="nc_vm_ciu" placeholder="Ciudad"></div>
           <div class="fi full"><label style="font-size:11px">Dirección</label><input type="text" id="nc_vm_dir" placeholder="Dirección"></div>
@@ -956,7 +956,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <div class="fi"><label>Apellidos</label><input type="text" id="c_ape"></div>
     <div class="fi"><label>Teléfono</label><input type="tel" id="c_tel"></div>
     <div class="fi"><label>Email</label><input type="email" id="c_ema"></div>
-    <div class="fi"><label>DNI / NIE</label><input type="text" id="c_dni" placeholder="12345678A" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+    <div class="fi"><label>DNI / NIE <span style="color:var(--red)">*</span></label><input type="text" id="c_dni" placeholder="12345678A" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
     <div class="fi"><label>Ciudad</label><input type="text" id="c_ciu"></div>
     <div class="fi full"><label>Dirección</label><input type="text" id="c_dir"></div>
   </div>
@@ -1553,6 +1553,7 @@ async function guardarNuevoCliInline(ctx){
   var ape=(document.getElementById('nc_'+ctx+'_ape').value||'').trim();
   if(!nom||!ape){toast('Nombre y apellidos son obligatorios');return;}
   var dni=(document.getElementById('nc_'+ctx+'_dni').value||'').trim();
+  if(!dni){toast('⚠️ El DNI/NIF es obligatorio');document.getElementById('nc_'+ctx+'_dni').focus();return;}
   var tel=(document.getElementById('nc_'+ctx+'_tel').value||'').trim();
   var ciu=(document.getElementById('nc_'+ctx+'_ciu').value||'').trim();
   var dir=(document.getElementById('nc_'+ctx+'_dir').value||'').trim();
@@ -2261,14 +2262,16 @@ async function openCM(id){
 async function saveC(){
   var nombre=document.getElementById('c_nom').value.trim(),apellidos=document.getElementById('c_ape').value.trim();
   if(!nombre||!apellidos){toast('Nombre y apellidos requeridos');return;}
-  var payload={nombre:nombre,apellidos:apellidos,...(window._dniOk&&document.getElementById('c_dni').value?{dni:document.getElementById('c_dni').value}:{}),telefono:document.getElementById('c_tel').value||null,email:document.getElementById('c_ema').value||null,ciudad:document.getElementById('c_ciu').value||null,direccion:document.getElementById('c_dir').value||null};
+  var dniInput=document.getElementById('c_dni').value.trim();
+  if(!dniInput){toast('⚠️ El DNI/NIF es obligatorio');document.getElementById('c_dni').focus();return;}
+  var payload={nombre:nombre,apellidos:apellidos,...(window._dniOk?{dni:dniInput}:{}),telefono:document.getElementById('c_tel').value||null,email:document.getElementById('c_ema').value||null,ciudad:document.getElementById('c_ciu').value||null,direccion:document.getElementById('c_dir').value||null};
   var btn=document.getElementById('btnSC');btn.disabled=true;btn.textContent='Guardando...';
   try{
     if(ceditId){await PATCH('/clientes?id=eq.'+ceditId,payload);toast('Cliente actualizado ✓');closeM('cm');invalidarCacheClientes();renderClientes();}
     else{
       // Verificar DNI duplicado
-      if(window._dniOk&&document.getElementById('c_dni').value.trim()){
-        var dniVal=document.getElementById('c_dni').value.trim();
+      if(window._dniOk&&dniInput){
+        var dniVal=dniInput;
         var existing=await GET('/clientes?select=id,nombre,apellidos&dni=eq.'+encodeURIComponent(dniVal)+'&limit=1');
         if(existing.length){toast('⚠️ Ya se encuentra registrada esa persona ('+existing[0].nombre+' '+existing[0].apellidos+' / '+existing[0].id+')',6000);btn.disabled=false;btn.textContent='Guardar';return;}
       }
