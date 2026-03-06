@@ -1254,23 +1254,94 @@ async function renderCaja(){
 function generarCajaPDF(){
   var d=window._cajaData;
   if(!d||!d.rows){toast('Primero carga los datos de caja');return;}
-  var filas=d.rows.map(function(v){return '<tr><td>'+v.id+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(v.productos?v.productos.nombre:'—')+'</td><td>'+(v.forma_pago||'Efectivo')+'</td><td>'+(v.vendedor||'—')+'</td><td style="text-align:right">'+fe(v.total)+'</td></tr>';}).join('');
+
   var fecha_lbl=new Date(d.fecha+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  var html2='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cierre de Caja '+d.fecha+'</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:13px;max-width:900px;margin:0 auto}.top-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:3px solid #C8372D;margin-bottom:20px}.brand-block{display:flex;align-items:center;gap:14px}.logo-img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #C8372D}.brand-name{font-size:26px;font-weight:900;color:#C8372D;letter-spacing:3px;line-height:1}.brand-sub{font-size:10px;color:#888;letter-spacing:4px;text-transform:uppercase;margin-top:2px}.doc-meta{text-align:right}.doc-meta-title{font-size:22px;font-weight:800;color:#1A1A1A}.doc-meta-sub{font-size:11px;color:#666;margin-top:3px}.empresa-info{font-size:11px;color:#888;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid #eee}.info-block{background:#F4F4F4;padding:16px 18px;border-radius:6px;display:flex;gap:24px;margin-bottom:22px}.ib-left{flex:1}.ib-right{min-width:220px}.ib-title{font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#666;margin-bottom:10px}.ib-row{font-size:12px;margin-bottom:5px;display:flex;gap:6px}.ib-label{color:#555;min-width:80px;font-weight:600}.ib-val{color:#1A1A1A}table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12px}thead tr{background:#C8372D;color:#fff}th{padding:9px 10px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.4px}th.r,td.r{text-align:right}th.c,td.c{text-align:center}td{padding:8px 10px;border-bottom:1px solid #eee}tr:nth-child(even) td{background:#fafafa}.summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}.scard{background:#fff;border:1px solid #eee;border-radius:8px;padding:16px;border-top:4px solid #C8372D}.scard-val{font-size:24px;font-weight:900;color:#1A1A1A}.scard-lbl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}.total-bar{background:#C8372D;color:#fff;padding:12px 18px;border-radius:6px;display:flex;justify-content:space-between;font-size:16px;font-weight:800;margin-bottom:20px}.section-title{font-size:12px;font-weight:800;color:#C8372D;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid #C8372D;padding-bottom:5px;margin-bottom:14px;margin-top:22px}.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700}.badge-comp{background:#E8F5EE;color:#2E7D52}.badge-pend{background:#FEF3C7;color:#92400E}.badge-canc{background:#FEE2E2;color:#991B1B}.footer{text-align:center;font-size:10px;color:#bbb;margin-top:24px;border-top:1px solid #eee;padding-top:12px}@media print{.no-print{display:none!important}body{padding:16px}}</style></head><body>'+
-    '<div class="top-header"><div class="brand-block"><img class="logo-img" src="'+window._LOGO_B64+'" alt="DECOTARA"><div><div class="brand-name">DECOTARA</div><div class="brand-sub">OUTLET</div></div></div><div class="doc-meta"><div class="doc-meta-title">Cierre de Caja</div><div class="doc-meta-sub">'+d.fecha+'</div></div></div>'+
-    
-    '<div class="empresa-info">DECOTARA OUTLET &nbsp;·&nbsp; Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza &nbsp;·&nbsp; DECOTARAOUTLET@gmail.com</div>'+
-    '<div class="resumen">'+
-      '<div class="rcard"><div class="rcard-bar" style="background:#4ADE80"></div><div class="rl">💵 Efectivo</div><div class="rv">'+fe(d.metodos['Efectivo'].tot)+'</div><div class="rs">'+d.metodos['Efectivo'].n+' ventas</div></div>'+
-      '<div class="rcard"><div class="rcard-bar" style="background:#60A5FA"></div><div class="rl">💳 Tarjeta</div><div class="rv">'+fe(d.metodos['Tarjeta'].tot)+'</div><div class="rs">'+d.metodos['Tarjeta'].n+' ventas</div></div>'+
-      '<div class="rcard"><div class="rcard-bar" style="background:#C47B0A"></div><div class="rl">🏦 Transferencia</div><div class="rv">'+fe(d.metodos['Transferencia'].tot)+'</div><div class="rs">'+d.metodos['Transferencia'].n+' ventas</div></div>'+
-      '<div class="rcard"><div class="rcard-bar" style="background:#6B3FA0"></div><div class="rl">💵+💳 Mixto</div><div class="rv">'+fe(d.metodos['mixto'].tot)+'</div><div class="rs">'+d.metodos['mixto'].n+' ventas</div></div>'+
-    '</div>'+
-    '<div class="total-box"><span class="tl">Total del día</span><span class="tv">'+fe(d.total)+'</span></div>'+
-    '<table><thead><tr><th>N</th><th>Cliente</th><th>Producto</th><th>Forma de pago</th><th>Vendedor</th><th class="r">Total</th></tr></thead><tbody>'+filas+'</tbody></table>'+
-    '<div class="footer">DECOTARA OUTLET &nbsp;·&nbsp; Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza &nbsp;·&nbsp; Generado el '+new Date().toLocaleDateString('es-ES')+'</div>'+
-    '<br><center><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:10px 28px;border-radius:7px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar PDF</button></center>'+
-    '</body></html>';
+
+  // Filas de ventas agrupadas
+  var filas=d.rows.map(function(v,i){
+    var estado=v.estado||'Completada';
+    var badgeCls=estado==='Completada'?'badge-comp':estado==='Pendiente'?'badge-pend':'badge-canc';
+    var productos=v.lineas&&v.lineas.length?v.lineas.map(function(l){return l.nombre+(l.qty>1?' ×'+l.qty:'');}).join(', '):(v.productos?v.productos.nombre:'—');
+    return '<tr>'
+      +'<td><span style="font-weight:700;color:#C8372D">'+v.id+'</span></td>'
+      +'<td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td>'
+      +'<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+productos+'">'+productos+'</td>'
+      +'<td><span class="pago-badge pago-'+((v.forma_pago||'Efectivo').replace(/[^a-z]/gi,'_').toLowerCase())+'">'+( v.forma_pago||'Efectivo')+'</span></td>'
+      +'<td>'+(v.vendedor||'—')+'</td>'
+      +'<td style="text-align:right;font-weight:700">'+fe(v.total)+'</td>'
+      +'</tr>';
+  }).join('');
+
+  var metodosHtml=
+    '<div class="mc"><div class="mc-bar" style="background:#22c55e"></div><div class="mc-icon">💵</div><div class="mc-label">Efectivo</div><div class="mc-val">'+fe(d.metodos['Efectivo'].tot)+'</div><div class="mc-count">'+d.metodos['Efectivo'].n+' ventas</div></div>'+
+    '<div class="mc"><div class="mc-bar" style="background:#3b82f6"></div><div class="mc-icon">💳</div><div class="mc-label">Tarjeta</div><div class="mc-val">'+fe(d.metodos['Tarjeta'].tot)+'</div><div class="mc-count">'+d.metodos['Tarjeta'].n+' ventas</div></div>'+
+    '<div class="mc"><div class="mc-bar" style="background:#f59e0b"></div><div class="mc-icon">🏦</div><div class="mc-label">Transferencia</div><div class="mc-val">'+fe(d.metodos['Transferencia'].tot)+'</div><div class="mc-count">'+d.metodos['Transferencia'].n+' ventas</div></div>'+
+    '<div class="mc"><div class="mc-bar" style="background:#8b5cf6"></div><div class="mc-icon">💵+💳</div><div class="mc-label">Mixto</div><div class="mc-val">'+fe(d.metodos['mixto'].tot)+'</div><div class="mc-count">'+d.metodos['mixto'].n+' ventas</div></div>';
+
+  var html2='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cierre de Caja '+d.fecha+'</title><style>'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:13px;max-width:920px;margin:0 auto;background:#fff}'
+    /* HEADER */
+    +'.top-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:3px solid #C8372D;margin-bottom:8px}'
+    +'.brand-block{display:flex;align-items:center;gap:14px}'
+    +'.logo-img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #C8372D}'
+    +'.brand-name{font-size:26px;font-weight:900;color:#C8372D;letter-spacing:3px;line-height:1}'
+    +'.brand-sub{font-size:10px;color:#888;letter-spacing:4px;text-transform:uppercase;margin-top:2px}'
+    +'.doc-meta{text-align:right}'
+    +'.doc-title{font-size:22px;font-weight:900;color:#1A1A1A}'
+    +'.doc-date{font-size:11px;color:#888;margin-top:3px}'
+    +'.empresa-info{font-size:10.5px;color:#aaa;padding:8px 0 16px;border-bottom:1px solid #f0f0f0;margin-bottom:22px}'
+    /* TARJETAS MÉTODOS */
+    +'.mc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}'
+    +'.mc{background:#fff;border:1.5px solid #ebebeb;border-radius:10px;padding:16px 14px 14px;position:relative;overflow:hidden}'
+    +'.mc-bar{position:absolute;top:0;left:0;right:0;height:4px}'
+    +'.mc-icon{font-size:20px;margin-bottom:8px;line-height:1}'
+    +'.mc-label{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}'
+    +'.mc-val{font-size:20px;font-weight:900;color:#1A1A1A;line-height:1}'
+    +'.mc-count{font-size:10px;color:#bbb;margin-top:5px}'
+    /* BARRA TOTAL */
+    +'.total-bar{background:linear-gradient(135deg,#B02820,#C8372D);color:#fff;padding:14px 20px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;box-shadow:0 4px 12px rgba(200,55,45,.25)}'
+    +'.total-bar-lbl{font-size:12px;font-weight:700;opacity:.85;text-transform:uppercase;letter-spacing:.5px}'
+    +'.total-bar-num{font-size:26px;font-weight:900}'
+    +'.total-bar-cnt{font-size:11px;opacity:.7;margin-top:2px}'
+    /* SECCIÓN TABLA */
+    +'.section-title{font-size:11px;font-weight:800;color:#C8372D;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid #C8372D;padding-bottom:5px;margin-bottom:14px}'
+    +'table{width:100%;border-collapse:collapse;font-size:12px}'
+    +'thead tr{background:#1A1A1A;color:#fff}'
+    +'th{padding:9px 10px;text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.3px}'
+    +'td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle}'
+    +'tr:last-child td{border-bottom:none}'
+    +'tr:hover td{background:#fafafa}'
+    +'.pago-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}'
+    +'.pago-badge.pago-efectivo{background:#dcfce7;color:#15803d}'
+    +'.pago-badge.pago-tarjeta{background:#dbeafe;color:#1d4ed8}'
+    +'.pago-badge.pago-transferencia{background:#fef3c7;color:#92400e}'
+    +'.pago-badge.pago-efectivo___tarjeta,.pago-badge.pago-mixto,.pago-badge[class*="mixto"]{background:#ede9fe;color:#6d28d9}'
+    +'.footer{text-align:center;font-size:10px;color:#ccc;margin-top:28px;border-top:1px solid #f0f0f0;padding-top:14px}'
+    +'@media print{.no-print{display:none!important}}'
+    +'</style></head><body>'
+    +'<div class="top-header">'
+      +'<div class="brand-block">'
+        +'<img class="logo-img" src="'+window._LOGO_B64+'" alt="DECOTARA">'
+        +'<div><div class="brand-name">DECOTARA</div><div class="brand-sub">OUTLET</div></div>'
+      +'</div>'
+      +'<div class="doc-meta"><div class="doc-title">Cierre de Caja</div><div class="doc-date">'+fecha_lbl+'</div></div>'
+    +'</div>'
+    +'<div class="empresa-info">DECOTARA OUTLET &nbsp;·&nbsp; Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza &nbsp;·&nbsp; DECOTARAOUTLET@gmail.com</div>'
+    +'<div class="mc-grid">'+metodosHtml+'</div>'
+    +'<div class="total-bar">'
+      +'<div><div class="total-bar-lbl">Total recaudado del día</div><div class="total-bar-cnt">'+d.rows.length+' ventas registradas</div></div>'
+      +'<div class="total-bar-num">'+fe(d.total)+'</div>'
+    +'</div>'
+    +'<div class="section-title">Detalle de ventas</div>'
+    +'<table>'
+      +'<thead><tr><th>Nº</th><th>Cliente</th><th>Producto / Artículos</th><th>Forma de pago</th><th>Vendedor</th><th style="text-align:right">Total</th></tr></thead>'
+      +'<tbody>'+filas+'</tbody>'
+    +'</table>'
+    +'<div class="footer">DECOTARA OUTLET &nbsp;·&nbsp; Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza &nbsp;·&nbsp; Generado el '+new Date().toLocaleDateString('es-ES')+'</div>'
+    +'<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700;margin-top:10px">Imprimir / Guardar PDF</button></center>'
+    +'</body></html>';
+
   var w=window.open('','_blank');if(w){w.document.write(html2);w.document.close();}
 }
 
