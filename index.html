@@ -2062,9 +2062,127 @@ async function generarReporte(tipo,desdeParam,hastaParam){
 
 function descargarReportePDF(){
   if(!rptData.length){toast('No hay datos para el PDF');return;}
+
+  // ── Calcular métricas resumen ──
   var tot=rptData.reduce(function(s,v){return s+Number(v.total||0);},0);
-  var filas=rptData.map(function(v){return '<tr><td>'+v.id+'</td><td>'+fD(v.fecha)+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(getProdNombre(v))+'</td><td style="text-align:center">'+v.cantidad+'</td><td>'+(v.vendedor||'—')+'</td><td style="text-align:right">'+fe(v.total)+'</td><td>'+v.estado+'</td></tr>';}).join('');
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+rptTitleStr+'</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:13px;max-width:900px;margin:0 auto}.top-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:3px solid #C8372D;margin-bottom:20px}.brand-block{display:flex;align-items:center;gap:14px}.logo-img{width:52px;height:52px;border-radius:50%;object-fit:cover}.brand-name{font-size:24px;font-weight:900;color:#C8372D;letter-spacing:3px;line-height:1}.brand-sub{font-size:10px;color:#888;letter-spacing:4px;text-transform:uppercase;margin-top:2px}.doc-meta{text-align:right;font-size:11px;color:#666}.doc-meta b{font-size:15px;color:#1A1A1A;display:block;font-weight:800}.empresa-info{font-size:11px;color:#888;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid #eee}.doc-title{font-size:26px;font-weight:800;color:#1A1A1A;margin-bottom:4px}.doc-period{font-size:13px;color:#666;margin-bottom:18px}table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12px}thead tr{background:#C8372D;color:#fff}th{padding:9px 10px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.4px}th.r,td.r{text-align:right}th.c,td.c{text-align:center}td{padding:8px 10px;border-bottom:1px solid #eee}tr:nth-child(even) td{background:#fafafa}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}.scard{background:#f5f5f5;border-radius:6px;padding:14px;border-left:4px solid #C8372D}.scard-val{font-size:22px;font-weight:900;color:#1A1A1A}.scard-lbl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}.total-bar{background:#C8372D;color:#fff;padding:12px 16px;border-radius:6px;display:flex;justify-content:space-between;font-size:16px;font-weight:800;margin-bottom:20px}.section-title{font-size:13px;font-weight:800;color:#C8372D;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid #C8372D;padding-bottom:5px;margin-bottom:14px}.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700}.badge-comp{background:#E8F5EE;color:#2E7D52}.badge-pend{background:#FEF3C7;color:#92400E}.badge-canc{background:#FEE2E2;color:#991B1B}.footer{text-align:center;font-size:10px;color:#bbb;margin-top:24px;border-top:1px solid #eee;padding-top:12px}.print-btn{display:block;margin:20px auto 0;background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:7px;font-size:14px;cursor:pointer;font-weight:700;letter-spacing:.3px}@media print{.print-btn{display:none!important}body{padding:16px}}</style></head><body><div class="top-header"><div class="brand-block"><img class="logo-img" src="'+window._LOGO_B64+'" alt="DECOTARA"><div><div class="brand-name">DECOTARA</div><div class="brand-sub">OUTLET</div></div></div><div class="doc-meta"><div class="doc-meta-title">'+rptTitleStr+'</div></div></div><div class="empresa-info">DECOTARA OUTLET &nbsp;&middot;&nbsp; Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza &nbsp;&middot;&nbsp; DECOTARAOUTLET@gmail.com</div><table><thead><tr><th>N</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Cant.</th><th>Vendedor</th><th>Total</th><th>Estado</th></tr></thead><tbody>'+filas+'</tbody></table><div class="total-box"><span class="total-label">Total del periodo</span><span class="total-val">'+fe(tot)+'</span></div><div class="footer">DECOTARA OUTLET &nbsp;·&nbsp; Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza &nbsp;·&nbsp; DECOTARAOUTLET@gmail.com &nbsp;·&nbsp; Generado el '+new Date().toLocaleDateString('es-ES')+'</div><br><center><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:10px 28px;border-radius:7px;font-size:14px;cursor:pointer;font-weight:700;margin-top:10px">Imprimir / Guardar como PDF</button></center></body></html>';
+  var numVentas=rptData.length;
+  var ticketMedio=numVentas?tot/numVentas:0;
+
+  // Resumen por vendedor
+  var porVend={};
+  rptData.forEach(function(v){
+    var vend=v.vendedor||'—';
+    if(!porVend[vend]){porVend[vend]={tot:0,n:0};}
+    porVend[vend].tot+=Number(v.total||0);
+    porVend[vend].n++;
+  });
+  var topVend=Object.keys(porVend).sort(function(a,b){return porVend[b].tot-porVend[a].tot;})[0]||'—';
+
+  // Resumen por estado
+  var nComp=rptData.filter(function(v){return v.estado==='Completada';}).length;
+  var nPend=rptData.filter(function(v){return v.estado==='Pendiente';}).length;
+
+  // Filas tabla
+  var filas=rptData.map(function(v){
+    var estado=v.estado||'Completada';
+    var badgeCls=estado==='Completada'?'badge-comp':estado==='Pendiente'?'badge-pend':'badge-canc';
+    return '<tr>'
+      +'<td><span style="font-weight:700;color:#C8372D">'+v.id+'</span></td>'
+      +'<td>'+fD(v.fecha)+'</td>'
+      +'<td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td>'
+      +'<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+getProdNombre(v)+'">'+getProdNombre(v)+'</td>'
+      +'<td style="text-align:center">'+v.cantidad+'</td>'
+      +'<td><b>'+(v.vendedor||'—')+'</b></td>'
+      +'<td style="text-align:right;font-weight:700">'+fe(v.total)+'</td>'
+      +'<td><span class="badge '+badgeCls+'">'+estado+'</span></td>'
+      +'</tr>';
+  }).join('');
+
+  // Tarjetas vendedores
+  var vendCards=Object.keys(porVend).sort(function(a,b){return porVend[b].tot-porVend[a].tot;}).map(function(vend){
+    return '<div class="vc"><div class="vc-name">'+vend+'</div><div class="vc-val">'+fe(porVend[vend].tot)+'</div><div class="vc-cnt">'+porVend[vend].n+' ventas</div></div>';
+  }).join('');
+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+rptTitleStr+'</title><style>'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:13px;max-width:960px;margin:0 auto;background:#fff}'
+    // HEADER
+    +'.top-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:3px solid #C8372D;margin-bottom:8px}'
+    +'.brand-block{display:flex;align-items:center;gap:14px}'
+    +'.logo-img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #C8372D}'
+    +'.brand-name{font-size:26px;font-weight:900;color:#C8372D;letter-spacing:3px;line-height:1}'
+    +'.brand-sub{font-size:10px;color:#888;letter-spacing:4px;text-transform:uppercase;margin-top:2px}'
+    +'.doc-meta{text-align:right}'
+    +'.doc-title{font-size:20px;font-weight:900;color:#1A1A1A}'
+    +'.doc-period{font-size:11px;color:#888;margin-top:3px}'
+    +'.empresa-info{font-size:10.5px;color:#aaa;padding:8px 0 18px;border-bottom:1px solid #f0f0f0;margin-bottom:20px}'
+    // KPI CARDS
+    +'.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}'
+    +'.kpi{background:#fff;border:1.5px solid #ebebeb;border-radius:10px;padding:16px 14px 14px;position:relative;overflow:hidden}'
+    +'.kpi-bar{position:absolute;top:0;left:0;right:0;height:4px}'
+    +'.kpi-lbl{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}'
+    +'.kpi-val{font-size:20px;font-weight:900;color:#1A1A1A;line-height:1}'
+    +'.kpi-sub{font-size:10px;color:#bbb;margin-top:5px}'
+    // TOTAL BAR
+    +'.total-bar{background:linear-gradient(135deg,#B02820,#C8372D);color:#fff;padding:14px 20px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;box-shadow:0 4px 12px rgba(200,55,45,.22)}'
+    +'.total-bar-lbl{font-size:12px;font-weight:700;opacity:.85;text-transform:uppercase;letter-spacing:.5px}'
+    +'.total-bar-num{font-size:26px;font-weight:900}'
+    +'.total-bar-cnt{font-size:11px;opacity:.7;margin-top:2px}'
+    // VENDEDORES
+    +'.section-title{font-size:11px;font-weight:800;color:#C8372D;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid #C8372D;padding-bottom:5px;margin-bottom:14px;margin-top:20px}'
+    +'.vc-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}'
+    +'.vc{background:#fff;border:1.5px solid #ebebeb;border-radius:8px;padding:12px 16px;min-width:130px}'
+    +'.vc-name{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}'
+    +'.vc-val{font-size:17px;font-weight:900;color:#1A1A1A}'
+    +'.vc-cnt{font-size:10px;color:#bbb;margin-top:3px}'
+    // TABLA
+    +'table{width:100%;border-collapse:collapse;font-size:12px}'
+    +'thead tr{background:#1A1A1A;color:#fff}'
+    +'th{padding:9px 10px;text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.3px}'
+    +'td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle}'
+    +'tr:last-child td{border-bottom:none}'
+    +'tr:hover td{background:#fafafa}'
+    +'.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}'
+    +'.badge-comp{background:#dcfce7;color:#15803d}'
+    +'.badge-pend{background:#fef3c7;color:#92400e}'
+    +'.badge-canc{background:#fee2e2;color:#991b1b}'
+    +'.footer{text-align:center;font-size:10px;color:#ccc;margin-top:28px;border-top:1px solid #f0f0f0;padding-top:14px}'
+    +'@media print{.no-print{display:none!important}}'
+    +'</style></head><body>'
+    // HEADER
+    +'<div class="top-header">'
+      +'<div class="brand-block">'
+        +'<img class="logo-img" src="'+window._LOGO_B64+'" alt="DECOTARA">'
+        +'<div><div class="brand-name">DECOTARA</div><div class="brand-sub">OUTLET</div></div>'
+      +'</div>'
+      +'<div class="doc-meta"><div class="doc-title">'+rptTitleStr+'</div><div class="doc-period">Generado el '+new Date().toLocaleDateString('es-ES')+'</div></div>'
+    +'</div>'
+    +'<div class="empresa-info">DECOTARA OUTLET &nbsp;·&nbsp; Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza &nbsp;·&nbsp; DECOTARAOUTLET@gmail.com</div>'
+    // KPI CARDS
+    +'<div class="kpi-grid">'
+      +'<div class="kpi"><div class="kpi-bar" style="background:#C8372D"></div><div class="kpi-lbl">Ventas totales</div><div class="kpi-val">'+numVentas+'</div><div class="kpi-sub">transacciones</div></div>'
+      +'<div class="kpi"><div class="kpi-bar" style="background:#22c55e"></div><div class="kpi-lbl">Completadas</div><div class="kpi-val">'+nComp+'</div><div class="kpi-sub">'+(numVentas?Math.round(nComp/numVentas*100):0)+'% del total</div></div>'
+      +'<div class="kpi"><div class="kpi-bar" style="background:#f59e0b"></div><div class="kpi-lbl">Pendientes</div><div class="kpi-val">'+nPend+'</div><div class="kpi-sub">'+(numVentas-nComp-nPend)+' canceladas</div></div>'
+      +'<div class="kpi"><div class="kpi-bar" style="background:#3b82f6"></div><div class="kpi-lbl">Ticket medio</div><div class="kpi-val">'+fe(ticketMedio)+'</div><div class="kpi-sub">por venta</div></div>'
+    +'</div>'
+    // TOTAL BAR
+    +'<div class="total-bar">'
+      +'<div><div class="total-bar-lbl">Total del periodo</div><div class="total-bar-cnt">'+numVentas+' ventas registradas</div></div>'
+      +'<div class="total-bar-num">'+fe(tot)+'</div>'
+    +'</div>'
+    // VENDEDORES
+    +'<div class="section-title">Desglose por vendedor</div>'
+    +'<div class="vc-grid">'+vendCards+'</div>'
+    // TABLA
+    +'<div class="section-title">Detalle de ventas</div>'
+    +'<table>'
+      +'<thead><tr><th>Nº</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th style="text-align:center">Cant.</th><th>Vendedor</th><th style="text-align:right">Total</th><th>Estado</th></tr></thead>'
+      +'<tbody>'+filas+'</tbody>'
+    +'</table>'
+    +'<div class="footer">DECOTARA OUTLET &nbsp;·&nbsp; Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza &nbsp;·&nbsp; DECOTARAOUTLET@gmail.com &nbsp;·&nbsp; Generado el '+new Date().toLocaleDateString('es-ES')+'</div>'
+    +'<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700;margin-top:10px">Imprimir / Guardar como PDF</button></center>'
+    +'</body></html>';
+
   var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
 }
 
