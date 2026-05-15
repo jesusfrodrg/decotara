@@ -675,7 +675,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <div style="border-top:1px solid var(--lgray);margin-top:4px;padding-top:14px">
         <div style="font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">🏷️ Reporte por vendedor</div>
         <div class="fg" style="gap:8px;margin-bottom:10px">
-          <div class="fi full"><label>Vendedor</label><select id="rpt_cli"><option value="">Seleccionar vendedor...</option><option value="Jaime">Jaime</option><option value="Samanta">Samanta</option><option value="Diana">Diana</option></select></div>
+          <div class="fi full"><label>Vendedor</label><select id="rpt_cli"><option value="">Seleccionar vendedor...</option></select></div>
           <div class="fi"><label>Desde</label><input type="date" id="rpt_cli_desde"></div>
           <div class="fi"><label>Hasta</label><input type="date" id="rpt_cli_hasta"></div>
         </div>
@@ -764,6 +764,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <button class="bn" data-page="catalogo" style="min-height:60px;background:var(--white)"><span class="bi">🛋️</span>Catálogo</button>
     <button class="bn" data-page="clientes" style="min-height:60px;background:var(--white)"><span class="bi">👥</span>Clientes</button>
     <button class="bn" data-page="reportes" style="min-height:60px;background:var(--white)"><span class="bi">📈</span>Reportes</button>
+    <button class="bn" data-page="vendedores" style="min-height:60px;background:var(--white)"><span class="bi">👤</span>Vendedores</button>
   </div>
 </div>
 
@@ -839,7 +840,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
           </div>
         </div>
       </div>
-      <div class="fi"><label>Vendedor</label><select id="cart_vend"><option value="">Seleccionar...</option><option>Jaime</option><option>Samanta</option><option>Diana</option></select></div>
+      <div class="fi"><label>Vendedor</label><select id="cart_vend"><option value="">Seleccionar...</option></select></div>
       <div class="fi"><label>Forma de pago</label><select id="cart_pago"><option value="Efectivo">💵 Efectivo</option><option value="Tarjeta">💳 Tarjeta</option><option value="Transferencia">🏦 Transferencia</option><option value="Efectivo + Tarjeta">💵+💳 Efectivo y Tarjeta</option><option value="Efectivo + Transferencia">💵+🏦 Efectivo y Transferencia</option></select></div>
       <div class="fi"><label>Entrega</label><select id="cart_entrega"><option value="Recogida por el Cliente">🚶 Recogida por el Cliente</option><option value="Transporte y Montaje">🚚 Transporte y Montaje</option></select></div>
       <div class="fi"><label>Fecha entrega</label><input type="date" id="cart_fecha_entrega"></div>
@@ -880,7 +881,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       </div>
     </div>
     <div class="fi"><label>Fecha</label><input type="date" id="v_fecha"></div>
-    <div class="fi"><label>Vendedor <span style="color:var(--red)">*</span></label><select id="v_vend"><option value="">Seleccionar...</option><option>Jaime</option><option>Samanta</option><option>Diana</option></select></div>
+    <div class="fi"><label>Vendedor <span style="color:var(--red)">*</span></label><select id="v_vend"><option value="">Seleccionar...</option></select></div>
 
     <!-- SELECTOR DE PRODUCTOS TIPO CATÁLOGO -->
     <div class="fi full" style="grid-column:1/-1">
@@ -978,6 +979,14 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   </div>
   <div class="mf"><button class="btn bs2" id="btnCPM">Cancelar</button><button class="btn bp" id="btnSP">Guardar</button></div>
 </div></div>
+
+<div class="page" id="page-vendedores">
+  <div class="panel">
+    <div class="ph"><span class="pt">👤 Vendedores</span><button class="btn bp" id="btnNVend">+ Nuevo</button></div>
+    <div id="vend-list" style="margin-top:8px"></div>
+  </div>
+</div>
+
 
 <div class="toast" id="toast"></div>
 
@@ -1209,6 +1218,7 @@ function navTo(page){
   else if(page==='productos')renderProductos();
   else if(page==='caja')renderCaja();
   else if(page==='agenda')renderAgenda();
+  else if(page==='vendedores')renderVendedores();
 }
 
 // ══════ CAJA DIARIA ══════
@@ -1779,6 +1789,8 @@ function showConnError(msg){
 }
 
 async function initApp(){
+  loadVendedores();
+  fillVendSelects();
   var cajafecha=document.getElementById('caja_fecha');
   if(cajafecha)cajafecha.value=new Date().toISOString().split('T')[0];
 
@@ -2020,6 +2032,82 @@ async function renderClientes(){
     var data=await GET(url);
     document.getElementById('clitbody').innerHTML=data.length?data.map(function(c){return '<tr><td><b style="color:var(--blue)">'+c.id+'</b></td><td>'+c.nombre+' '+c.apellidos+'</td><td><span style="font-size:11px;font-weight:600;color:var(--mid)">'+(c.dni||'—')+'</span></td><td>'+(c.telefono||'—')+'</td><td>'+(c.ciudad||'—')+'</td><td><div style="display:flex;gap:3px"><button class="btn btn-sm bs2 bic" data-action="ec" data-id="'+c.id+'">✏️</button><button class="btn btn-sm bd bic" data-action="dc" data-id="'+c.id+'">🗑</button></div></td></tr>';}).join(''):EM(6,'👥','Sin clientes');
   }catch(e){toast('Error: '+e.message);}
+}
+
+
+// ══════ VENDEDORES ══════
+var _vendedores = ['Jaime','Samanta','Diana'];
+
+function loadVendedores(){
+  var v = localStorage.getItem('decotara_vendedores');
+  if(v){try{_vendedores=JSON.parse(v);}catch(e){}}
+}
+
+function saveVendedores(){
+  localStorage.setItem('decotara_vendedores', JSON.stringify(_vendedores));
+}
+
+function getVendedoresOpts(selected){
+  return _vendedores.map(function(v){
+    return '<option'+(v===selected?' selected':'')+'>'+v+'</option>';
+  }).join('');
+}
+
+function fillVendSelects(){
+  var ids=['cart_vend','v_vend','rpt_cli'];
+  ids.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var cur=el.value;
+    if(id==='rpt_cli'){
+      el.innerHTML='<option value="">Seleccionar vendedor...</option>'+getVendedoresOpts(cur);
+    } else {
+      el.innerHTML='<option value="">Seleccionar...</option>'+getVendedoresOpts(cur);
+    }
+  });
+}
+
+function renderVendedores(){
+  loadVendedores();
+  var list=document.getElementById('vend-list');
+  if(!list)return;
+  if(_vendedores.length===0){
+    list.innerHTML='<div style="text-align:center;color:var(--gray);padding:40px 20px;font-size:14px">No hay vendedores. Añade uno con el botón.</div>';
+    return;
+  }
+  list.innerHTML=_vendedores.map(function(v,i){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--xlgray);gap:12px">'
+      +'<div style="display:flex;align-items:center;gap:12px">'
+        +'<div style="width:40px;height:40px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0">'+v.charAt(0).toUpperCase()+'</div>'
+        +'<div style="font-weight:700;font-size:15px;color:var(--black)">'+v+'</div>'
+      +'</div>'
+      +'<button onclick="eliminarVendedor('+i+')" style="background:#fee2e2;color:#c8372d;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Eliminar</button>'
+    +'</div>';
+  }).join('');
+}
+
+function eliminarVendedor(i){
+  if(!confirm('¿Eliminar vendedor "'+_vendedores[i]+'"?'))return;
+  _vendedores.splice(i,1);
+  saveVendedores();
+  renderVendedores();
+  fillVendSelects();
+  toast('Vendedor eliminado');
+}
+
+function agregarVendedor(){
+  var nombre=prompt('Nombre del nuevo vendedor:');
+  if(!nombre)return;
+  nombre=nombre.trim();
+  if(!nombre){toast('Nombre inválido');return;}
+  if(_vendedores.map(function(v){return v.toLowerCase();}).indexOf(nombre.toLowerCase())>=0){
+    toast('Ya existe ese vendedor');return;
+  }
+  _vendedores.push(nombre);
+  saveVendedores();
+  renderVendedores();
+  fillVendSelects();
+  toast('Vendedor añadido: '+nombre);
 }
 
 async function renderProductos(){
