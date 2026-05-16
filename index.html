@@ -598,9 +598,9 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password"
         style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:'Barlow',sans-serif;box-sizing:border-box;outline:none"
         onfocus="this.style.borderColor='#C8372D'" onblur="this.style.borderColor='rgba(255,255,255,.12)'"
-        onkeydown="if(event.key==='Enter')doLogin()">
+        id="loginPassField">
     </div>
-    <button onclick="doLogin()" style="width:100%;padding:13px;background:linear-gradient(135deg,#B02820,#C8372D);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;font-family:'Barlow',sans-serif;letter-spacing:.5px;cursor:pointer;box-shadow:0 4px 16px rgba(200,55,45,.35)">
+    <button id="btnLogin" style="width:100%;padding:13px;background:linear-gradient(135deg,#B02820,#C8372D);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;font-family:'Barlow',sans-serif;letter-spacing:.5px;cursor:pointer;box-shadow:0 4px 16px rgba(200,55,45,.35)">
       Entrar
     </button>
     <div id="loginErr" style="display:none;text-align:center;margin-top:14px;font-size:13px;color:#ff6b6b;font-weight:600"></div>
@@ -1976,6 +1976,11 @@ function showUserMenu(){
 }
 
 // Cerrar menú al clickar fuera
+// Wire login button and enter key
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+var lpf = document.getElementById('loginPassField') || document.getElementById('loginPass');
+if(lpf) lpf.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+
 document.addEventListener('click',function(e){
   var menu=document.getElementById('userMenu');
   var badge=document.getElementById('userBadge');
