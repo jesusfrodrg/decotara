@@ -2546,7 +2546,7 @@ async function openVM(id){
   veditId=id||null;
   vmLineas=[];
   document.getElementById('vm-t').textContent=id?'Editar venta':'Nueva venta';
-  var [cl,pr]=await Promise.all([getCachedClientes(),getCachedProductos()]);
+  var [cl,pr]=await Promise.all([getCachedClientes(true),getCachedProductos()]);
   // Populate cliente selector
   document.getElementById('v_cli').innerHTML='<option value="">Seleccionar...</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.nombre+' '+c.apellidos+'</option>';}).join('');
   // Load products into catalog
@@ -2680,7 +2680,7 @@ async function openCartModal(){
   cartRender();
   cartProdsCache=[];
   loadCartProds();
-  var cl=await GET('/clientes?select=id,nombre,apellidos&order=nombre.asc');
+  var cl=await getCachedClientes(true);
   document.getElementById('cart_cli').innerHTML='<option value="">Seleccionar cliente...</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.nombre+' '+c.apellidos+'</option>';}).join('');
   document.getElementById('cart_fecha').value=new Date().toISOString().split('T')[0];
   document.getElementById('cart_dto').value=0;
@@ -2770,7 +2770,7 @@ async function saveC(){
       var maxN=0;todos.forEach(function(c){var nv=parseInt((c.id||'').replace('CLI-',''))||0;if(nv>maxN)maxN=nv;});
       var nid='CLI-'+String(maxN+1).padStart(3,'0');
       payload.id=nid;payload.fecha_alta=new Date().toISOString().split('T')[0];
-      await POST('/clientes',payload);toast('Cliente creado: '+nid+' ✓');closeM('cm');renderClientes();
+      await POST('/clientes',payload);invalidarCacheClientes();toast('Cliente creado: '+nid+' ✓');closeM('cm');renderClientes();
     }
   }catch(e){toast('Error: '+e.message,5000);console.error('saveC:',e);}
   btn.disabled=false;btn.textContent='Guardar';
