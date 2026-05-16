@@ -891,7 +891,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
           </div>
         </div>
       </div>
-      <div class="fi"><label>Vendedor</label><select id="cart_vend"><option value="">Seleccionar...</option></select></div>
+      <div class="fi"><label>Vendedor</label><div id="cart_vend_display" style="padding:10px 12px;background:var(--xlgray);border-radius:var(--r-sm);font-weight:700;color:var(--black);font-size:14px"></div><input type="hidden" id="cart_vend"></div>
       <div class="fi"><label>Forma de pago</label><select id="cart_pago"><option value="Efectivo">💵 Efectivo</option><option value="Tarjeta">💳 Tarjeta</option><option value="Transferencia">🏦 Transferencia</option><option value="Efectivo + Tarjeta">💵+💳 Efectivo y Tarjeta</option><option value="Efectivo + Transferencia">💵+🏦 Efectivo y Transferencia</option></select></div>
       <div class="fi"><label>Entrega</label><select id="cart_entrega"><option value="Recogida por el Cliente">🚶 Recogida por el Cliente</option><option value="Transporte y Montaje">🚚 Transporte y Montaje</option></select></div>
       <div class="fi"><label>Fecha entrega</label><input type="date" id="cart_fecha_entrega"></div>
@@ -932,7 +932,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       </div>
     </div>
     <div class="fi"><label>Fecha</label><input type="date" id="v_fecha"></div>
-    <div class="fi"><label>Vendedor <span style="color:var(--red)">*</span></label><select id="v_vend"><option value="">Seleccionar...</option></select></div>
+    <div class="fi"><label>Vendedor</label><div id="v_vend_display" style="padding:10px 12px;background:var(--xlgray);border-radius:var(--r-sm);font-weight:700;color:var(--black);font-size:14px"></div><input type="hidden" id="v_vend"></div>
 
     <!-- SELECTOR DE PRODUCTOS TIPO CATÁLOGO -->
     <div class="fi full" style="grid-column:1/-1">
@@ -1033,8 +1033,40 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 
 <div class="page" id="page-vendedores">
   <div class="panel">
-    <div class="ph"><span class="pt">👤 Vendedores</span><button class="btn bp" id="btnNVend">+ Nuevo</button></div>
+    <div class="ph"><span class="pt">👤 Usuarios &amp; Vendedores</span><button class="btn bp" id="btnNVend">+ Nuevo usuario</button></div>
     <div id="vend-list" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO/EDITAR USUARIO -->
+<div class="modal" id="modal-usuario" style="display:none">
+  <div class="modal-box" style="max-width:400px">
+    <div class="mh"><span class="mt" id="mu-title">Nuevo usuario</span><button class="mc" onclick="closeModalUsuario()">✕</button></div>
+    <div class="mb">
+      <div class="fg">
+        <div class="fi full"><label>Nombre completo <span style="color:var(--red)">*</span></label><input type="text" id="mu_nombre" placeholder="Ej: Jaime García"></div>
+        <div class="fi full"><label>Usuario (para login) <span style="color:var(--red)">*</span></label><input type="text" id="mu_user" placeholder="Ej: jaime" autocomplete="off" style="text-transform:lowercase"></div>
+        <div class="fi full"><label>Contraseña <span style="color:var(--red)">*</span></label>
+          <div style="position:relative">
+            <input type="password" id="mu_pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password" style="width:100%;box-sizing:border-box;padding-right:44px">
+            <button type="button" onclick="togglePassVis('mu_pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px">👁</button>
+          </div>
+        </div>
+        <div class="fi full"><label>Rol <span style="color:var(--red)">*</span></label>
+          <select id="mu_rol">
+            <option value="vendedor">Vendedor — solo ventas y agenda</option>
+            <option value="admin">Administrador — acceso total</option>
+          </select>
+        </div>
+        <div class="fi full" id="mu_pass_edit_wrap" style="display:none">
+          <label style="color:var(--gray);font-size:11px">Deja la contraseña en blanco para no cambiarla</label>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bs2" onclick="closeModalUsuario()">Cancelar</button>
+      <button class="btn bp" onclick="guardarUsuario()">Guardar</button>
+    </div>
   </div>
 </div>
 
@@ -1987,7 +2019,6 @@ function changePassword(){
 function isAdmin(){return _currentUser && _currentUser.role==='admin';}
 
 async function initApp(){
-  loadVendedores();
   fillVendSelects();
   var cajafecha=document.getElementById('caja_fecha');
   if(cajafecha)cajafecha.value=new Date().toISOString().split('T')[0];
@@ -2233,79 +2264,183 @@ async function renderClientes(){
 }
 
 
-// ══════ VENDEDORES ══════
-var _vendedores = ['Jaime','Samanta','Diana'];
+// ══════ GESTIÓN DE USUARIOS / VENDEDORES ══════
 
-function loadVendedores(){
-  var v = localStorage.getItem('decotara_vendedores');
-  if(v){try{_vendedores=JSON.parse(v);}catch(e){}}
-}
-
-function saveVendedores(){
-  localStorage.setItem('decotara_vendedores', JSON.stringify(_vendedores));
-}
+var _muEditUser = null; // username being edited
 
 function getVendedoresOpts(selected){
-  return _vendedores.map(function(v){
-    return '<option'+(v===selected?' selected':'')+'>'+v+'</option>';
+  var users = getAuthUsers().filter(function(u){return u.role==='vendedor';});
+  return users.map(function(u){
+    return '<option'+(u.nombre===selected?' selected':'')+'>'+u.nombre+'</option>';
   }).join('');
 }
 
 function fillVendSelects(){
-  var ids=['cart_vend','v_vend','rpt_cli'];
-  ids.forEach(function(id){
-    var el=document.getElementById(id);
-    if(!el)return;
-    var cur=el.value;
-    if(id==='rpt_cli'){
-      el.innerHTML='<option value="">Seleccionar vendedor...</option>'+getVendedoresOpts(cur);
-    } else {
-      el.innerHTML='<option value="">Seleccionar...</option>'+getVendedoresOpts(cur);
-    }
-  });
+  // rpt_cli sigue siendo select (para filtrar reportes por vendedor)
+  var rpt=document.getElementById('rpt_cli');
+  if(rpt){
+    var cur=rpt.value;
+    var users=getAuthUsers();
+    var opts=users.map(function(u){return '<option'+(u.nombre===cur?' selected':'')+'>'+u.nombre+'</option>';}).join('');
+    rpt.innerHTML='<option value="">Todos los vendedores</option>'+opts;
+  }
+  setVendedorActual();
+}
+
+function setVendedorActual(){
+  if(!_currentUser)return;
+  var nombre=_currentUser.nombre;
+  var cv=document.getElementById('cart_vend');
+  var cvd=document.getElementById('cart_vend_display');
+  if(cv)cv.value=nombre;
+  if(cvd)cvd.textContent=nombre;
+  var vv=document.getElementById('v_vend');
+  var vvd=document.getElementById('v_vend_display');
+  if(vv)vv.value=nombre;
+  if(vvd)vvd.textContent=nombre;
 }
 
 function renderVendedores(){
-  loadVendedores();
+  if(!isAdmin()){toast('Solo el administrador puede gestionar usuarios');navTo('dashboard');return;}
+  var users=getAuthUsers();
   var list=document.getElementById('vend-list');
   if(!list)return;
-  if(_vendedores.length===0){
-    list.innerHTML='<div style="text-align:center;color:var(--gray);padding:40px 20px;font-size:14px">No hay vendedores. Añade uno con el botón.</div>';
-    return;
-  }
-  list.innerHTML=_vendedores.map(function(v,i){
+
+  var html='';
+  // Group by role
+  var admins=users.filter(function(u){return u.role==='admin';});
+  var vendedores=users.filter(function(u){return u.role==='vendedor';});
+
+  function userCard(u){
+    var isMe=_currentUser&&_currentUser.user===u.user;
+    var roleLabel=u.role==='admin'
+      ?'<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700">👑 Admin</span>'
+      :'<span style="background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700">👤 Vendedor</span>';
+    var bgColor=u.role==='admin'?'#B02820':'#5b21b6';
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--xlgray);gap:12px">'
-      +'<div style="display:flex;align-items:center;gap:12px">'
-        +'<div style="width:40px;height:40px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0">'+v.charAt(0).toUpperCase()+'</div>'
-        +'<div style="font-weight:700;font-size:15px;color:var(--black)">'+v+'</div>'
+      +'<div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">'
+        +'<div style="width:44px;height:44px;border-radius:50%;background:'+bgColor+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex-shrink:0">'+u.nombre.charAt(0).toUpperCase()+'</div>'
+        +'<div style="min-width:0">'
+          +'<div style="font-weight:700;font-size:15px;color:var(--black);display:flex;align-items:center;gap:6px">'+u.nombre+(isMe?' <span style="font-size:10px;color:var(--gray)">(tú)</span>':'')+'</div>'
+          +'<div style="font-size:12px;color:var(--gray);margin-top:2px">@'+u.user+'</div>'
+          +'<div style="margin-top:4px">'+roleLabel+'</div>'
+        +'</div>'
       +'</div>'
-      +'<button onclick="eliminarVendedor('+i+')" style="background:#fee2e2;color:#c8372d;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Eliminar</button>'
+      +'<div style="display:flex;gap:6px;flex-shrink:0">'
+        +'<button onclick="editarUsuario(''+u.user+'')" style="background:var(--xlgray);color:var(--black);border:none;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">✏️</button>'
+        +(isMe?'':'<button onclick="eliminarUsuario(''+u.user+'')" style="background:#fee2e2;color:#c8372d;border:none;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">🗑️</button>')
+      +'</div>'
     +'</div>';
-  }).join('');
-}
-
-function eliminarVendedor(i){
-  if(!confirm('¿Eliminar vendedor "'+_vendedores[i]+'"?'))return;
-  _vendedores.splice(i,1);
-  saveVendedores();
-  renderVendedores();
-  fillVendSelects();
-  toast('Vendedor eliminado');
-}
-
-function agregarVendedor(){
-  var nombre=prompt('Nombre del nuevo vendedor:');
-  if(!nombre)return;
-  nombre=nombre.trim();
-  if(!nombre){toast('Nombre inválido');return;}
-  if(_vendedores.map(function(v){return v.toLowerCase();}).indexOf(nombre.toLowerCase())>=0){
-    toast('Ya existe ese vendedor');return;
   }
-  _vendedores.push(nombre);
-  saveVendedores();
-  renderVendedores();
+
+  if(admins.length){
+    html+='<div style="padding:10px 16px 6px;font-size:10px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;background:var(--xlgray)">Administradores</div>';
+    html+=admins.map(userCard).join('');
+  }
+  if(vendedores.length){
+    html+='<div style="padding:10px 16px 6px;font-size:10px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;background:var(--xlgray)">Vendedores</div>';
+    html+=vendedores.map(userCard).join('');
+  }
+  if(!users.length){
+    html='<div style="text-align:center;color:var(--gray);padding:40px 20px;font-size:14px">No hay usuarios. Crea uno con el botón.</div>';
+  }
+  list.innerHTML=html;
+}
+
+function openModalUsuario(){
+  _muEditUser=null;
+  document.getElementById('mu-title').textContent='Nuevo usuario';
+  document.getElementById('mu_nombre').value='';
+  document.getElementById('mu_user').value='';
+  document.getElementById('mu_pass').value='';
+  document.getElementById('mu_rol').value='vendedor';
+  document.getElementById('mu_pass_edit_wrap').style.display='none';
+  document.getElementById('mu_pass').placeholder='Mínimo 6 caracteres';
+  document.getElementById('modal-usuario').style.display='flex';
+}
+
+function editarUsuario(username){
+  var users=getAuthUsers();
+  var u=users.find(function(x){return x.user===username;});
+  if(!u)return;
+  _muEditUser=username;
+  document.getElementById('mu-title').textContent='Editar usuario';
+  document.getElementById('mu_nombre').value=u.nombre;
+  document.getElementById('mu_user').value=u.user;
+  document.getElementById('mu_pass').value='';
+  document.getElementById('mu_pass').placeholder='Dejar vacío para no cambiar';
+  document.getElementById('mu_rol').value=u.role;
+  document.getElementById('mu_pass_edit_wrap').style.display='block';
+  document.getElementById('modal-usuario').style.display='flex';
+}
+
+function closeModalUsuario(){
+  document.getElementById('modal-usuario').style.display='none';
+  _muEditUser=null;
+}
+
+function togglePassVis(inputId, btn){
+  var el=document.getElementById(inputId);
+  if(el.type==='password'){el.type='text';btn.textContent='🙈';}
+  else{el.type='password';btn.textContent='👁';}
+}
+
+function guardarUsuario(){
+  var nombre=document.getElementById('mu_nombre').value.trim();
+  var username=document.getElementById('mu_user').value.trim().toLowerCase();
+  var pass=document.getElementById('mu_pass').value;
+  var rol=document.getElementById('mu_rol').value;
+
+  if(!nombre){toast('El nombre es obligatorio');return;}
+  if(!username){toast('El usuario es obligatorio');return;}
+  if(!/^[a-z0-9_]+$/.test(username)){toast('El usuario solo puede contener letras, números y _');return;}
+
+  var users=getAuthUsers();
+
+  if(_muEditUser){
+    // EDITAR
+    var idx=users.findIndex(function(x){return x.user===_muEditUser;});
+    if(idx<0)return;
+    // Check username conflict (excluding self)
+    var conflict=users.find(function(x){return x.user===username&&x.user!==_muEditUser;});
+    if(conflict){toast('Ese nombre de usuario ya existe');return;}
+    if(pass&&pass.length<6){toast('La contraseña debe tener al menos 6 caracteres');return;}
+    users[idx].nombre=nombre;
+    users[idx].user=username;
+    users[idx].role=rol;
+    if(pass)users[idx].hash=simpleHash(pass);
+    saveAuthUsers(users);
+    // Update session if editing self
+    if(_currentUser&&_currentUser.user===_muEditUser){
+      _currentUser.nombre=nombre;_currentUser.user=username;_currentUser.role=rol;
+      saveSession(_currentUser);showUserBadge();
+    }
+    toast('Usuario actualizado ✓');
+  } else {
+    // CREAR
+    if(users.find(function(x){return x.user===username;})){toast('Ese nombre de usuario ya existe');return;}
+    if(!pass||pass.length<6){toast('La contraseña debe tener al menos 6 caracteres');return;}
+    users.push({user:username,hash:simpleHash(pass),role:rol,nombre:nombre});
+    saveAuthUsers(users);
+    toast('Usuario creado: '+nombre+' ✓');
+  }
+
   fillVendSelects();
-  toast('Vendedor añadido: '+nombre);
+  closeModalUsuario();
+  renderVendedores();
+}
+
+function eliminarUsuario(username){
+  if(_currentUser&&_currentUser.user===username){toast('No puedes eliminar tu propio usuario');return;}
+  var users=getAuthUsers();
+  var u=users.find(function(x){return x.user===username;});
+  if(!u)return;
+  if(!confirm('¿Eliminar usuario "'+u.nombre+'" (@'+username+')?
+Esta acción no se puede deshacer.'))return;
+  saveAuthUsers(users.filter(function(x){return x.user!==username;}));
+  fillVendSelects();
+  renderVendedores();
+  toast('Usuario eliminado');
 }
 
 async function renderProductos(){
@@ -2559,6 +2694,7 @@ async function openVM(id){
   document.getElementById('vm_prod_cat').value='';
   renderVMCatalog();
   renderVMLineas();
+  if(!id) setVendedorActual();
   if(id){
     // Edit mode: load single venta
     var rows=await GET('/ventas?select=*&id=eq.'+id);var v=rows[0];
@@ -2569,6 +2705,7 @@ async function openVM(id){
       document.getElementById('v_est').value=v.estado||'Completada';
       document.getElementById('v_not').value=v.notas||'';
       document.getElementById('v_vend').value=v.vendedor||'';
+    var vvd2=document.getElementById('v_vend_display');if(vvd2)vvd2.textContent=v.vendedor||'—';
       document.getElementById('v_pago').value=v.forma_pago||'Efectivo';
       document.getElementById('v_entrega').value=v.entrega||'Recogida por el Cliente';
       document.getElementById('v_fecha_entrega').value=v.fecha_entrega||'';
@@ -2586,7 +2723,7 @@ async function openVM(id){
     document.getElementById('v_fecha').value=new Date().toISOString().split('T')[0];
     document.getElementById('v_dto').value=0;
     document.getElementById('v_est').value='Completada';
-    document.getElementById('v_vend').value='';
+    setVendedorActual();
     document.getElementById('v_pago').value='Efectivo';
     document.getElementById('v_entrega').value='Recogida por el Cliente';
     document.getElementById('v_fecha_entrega').value='';
@@ -2629,7 +2766,7 @@ async function saveV(){
   var entrega=document.getElementById('v_entrega').value;
   var fechaE=document.getElementById('v_fecha_entrega').value;
   if(!cId||!fecha){toast('Selecciona cliente y fecha');return;}
-  if(!vend){toast('Selecciona un vendedor');document.getElementById('v_vend').focus();return;}
+  if(!vend){toast('Error: no hay vendedor asignado');return;}
   if(!vmLineas.length){toast('Añade al menos un artículo');return;}
   var btn=document.getElementById('btnSV');btn.disabled=true;btn.textContent='Guardando...';
   try{
@@ -2687,7 +2824,7 @@ async function openCartModal(){
   document.getElementById('cart_cli').innerHTML='<option value="">Seleccionar cliente...</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.nombre+' '+c.apellidos+'</option>';}).join('');
   document.getElementById('cart_fecha').value=new Date().toISOString().split('T')[0];
   document.getElementById('cart_dto').value=0;
-  document.getElementById('cart_vend').value='';
+  setVendedorActual();
   document.getElementById('cart_pago').value='Efectivo';
   document.getElementById('cart_entrega').value='Recogida por el Cliente';
   document.getElementById('cart_fecha_entrega').value='';
@@ -2851,6 +2988,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('btnSCart').addEventListener('click',saveCart);
   document.getElementById('btnNV').addEventListener('click',function(){openVM(null);});
   document.getElementById('btnNC').addEventListener('click',function(){openCM(null);});
+  document.getElementById('btnNVend').addEventListener('click',openModalUsuario);
   document.getElementById('btnNP').addEventListener('click',function(){openPM(null);});
   document.getElementById('btnNPcat').addEventListener('click',function(){openPM(null);});
   document.getElementById('rptDia').addEventListener('click',function(){generarReporte('dia');});
