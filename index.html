@@ -583,22 +583,19 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 <div id="loginScreen" style="display:flex;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1a0a0a 0%,#2d1010 50%,#1a0a0a 100%);align-items:center;justify-content:center;flex-direction:column;font-family:'Barlow',sans-serif">
   <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:40px 36px;width:340px;max-width:90vw;box-shadow:0 24px 60px rgba(0,0,0,.5)">
     <div style="text-align:center;margin-bottom:32px">
-      <img src="" id="loginLogo" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #C8372D;display:block;margin:0 auto 14px">
+      <img id="loginLogo" src="" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #C8372D;display:block;margin:0 auto 14px">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:4px;color:#C8372D">DECOTARA</div>
       <div style="font-size:10px;color:rgba(255,255,255,.4);letter-spacing:4px;text-transform:uppercase;margin-top:4px">OUTLET · Sistema de Gestión</div>
     </div>
     <div style="margin-bottom:16px">
       <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Usuario</label>
       <input id="loginUser" type="text" placeholder="Tu nombre de usuario" autocomplete="username"
-        style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:'Barlow',sans-serif;box-sizing:border-box;outline:none"
-        onfocus="this.style.borderColor='#C8372D'" onblur="this.style.borderColor='rgba(255,255,255,.12)'">
+        style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:'Barlow',sans-serif;box-sizing:border-box;outline:none">
     </div>
     <div style="margin-bottom:24px">
       <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Contraseña</label>
       <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password"
-        style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:'Barlow',sans-serif;box-sizing:border-box;outline:none"
-        onfocus="this.style.borderColor='#C8372D'" onblur="this.style.borderColor='rgba(255,255,255,.12)'"
-        id="loginPassField">
+        style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:'Barlow',sans-serif;box-sizing:border-box;outline:none">
     </div>
     <button id="btnLogin" style="width:100%;padding:13px;background:linear-gradient(135deg,#B02820,#C8372D);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;font-family:'Barlow',sans-serif;letter-spacing:.5px;cursor:pointer;box-shadow:0 4px 16px rgba(200,55,45,.35)">
       Entrar
@@ -606,8 +603,46 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <div id="loginErr" style="display:none;text-align:center;margin-top:14px;font-size:13px;color:#ff6b6b;font-weight:600"></div>
   </div>
   <div style="margin-top:20px;font-size:11px;color:rgba(255,255,255,.2)">DECOTARA OUTLET &copy; 2025</div>
-  <button onclick="localStorage.removeItem('decotara_users');location.reload();" style="margin-top:10px;background:none;border:none;color:rgba(255,255,255,.15);font-size:10px;cursor:pointer;text-decoration:underline">Restablecer usuarios</button>
+  <button id="btnResetUsers" style="margin-top:10px;background:none;border:none;color:rgba(255,255,255,.15);font-size:10px;cursor:pointer;text-decoration:underline">Restablecer usuarios</button>
 </div>
+<script>
+// Login inline - runs immediately, no dependency on main script
+(function(){
+  function sh(s){var h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return h.toString(36);}
+  function tryLogin(){
+    var u=(document.getElementById('loginUser').value||'').trim().toLowerCase();
+    var p=document.getElementById('loginPass').value||'';
+    var err=document.getElementById('loginErr');
+    if(!u||!p){err.textContent='Completa todos los campos';err.style.display='block';return;}
+    var stored=localStorage.getItem('decotara_users');
+    var users;
+    try{users=JSON.parse(stored);}catch(e){users=null;}
+    if(!users||!users[0]||!users[0].hash){
+      users=[
+        {user:'admin',hash:sh('decotara2025'),role:'admin',nombre:'Administrador'},
+        {user:'diana',hash:sh('vendedor123'),role:'admin',nombre:'Diana'},
+        {user:'jaime',hash:sh('vendedor123'),role:'vendedor',nombre:'Jaime'},
+        {user:'samanta',hash:sh('vendedor123'),role:'vendedor',nombre:'Samanta'}
+      ];
+      localStorage.setItem('decotara_users',JSON.stringify(users));
+    }
+    var found=null;
+    for(var i=0;i<users.length;i++){if(users[i].user===u&&users[i].hash===sh(p)){found=users[i];break;}}
+    if(!found){
+      err.textContent='Usuario o contraseña incorrectos';err.style.display='block';
+      document.getElementById('loginPass').value='';return;
+    }
+    // Save session
+    localStorage.setItem('decotara_session',JSON.stringify({user:found.user,role:found.role,nombre:found.nombre,time:Date.now()}));
+    // Hide login and trigger app
+    document.getElementById('loginScreen').style.display='none';
+    if(typeof window.onLoginSuccess==='function') window.onLoginSuccess(found);
+  }
+  document.getElementById('btnLogin').addEventListener('click', tryLogin);
+  document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')tryLogin();});
+  document.getElementById('btnResetUsers').addEventListener('click',function(){localStorage.removeItem('decotara_users');location.reload();});
+})();
+</script>
 
 <!-- Badge usuario movido al topbar -->
 
@@ -1935,24 +1970,18 @@ function saveSession(user){
 }
 
 function doLogin(){
-  var u=document.getElementById('loginUser').value.trim().toLowerCase();
-  var p=document.getElementById('loginPass').value;
-  var errEl=document.getElementById('loginErr');
-  if(!u||!p){errEl.textContent='Completa todos los campos';errEl.style.display='block';return;}
-  var users=getAuthUsers();
-  var found=users.find(function(x){return x.user===u && x.hash===simpleHash(p);});
-  if(!found){
-    errEl.textContent='Usuario o contraseña incorrectos';errEl.style.display='block';
-    document.getElementById('loginPass').value='';
-    return;
-  }
+  // Login now handled by inline script - this is kept for compatibility
+  var sess=checkSession();
+  if(sess){_currentUser=sess;document.getElementById('loginScreen').style.display='none';showUserBadge();applyRoleRestrictions();initApp();}
+}
+
+// Called by inline login script on success
+window.onLoginSuccess=function(found){
   _currentUser=found;
-  saveSession(found);
-  document.getElementById('loginScreen').style.display='none';
   showUserBadge();
   applyRoleRestrictions();
   initApp();
-}
+};
 
 function doLogout(){
   localStorage.removeItem(_AUTH_SESSION_KEY);
@@ -2953,11 +2982,6 @@ async function saveP(){
 
 // INIT
 document.addEventListener('DOMContentLoaded',function(){
-  // Wire login button
-  document.getElementById('btnLogin').addEventListener('click', doLogin);
-  var lpf = document.getElementById('loginPass');
-  if(lpf) lpf.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
-
   document.getElementById('bnav').addEventListener('click',function(e){
     var btn=e.target.closest('[data-page]');
     if(btn){document.getElementById('masMenu').style.display='none';navTo(btn.dataset.page);return;}
@@ -3197,10 +3221,8 @@ document.addEventListener('DOMContentLoaded',function(){
     showUserBadge();
     applyRoleRestrictions();
     initApp();
-  } else {
-    // Show login, don't call initApp yet
-    document.getElementById('loginScreen').style.display = 'flex';
   }
+  // If no session, inline login script handles showing the form
 });
 </script>
 </body>
