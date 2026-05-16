@@ -606,6 +606,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <div id="loginErr" style="display:none;text-align:center;margin-top:14px;font-size:13px;color:#ff6b6b;font-weight:600"></div>
   </div>
   <div style="margin-top:20px;font-size:11px;color:rgba(255,255,255,.2)">DECOTARA OUTLET &copy; 2025</div>
+  <button onclick="localStorage.removeItem('decotara_users');location.reload();" style="margin-top:10px;background:none;border:none;color:rgba(255,255,255,.15);font-size:10px;cursor:pointer;text-decoration:underline">Restablecer usuarios</button>
 </div>
 
 <!-- Badge usuario movido al topbar -->
@@ -1893,7 +1894,13 @@ function simpleHash(str){
 
 function getAuthUsers(){
   var stored=localStorage.getItem(_AUTH_USERS_KEY);
-  if(stored){try{return JSON.parse(stored);}catch(e){}}
+  if(stored){
+    try{
+      var parsed=JSON.parse(stored);
+      // Safety: if users exist but have no hash, reset to defaults
+      if(Array.isArray(parsed) && parsed.length>0 && parsed[0].hash) return parsed;
+    }catch(e){}
+  }
   // Usuarios por defecto
   var defaults=[
     {user:'admin',hash:simpleHash('decotara2025'),role:'admin',nombre:'Administrador'},
@@ -1976,11 +1983,6 @@ function showUserMenu(){
 }
 
 // Cerrar menú al clickar fuera
-// Wire login button and enter key
-document.getElementById('btnLogin').addEventListener('click', doLogin);
-var lpf = document.getElementById('loginPassField') || document.getElementById('loginPass');
-if(lpf) lpf.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
-
 document.addEventListener('click',function(e){
   var menu=document.getElementById('userMenu');
   var badge=document.getElementById('userBadge');
@@ -2951,6 +2953,11 @@ async function saveP(){
 
 // INIT
 document.addEventListener('DOMContentLoaded',function(){
+  // Wire login button
+  document.getElementById('btnLogin').addEventListener('click', doLogin);
+  var lpf = document.getElementById('loginPass');
+  if(lpf) lpf.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+
   document.getElementById('bnav').addEventListener('click',function(e){
     var btn=e.target.closest('[data-page]');
     if(btn){document.getElementById('masMenu').style.display='none';navTo(btn.dataset.page);return;}
