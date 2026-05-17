@@ -2304,7 +2304,7 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
 
   var filas=ventas.map(function(v){
     return '<tr>'
-      +'<td>'+getProdNombre(v)+'</td>'
+      +'<td>'+(v.prod_nombre||getProdNombre(v)||'—')+'</td>'
       +'<td class="center">'+v.cantidad+'</td>'
       +'<td class="right">'+fe(v.pvp)+'</td>'
       +(dto>0?'<td class="right">'+dto+'%</td>':'')
