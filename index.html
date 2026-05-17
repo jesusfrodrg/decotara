@@ -580,83 +580,6 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 </head>
 <body>
 
-<!-- ══════ PANTALLA LOGIN ══════ -->
-<div id="loginScreen" style="display:flex;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1a0a0a 0%,#2d1010 50%,#1a0a0a 100%);align-items:center;justify-content:center;flex-direction:column;font-family:'Barlow',sans-serif">
-  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:40px 36px;width:340px;max-width:90vw;box-shadow:0 24px 60px rgba(0,0,0,.5)">
-    <div style="text-align:center;margin-bottom:32px">
-      <img id="loginLogo" src="" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #C8372D;display:block;margin:0 auto 14px">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:4px;color:#C8372D">DECOTARA</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.4);letter-spacing:4px;text-transform:uppercase;margin-top:4px">OUTLET · Sistema de Gestión</div>
-    </div>
-    <div style="margin-bottom:16px">
-      <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Usuario</label>
-      <input id="loginUser" type="text" placeholder="Tu nombre de usuario" autocomplete="username"
-        style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:'Barlow',sans-serif;box-sizing:border-box;outline:none">
-    </div>
-    <div style="margin-bottom:24px">
-      <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Contraseña</label>
-      <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password"
-        style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:'Barlow',sans-serif;box-sizing:border-box;outline:none">
-    </div>
-    <button id="btnLogin" style="width:100%;padding:13px;background:linear-gradient(135deg,#B02820,#C8372D);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;font-family:'Barlow',sans-serif;letter-spacing:.5px;cursor:pointer;box-shadow:0 4px 16px rgba(200,55,45,.35)">
-      Entrar
-    </button>
-    <div id="loginErr" style="display:none;text-align:center;margin-top:14px;font-size:13px;color:#ff6b6b;font-weight:600"></div>
-  </div>
-  <div style="margin-top:20px;font-size:11px;color:rgba(255,255,255,.2)">DECOTARA OUTLET &copy; 2025</div>
-  <button id="btnResetUsers" style="margin-top:10px;background:none;border:none;color:rgba(255,255,255,.15);font-size:10px;cursor:pointer;text-decoration:underline">Restablecer usuarios</button>
-</div>
-<script>
-// Login inline - runs immediately, no dependency on main script
-(function(){
-  function sh(s){var h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return h.toString(36);}
-  function tryLogin(){
-    var u=(document.getElementById('loginUser').value||'').trim().toLowerCase();
-    var p=document.getElementById('loginPass').value||'';
-    var err=document.getElementById('loginErr');
-    if(!u||!p){err.textContent='Completa todos los campos';err.style.display='block';return;}
-    var stored=localStorage.getItem('decotara_users');
-    var users;
-    try{users=JSON.parse(stored);}catch(e){users=null;}
-    if(!users||!users[0]||!users[0].hash){
-      users=[
-        {user:'admin',hash:sh('decotara2025'),role:'admin',nombre:'Administrador'},
-        {user:'diana',hash:sh('vendedor123'),role:'admin',nombre:'Diana'},
-        {user:'jaime',hash:sh('vendedor123'),role:'vendedor',nombre:'Jaime'},
-        {user:'samanta',hash:sh('vendedor123'),role:'vendedor',nombre:'Samanta'}
-      ];
-      localStorage.setItem('decotara_users',JSON.stringify(users));
-    }
-    var found=null;
-    for(var i=0;i<users.length;i++){if(users[i].user===u&&users[i].hash===sh(p)){found=users[i];break;}}
-    if(!found){
-      err.textContent='Usuario o contraseña incorrectos';err.style.display='block';
-      document.getElementById('loginPass').value='';return;
-    }
-    // Save session
-    localStorage.setItem('decotara_session',JSON.stringify({user:found.user,role:found.role,nombre:found.nombre,time:Date.now()}));
-    // Hide login and trigger app
-    document.getElementById('loginScreen').style.display='none';
-    if(typeof window.onLoginSuccess==='function') window.onLoginSuccess(found);
-  }
-  document.getElementById('btnLogin').addEventListener('click', tryLogin);
-  document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')tryLogin();});
-  document.getElementById('btnResetUsers').addEventListener('click',function(){localStorage.removeItem('decotara_users');location.reload();});
-})();
-</script>
-
-<!-- Badge usuario movido al topbar -->
-
-<!-- ══════ MENÚ USUARIO ══════ -->
-<div id="userMenu" style="display:none;position:fixed;top:65px;right:10px;z-index:201;background:#fff;border:1.5px solid var(--lgray);border-radius:12px;padding:8px 0;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.2)">
-  <div style="padding:10px 16px 8px;border-bottom:1px solid var(--xlgray)">
-    <div id="menuUserName" style="font-weight:800;font-size:14px;color:var(--black)"></div>
-    <div id="menuUserRole" style="font-size:11px;color:var(--gray);margin-top:2px"></div>
-  </div>
-  <button onclick="changePassword()" style="width:100%;text-align:left;padding:10px 16px;border:none;background:none;font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer;color:var(--black)">🔑 Cambiar contraseña</button>
-  <button onclick="doLogout()" style="width:100%;text-align:left;padding:10px 16px;border:none;background:none;font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer;color:#C8372D;font-weight:700">🚪 Cerrar sesión</button>
-</div>
-
 <div id="dbg-bar" style="display:none;position:fixed;top:60px;left:0;right:0;background:rgba(0,0,0,.85);color:#fff;font-size:12px;font-family:monospace;padding:7px 14px;z-index:99999;text-align:center;"></div>
 
 <!-- TOPBAR -->
@@ -670,9 +593,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <div class="topbar-actions">
       <button class="bell-btn" id="bellBtn" title="Alertas de stock">🔔<span class="bell-badge" id="bellBadge">0</span></button>
       <button class="cart-btn" id="cartBtn">🛒<span class="cart-count" id="cartCount">0</span></button>
-      <button id="userBadge" onclick="showUserMenu()" title="Mi cuenta" style="display:none;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);border-radius:50%;width:34px;height:34px;cursor:pointer;align-items:center;justify-content:center;font-size:15px;color:#fff;flex-shrink:0;padding:0">
-        <span id="userBadgeIcon">👤</span><span id="userBadgeName" style="display:none"></span>
-      </button>
+
     </div>
   </div>
 </div>
@@ -928,7 +849,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
           </div>
         </div>
       </div>
-      <div class="fi"><label>Vendedor</label><div id="cart_vend_display" style="padding:10px 12px;background:var(--xlgray);border-radius:var(--r-sm);font-weight:700;color:var(--black);font-size:14px"></div><input type="hidden" id="cart_vend"></div>
+      <div class="fi"><label>Vendedor <span style="color:var(--red)">*</span></label><select id="cart_vend"><option value="">Seleccionar...</option></select></div>
       <div class="fi"><label>Forma de pago</label><select id="cart_pago"><option value="Efectivo">💵 Efectivo</option><option value="Tarjeta">💳 Tarjeta</option><option value="Transferencia">🏦 Transferencia</option><option value="Efectivo + Tarjeta">💵+💳 Efectivo y Tarjeta</option><option value="Efectivo + Transferencia">💵+🏦 Efectivo y Transferencia</option></select></div>
       <div class="fi"><label>Entrega</label><select id="cart_entrega"><option value="Recogida por el Cliente">🚶 Recogida por el Cliente</option><option value="Transporte y Montaje">🚚 Transporte y Montaje</option></select></div>
       <div class="fi"><label>Fecha entrega</label><input type="date" id="cart_fecha_entrega"></div>
@@ -969,7 +890,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       </div>
     </div>
     <div class="fi"><label>Fecha</label><input type="date" id="v_fecha"></div>
-    <div class="fi"><label>Vendedor</label><div id="v_vend_display" style="padding:10px 12px;background:var(--xlgray);border-radius:var(--r-sm);font-weight:700;color:var(--black);font-size:14px"></div><input type="hidden" id="v_vend"></div>
+    <div class="fi"><label>Vendedor <span style="color:var(--red)">*</span></label><select id="v_vend"><option value="">Seleccionar...</option></select></div>
 
     <!-- SELECTOR DE PRODUCTOS TIPO CATÁLOGO -->
     <div class="fi full" style="grid-column:1/-1">
@@ -1072,38 +993,6 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   <div class="panel">
     <div class="ph"><span class="pt">👤 Usuarios &amp; Vendedores</span><button class="btn bp" id="btnNVend">+ Nuevo usuario</button></div>
     <div id="vend-list" style="margin-top:8px"></div>
-  </div>
-</div>
-
-<!-- MODAL NUEVO/EDITAR USUARIO -->
-<div class="modal" id="modal-usuario" style="display:none">
-  <div class="modal-box" style="max-width:400px">
-    <div class="mh"><span class="mt" id="mu-title">Nuevo usuario</span><button class="mc" onclick="closeModalUsuario()">✕</button></div>
-    <div class="mb">
-      <div class="fg">
-        <div class="fi full"><label>Nombre completo <span style="color:var(--red)">*</span></label><input type="text" id="mu_nombre" placeholder="Ej: Jaime García"></div>
-        <div class="fi full"><label>Usuario (para login) <span style="color:var(--red)">*</span></label><input type="text" id="mu_user" placeholder="Ej: jaime" autocomplete="off" style="text-transform:lowercase"></div>
-        <div class="fi full"><label>Contraseña <span style="color:var(--red)">*</span></label>
-          <div style="position:relative">
-            <input type="password" id="mu_pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password" style="width:100%;box-sizing:border-box;padding-right:44px">
-            <button type="button" onclick="togglePassVis('mu_pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px">👁</button>
-          </div>
-        </div>
-        <div class="fi full"><label>Rol <span style="color:var(--red)">*</span></label>
-          <select id="mu_rol">
-            <option value="vendedor">Vendedor — solo ventas y agenda</option>
-            <option value="admin">Administrador — acceso total</option>
-          </select>
-        </div>
-        <div class="fi full" id="mu_pass_edit_wrap" style="display:none">
-          <label style="color:var(--gray);font-size:11px">Deja la contraseña en blanco para no cambiarla</label>
-        </div>
-      </div>
-    </div>
-    <div class="mf">
-      <button class="btn bs2" onclick="closeModalUsuario()">Cancelar</button>
-      <button class="btn bp" onclick="guardarUsuario()">Guardar</button>
-    </div>
   </div>
 </div>
 
@@ -1918,201 +1807,35 @@ function showConnError(msg){
 }
 
 
-// ══════════════════════════════════════════════
-// SISTEMA DE AUTENTICACIÓN
-// ══════════════════════════════════════════════
-
-// Usuarios predefinidos: { user, pass (hashed), role: 'admin'|'vendedor', nombre }
-// Contraseñas por defecto: Admin=decotara2025 | Vendedores=vendedor123
-// Las contraseñas se almacenan en localStorage como hash simple
-
-var _AUTH_USERS_KEY = 'decotara_users';
-var _AUTH_SESSION_KEY = 'decotara_session';
-var _currentUser = null;
-
-// Hash simple (no criptográfico, suficiente para app interna)
-function simpleHash(str){
-  var h=0;
-  for(var i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0;}
-  return h.toString(36);
-}
-
-function getAuthUsers(){
-  var stored=localStorage.getItem(_AUTH_USERS_KEY);
-  if(stored){
-    try{
-      var parsed=JSON.parse(stored);
-      // Safety: if users exist but have no hash, reset to defaults
-      if(Array.isArray(parsed) && parsed.length>0 && parsed[0].hash) return parsed;
-    }catch(e){}
-  }
-  // Usuarios por defecto
-  var defaults=[
-    {user:'admin',hash:simpleHash('decotara2025'),role:'admin',nombre:'Administrador'},
-    {user:'diana',hash:simpleHash('vendedor123'),role:'admin',nombre:'Diana'},
-    {user:'jaime',hash:simpleHash('vendedor123'),role:'vendedor',nombre:'Jaime'},
-    {user:'samanta',hash:simpleHash('vendedor123'),role:'vendedor',nombre:'Samanta'}
-  ];
-  localStorage.setItem(_AUTH_USERS_KEY, JSON.stringify(defaults));
-  return defaults;
-}
-
-function saveAuthUsers(users){
-  localStorage.setItem(_AUTH_USERS_KEY, JSON.stringify(users));
-}
-
-function checkSession(){
-  var s=localStorage.getItem(_AUTH_SESSION_KEY);
-  if(!s)return null;
-  try{
-    var sess=JSON.parse(s);
-    // Sesión válida por 12 horas
-    if(Date.now()-sess.time > 12*60*60*1000){
-      localStorage.removeItem(_AUTH_SESSION_KEY);
-      return null;
-    }
-    return sess;
-  }catch(e){return null;}
-}
-
-function saveSession(user){
-  localStorage.setItem(_AUTH_SESSION_KEY, JSON.stringify({user:user.user, role:user.role, nombre:user.nombre, time:Date.now()}));
-}
-
-function doLogin(){
-  // Login now handled by inline script - this is kept for compatibility
-  var sess=checkSession();
-  if(sess){_currentUser=sess;document.getElementById('loginScreen').style.display='none';showUserBadge();applyRoleRestrictions();initApp();}
-}
-
-// Called by inline login script on success
-window.onLoginSuccess=function(found){
-  _currentUser=found;
-  showUserBadge();
-  applyRoleRestrictions();
-  initApp();
-};
-
-function doLogout(){
-  localStorage.removeItem(_AUTH_SESSION_KEY);
-  _currentUser=null;
-  document.getElementById('userMenu').style.display='none';
-  document.getElementById('userBadge').style.display='none';
-  document.getElementById('loginUser').value='';
-  document.getElementById('loginPass').value='';
-  document.getElementById('loginErr').style.display='none';
-  document.getElementById('loginScreen').style.display='flex';
-}
-
-function showUserBadge(){
-  if(!_currentUser)return;
-  var badge=document.getElementById('userBadge');
-  var icon=_currentUser.role==='admin'?'👑':'👤';
-  var roleText=_currentUser.role==='admin'?'Admin':'Vendedor';
-  document.getElementById('userBadgeIcon').textContent=icon;
-  if(document.getElementById('userBadgeRole')) document.getElementById('userBadgeRole').textContent=roleText;
-  document.getElementById('menuUserName').textContent=_currentUser.nombre;
-  document.getElementById('menuUserRole').textContent=roleText+' · '+_currentUser.user;
-  badge.style.display='flex';
-}
-
-function showUserMenu(){
-  var m=document.getElementById('userMenu');
-  m.style.display=m.style.display==='none'?'block':'none';
-}
-
-// Cerrar menú al clickar fuera
-document.addEventListener('click',function(e){
-  var menu=document.getElementById('userMenu');
-  var badge=document.getElementById('userBadge');
-  if(menu && badge && !menu.contains(e.target) && !badge.contains(e.target)){
-    menu.style.display='none';
-  }
-});
-
-function applyRoleRestrictions(){
-  if(!_currentUser)return;
-  var admin=_currentUser.role==='admin';
-  // Botones solo para admin
-  var adminOnlyIds=['rptDia','rptSem','rptMes','rptAno','rptFecha','btnNP','btnNPcat','btnNVend'];
-  adminOnlyIds.forEach(function(id){
-    var el=document.getElementById(id);
-    if(!el)return;
-    el.style.display=admin?'':'none';
-  });
-  // Páginas de nav solo para admin
-  document.querySelectorAll('[data-page="caja"],[data-page="reportes"],[data-page="productos"],[data-page="vendedores"]').forEach(function(btn){
-    btn.style.display=admin?'':'none';
-  });
-  // Si vendedor intenta ir a página restringida, redirigir a dashboard
-  if(!admin && ['caja','reportes','productos','vendedores'].indexOf(curPage)>=0){
-    navTo('dashboard');
-  }
-}
-
-function changePassword(){
-  document.getElementById('userMenu').style.display='none';
-  var newPass=prompt('Nueva contraseña (mínimo 6 caracteres):');
-  if(!newPass||newPass.length<6){if(newPass!==null)toast('La contraseña debe tener al menos 6 caracteres');return;}
-  var users=getAuthUsers();
-  var idx=users.findIndex(function(x){return x.user===_currentUser.user;});
-  if(idx<0)return;
-  users[idx].hash=simpleHash(newPass);
-  saveAuthUsers(users);
-  toast('Contraseña actualizada ✓');
-}
-
-function isAdmin(){return _currentUser && _currentUser.role==='admin';}
-
 async function initApp(){
-  fillVendSelects();
   var cajafecha=document.getElementById('caja_fecha');
   if(cajafecha)cajafecha.value=new Date().toISOString().split('T')[0];
 
-  // Activar dashboard inmediatamente
-  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
-  var dash=document.getElementById('page-dashboard');
-  if(dash)dash.classList.add('active');
-
-  // Mostrar overlay de carga
-  var loadDiv=document.createElement('div');
-  loadDiv.id='initLoadOverlay';
-  loadDiv.style.cssText='position:fixed;inset:0;z-index:8000;background:rgba(255,255,255,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:Barlow,sans-serif';
-  loadDiv.innerHTML=
-    '<img src="'+window._LOGO_B64+'" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid #C8372D">'+
-    '<div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:#C8372D">DECOTARA</div>'+
-    '<div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#888">'+
-      '<div style="width:18px;height:18px;border:3px solid #C8372D;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite"></div>'+
-      '<span id="initLoadMsg">Conectando...</span>'+
-    '</div>';
-  document.body.appendChild(loadDiv);
-
-  function setLoadMsg(txt){ var el=document.getElementById('initLoadMsg'); if(el)el.textContent=txt; }
-  function removeOverlay(){ var el=document.getElementById('initLoadOverlay'); if(el)el.remove(); }
-
-  // Timeout manual de 12 segundos
-  var timedOut=false;
-  var globalTimer=setTimeout(function(){
-    timedOut=true;
-    removeOverlay();
-    showConnError('Sin respuesta tras 12 segundos.<br>Puede que el proyecto Supabase esté <b>pausado</b>.<br>Entra a supabase.com y actívalo.');
-  },12000);
+  var dbg=document.getElementById('dbg-bar');
+  function dbgLog(msg,ok){
+    if(dbg)dbg.innerHTML=(ok===true?'✅ ':ok===false?'❌ ':'⏳ ')+msg;
+  }
+  if(dbg)dbg.style.display='block';
 
   try{
-    setLoadMsg('Verificando conexión...');
-    var r=await fetch(SB+'/productos?select=id&limit=1',{headers:SH});
-    
-    if(timedOut)return;
-    clearTimeout(globalTimer);
-
-    if(!r.ok){
-      removeOverlay();
-      showConnError('Error Supabase '+r.status+'. Revisa la API key en supabase.com → Settings → API.');
+    dbgLog('Probando conexión...');
+    var ctrl=new AbortController();
+    var tid=setTimeout(function(){ctrl.abort();},15000);
+    var r;
+    try{
+      r=await fetch(SB+'/productos?select=id&limit=1',{headers:SH,signal:ctrl.signal});
+      clearTimeout(tid);
+    }catch(fe){
+      clearTimeout(tid);
+      showConnError(fe.name==='AbortError'
+        ?'Sin respuesta (15s). El proyecto Supabase puede estar pausado.'
+        :'Error de red: '+fe.message);
       return;
     }
+    if(!r.ok){showConnError('Error Supabase '+r.status);return;}
 
     setConn(true);
-    setLoadMsg('Cargando datos...');
+    dbgLog('Conectado — cargando datos...',true);
 
     await Promise.all([
       GET('/clientes?select=dni&limit=1').then(function(){window._dniOk=true;}).catch(function(){window._dniOk=false;}),
@@ -2122,15 +1845,12 @@ async function initApp(){
       getCachedProductos()
     ]);
 
-    if(timedOut)return;
-    removeOverlay();
+    dbgLog('Listo ✓',true);
     navTo('dashboard');
+    setTimeout(function(){if(dbg)dbg.style.display='none';},1500);
 
   }catch(e){
-    if(timedOut)return;
-    clearTimeout(globalTimer);
-    removeOverlay();
-    showConnError('Error de red: '+e.message+'<br>Comprueba tu conexión a internet.');
+    showConnError('Error inesperado: '+e.message);
   }
 }
 
@@ -2312,184 +2032,80 @@ async function renderClientes(){
 }
 
 
-// ══════ GESTIÓN DE USUARIOS / VENDEDORES ══════
+// ══════ VENDEDORES ══════
+var _vendedores = ['Jaime','Samanta','Diana'];
 
-var _muEditUser = null; // username being edited
+function loadVendedores(){
+  var v=localStorage.getItem('decotara_vendedores');
+  if(v){try{_vendedores=JSON.parse(v);}catch(e){}}
+}
+
+function saveVendedores(){
+  localStorage.setItem('decotara_vendedores',JSON.stringify(_vendedores));
+}
 
 function getVendedoresOpts(selected){
-  var users = getAuthUsers().filter(function(u){return u.role==='vendedor';});
-  return users.map(function(u){
-    return '<option'+(u.nombre===selected?' selected':'')+'>'+u.nombre+'</option>';
+  return _vendedores.map(function(v){
+    return '<option'+(v===selected?' selected':'')+'>'+v+'</option>';
   }).join('');
 }
 
 function fillVendSelects(){
-  // rpt_cli sigue siendo select (para filtrar reportes por vendedor)
-  var rpt=document.getElementById('rpt_cli');
-  if(rpt){
-    var cur=rpt.value;
-    var users=getAuthUsers();
-    var opts=users.map(function(u){return '<option'+(u.nombre===cur?' selected':'')+'>'+u.nombre+'</option>';}).join('');
-    rpt.innerHTML='<option value="">Todos los vendedores</option>'+opts;
-  }
-  setVendedorActual();
-}
-
-function setVendedorActual(){
-  if(!_currentUser)return;
-  var nombre=_currentUser.nombre;
-  var cv=document.getElementById('cart_vend');
-  var cvd=document.getElementById('cart_vend_display');
-  if(cv)cv.value=nombre;
-  if(cvd)cvd.textContent=nombre;
-  var vv=document.getElementById('v_vend');
-  var vvd=document.getElementById('v_vend_display');
-  if(vv)vv.value=nombre;
-  if(vvd)vvd.textContent=nombre;
+  loadVendedores();
+  var ids=['cart_vend','v_vend','rpt_cli'];
+  ids.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var cur=el.value;
+    if(id==='rpt_cli'){
+      el.innerHTML='<option value="">Seleccionar vendedor...</option>'+getVendedoresOpts(cur);
+    } else {
+      el.innerHTML='<option value="">Seleccionar...</option>'+getVendedoresOpts(cur);
+    }
+  });
 }
 
 function renderVendedores(){
-  if(!isAdmin()){toast('Solo el administrador puede gestionar usuarios');navTo('dashboard');return;}
-  var users=getAuthUsers();
+  loadVendedores();
   var list=document.getElementById('vend-list');
   if(!list)return;
-
-  var html='';
-  // Group by role
-  var admins=users.filter(function(u){return u.role==='admin';});
-  var vendedores=users.filter(function(u){return u.role==='vendedor';});
-
-  function userCard(u){
-    var isMe=_currentUser&&_currentUser.user===u.user;
-    var roleLabel=u.role==='admin'
-      ?'<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700">👑 Admin</span>'
-      :'<span style="background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700">👤 Vendedor</span>';
-    var bgColor=u.role==='admin'?'#B02820':'#5b21b6';
+  if(!_vendedores.length){
+    list.innerHTML='<div style="text-align:center;color:var(--gray);padding:40px">No hay vendedores.</div>';
+    return;
+  }
+  list.innerHTML=_vendedores.map(function(v,i){
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--xlgray);gap:12px">'
-      +'<div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">'
-        +'<div style="width:44px;height:44px;border-radius:50%;background:'+bgColor+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex-shrink:0">'+u.nombre.charAt(0).toUpperCase()+'</div>'
-        +'<div style="min-width:0">'
-          +'<div style="font-weight:700;font-size:15px;color:var(--black);display:flex;align-items:center;gap:6px">'+u.nombre+(isMe?' <span style="font-size:10px;color:var(--gray)">(tú)</span>':'')+'</div>'
-          +'<div style="font-size:12px;color:var(--gray);margin-top:2px">@'+u.user+'</div>'
-          +'<div style="margin-top:4px">'+roleLabel+'</div>'
-        +'</div>'
+      +'<div style="display:flex;align-items:center;gap:12px">'
+        +'<div style="width:40px;height:40px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px">'+v.charAt(0).toUpperCase()+'</div>'
+        +'<div style="font-weight:700;font-size:15px">'+v+'</div>'
       +'</div>'
-      +'<div style="display:flex;gap:6px;flex-shrink:0">'
-        +'<button onclick="editarUsuario(''+u.user+'')" style="background:var(--xlgray);color:var(--black);border:none;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">✏️</button>'
-        +(isMe?'':'<button onclick="eliminarUsuario(''+u.user+'')" style="background:#fee2e2;color:#c8372d;border:none;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">🗑️</button>')
-      +'</div>'
+      +'<button onclick="eliminarVendedor('+i+')" style="background:#fee2e2;color:#c8372d;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Eliminar</button>'
     +'</div>';
-  }
-
-  if(admins.length){
-    html+='<div style="padding:10px 16px 6px;font-size:10px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;background:var(--xlgray)">Administradores</div>';
-    html+=admins.map(userCard).join('');
-  }
-  if(vendedores.length){
-    html+='<div style="padding:10px 16px 6px;font-size:10px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;background:var(--xlgray)">Vendedores</div>';
-    html+=vendedores.map(userCard).join('');
-  }
-  if(!users.length){
-    html='<div style="text-align:center;color:var(--gray);padding:40px 20px;font-size:14px">No hay usuarios. Crea uno con el botón.</div>';
-  }
-  list.innerHTML=html;
+  }).join('');
 }
 
-function openModalUsuario(){
-  _muEditUser=null;
-  document.getElementById('mu-title').textContent='Nuevo usuario';
-  document.getElementById('mu_nombre').value='';
-  document.getElementById('mu_user').value='';
-  document.getElementById('mu_pass').value='';
-  document.getElementById('mu_rol').value='vendedor';
-  document.getElementById('mu_pass_edit_wrap').style.display='none';
-  document.getElementById('mu_pass').placeholder='Mínimo 6 caracteres';
-  document.getElementById('modal-usuario').style.display='flex';
-}
-
-function editarUsuario(username){
-  var users=getAuthUsers();
-  var u=users.find(function(x){return x.user===username;});
-  if(!u)return;
-  _muEditUser=username;
-  document.getElementById('mu-title').textContent='Editar usuario';
-  document.getElementById('mu_nombre').value=u.nombre;
-  document.getElementById('mu_user').value=u.user;
-  document.getElementById('mu_pass').value='';
-  document.getElementById('mu_pass').placeholder='Dejar vacío para no cambiar';
-  document.getElementById('mu_rol').value=u.role;
-  document.getElementById('mu_pass_edit_wrap').style.display='block';
-  document.getElementById('modal-usuario').style.display='flex';
-}
-
-function closeModalUsuario(){
-  document.getElementById('modal-usuario').style.display='none';
-  _muEditUser=null;
-}
-
-function togglePassVis(inputId, btn){
-  var el=document.getElementById(inputId);
-  if(el.type==='password'){el.type='text';btn.textContent='🙈';}
-  else{el.type='password';btn.textContent='👁';}
-}
-
-function guardarUsuario(){
-  var nombre=document.getElementById('mu_nombre').value.trim();
-  var username=document.getElementById('mu_user').value.trim().toLowerCase();
-  var pass=document.getElementById('mu_pass').value;
-  var rol=document.getElementById('mu_rol').value;
-
-  if(!nombre){toast('El nombre es obligatorio');return;}
-  if(!username){toast('El usuario es obligatorio');return;}
-  if(!/^[a-z0-9_]+$/.test(username)){toast('El usuario solo puede contener letras, números y _');return;}
-
-  var users=getAuthUsers();
-
-  if(_muEditUser){
-    // EDITAR
-    var idx=users.findIndex(function(x){return x.user===_muEditUser;});
-    if(idx<0)return;
-    // Check username conflict (excluding self)
-    var conflict=users.find(function(x){return x.user===username&&x.user!==_muEditUser;});
-    if(conflict){toast('Ese nombre de usuario ya existe');return;}
-    if(pass&&pass.length<6){toast('La contraseña debe tener al menos 6 caracteres');return;}
-    users[idx].nombre=nombre;
-    users[idx].user=username;
-    users[idx].role=rol;
-    if(pass)users[idx].hash=simpleHash(pass);
-    saveAuthUsers(users);
-    // Update session if editing self
-    if(_currentUser&&_currentUser.user===_muEditUser){
-      _currentUser.nombre=nombre;_currentUser.user=username;_currentUser.role=rol;
-      saveSession(_currentUser);showUserBadge();
-    }
-    toast('Usuario actualizado ✓');
-  } else {
-    // CREAR
-    if(users.find(function(x){return x.user===username;})){toast('Ese nombre de usuario ya existe');return;}
-    if(!pass||pass.length<6){toast('La contraseña debe tener al menos 6 caracteres');return;}
-    users.push({user:username,hash:simpleHash(pass),role:rol,nombre:nombre});
-    saveAuthUsers(users);
-    toast('Usuario creado: '+nombre+' ✓');
-  }
-
-  fillVendSelects();
-  closeModalUsuario();
+function eliminarVendedor(i){
+  if(!confirm('¿Eliminar vendedor "'+_vendedores[i]+'"?'))return;
+  _vendedores.splice(i,1);
+  saveVendedores();
   renderVendedores();
+  fillVendSelects();
+  toast('Vendedor eliminado');
 }
 
-function eliminarUsuario(username){
-  if(_currentUser&&_currentUser.user===username){toast('No puedes eliminar tu propio usuario');return;}
-  var users=getAuthUsers();
-  var u=users.find(function(x){return x.user===username;});
-  if(!u)return;
-  if(!confirm('¿Eliminar usuario "'+u.nombre+'" (@'+username+')?
-Esta acción no se puede deshacer.'))return;
-  saveAuthUsers(users.filter(function(x){return x.user!==username;}));
-  fillVendSelects();
+function agregarVendedor(){
+  var nombre=prompt('Nombre del nuevo vendedor:');
+  if(!nombre)return;
+  nombre=nombre.trim();
+  if(!nombre){toast('Nombre inválido');return;}
+  if(_vendedores.map(function(v){return v.toLowerCase();}).indexOf(nombre.toLowerCase())>=0){toast('Ya existe');return;}
+  _vendedores.push(nombre);
+  saveVendedores();
   renderVendedores();
-  toast('Usuario eliminado');
+  fillVendSelects();
+  toast('Vendedor añadido: '+nombre);
 }
+
 
 async function renderProductos(){
   var q=(document.getElementById('prodsearch').value||'').toLowerCase();
@@ -2814,7 +2430,7 @@ async function saveV(){
   var entrega=document.getElementById('v_entrega').value;
   var fechaE=document.getElementById('v_fecha_entrega').value;
   if(!cId||!fecha){toast('Selecciona cliente y fecha');return;}
-  if(!vend){toast('Error: no hay vendedor asignado');return;}
+  if(!vend){toast('Selecciona un vendedor');document.getElementById('v_vend').focus();return;}
   if(!vmLineas.length){toast('Añade al menos un artículo');return;}
   var btn=document.getElementById('btnSV');btn.disabled=true;btn.textContent='Guardando...';
   try{
@@ -3036,7 +2652,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('btnSCart').addEventListener('click',saveCart);
   document.getElementById('btnNV').addEventListener('click',function(){openVM(null);});
   document.getElementById('btnNC').addEventListener('click',function(){openCM(null);});
-  document.getElementById('btnNVend').addEventListener('click',openModalUsuario);
+  document.getElementById('btnNVend').addEventListener('click',agregarVendedor);
   document.getElementById('btnNP').addEventListener('click',function(){openPM(null);});
   document.getElementById('btnNPcat').addEventListener('click',function(){openPM(null);});
   document.getElementById('rptDia').addEventListener('click',function(){generarReporte('dia');});
@@ -3220,21 +2836,7 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(a==='dp'){if(confirm('¿Eliminar este producto?'))DEL('/productos?id=eq.'+id).then(function(){toast('Eliminado');loadStockCache();if(curPage==='catalogo')renderCatalogo();else renderProductos();}).catch(function(e){toast('Error: '+e.message);});}
   });
 
-  // ── Auth startup ──
-  // Set logo on login screen
-  var loginLogo = document.getElementById('loginLogo');
-  if(loginLogo && window._LOGO_B64) loginLogo.src = window._LOGO_B64;
-
-  // Check existing session
-  var sess = checkSession();
-  if(sess){
-    _currentUser = sess;
-    document.getElementById('loginScreen').style.display = 'none';
-    showUserBadge();
-    applyRoleRestrictions();
-    initApp();
-  }
-  // If no session, inline login script handles showing the form
+  initApp();
 });
 </script>
 </body>
