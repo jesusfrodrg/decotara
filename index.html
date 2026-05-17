@@ -1435,7 +1435,7 @@ function _agendaGrupoHTML(grupo,hoyStr,esEntregada){
     '<div style="display:flex;flex-direction:column;gap:4px">'+
       (!esEntregada?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff;width:32px;height:32px" title="Marcar TODA la compra como entregada" data-action="marcar-entregada-grupo" data-ids="'+grupo.map(function(v){return v.id;}).join(',')+'" data-id="'+grupo[0].id+'">✅</button>':'')+
       (esEntregada?'<button class="btn btn-sm bic" style="background:#e67e22;color:#fff;width:32px;height:32px" title="Cancelar entrega (volver a pendiente)" data-action="cancelar-entrega-grupo" data-ids="'+grupo.map(function(v){return v.id;}).join(',')+'" data-id="'+grupo[0].id+'">↩️</button>':'')+
-      '<button class="btn btn-sm bic" style="background:var(--blue);color:#fff;width:32px;height:32px" title="Albarán PDF" data-action="albaran-agenda-grupo" data-key="'+albNum+'" data-id="'+grupo[0].id+'">📄</button>'+
+      '<button class="btn btn-sm bic" style="background:var(--blue);color:#fff;width:32px;height:32px" title="Factura PDF" data-action="albaran-agenda-grupo" data-key="'+albNum+'" data-id="'+grupo[0].id+'">📄</button>'+
     '</div>'+
   '</div>';
 }
@@ -1974,8 +1974,8 @@ async function renderVentas(){
         '<td><div style="display:flex;gap:3px">'+
           '<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff;width:30px;height:30px;padding:0" title="Ver artículos de la compra" data-action="vergrupo" data-expand="'+expandId+'">👁</button>'+
           (grupo.length>1
-            ?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff" title="Albarán PDF compra completa ('+albNum+')" data-action="pdfgrupo" data-key="'+key+'">🧾</button>'
-            :'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdf" data-id="'+v0.id+'">📄</button>')+
+            ?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff" title="Factura PDF compra completa ('+albNum+')" data-action="pdfgrupo" data-key="'+key+'">🧾</button>'
+            :'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Factura PDF" data-action="pdf" data-id="'+v0.id+'">📄</button>')+
           '<button class="btn btn-sm bs2 bic" data-action="ev" data-id="'+v0.id+'">✏️</button>'+
           '<button class="btn btn-sm bd bic" data-action="dv" data-id="'+v0.id+'">🗑</button>'+
         '</div></td>'+
@@ -2312,9 +2312,9 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
       +'</tr>';
   }).join('');
 
-  var html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Albarán ${numStr}</title><style>${CSS_ALBARAN}</style></head><body>`;
+  var html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura ${numStr}</title><style>${CSS_ALBARAN}</style></head><body>`;
   html+='<div class="doc-date">Fecha: '+fechaStr+'</div>';
-  html+='<div class="hdr"><div class="hdr-left"><div class="doc-type">ALBARÁN</div><div class="doc-badge">'+numStr+'</div></div>'
+  html+='<div class="hdr"><div class="hdr-left"><div class="doc-type">FACTURA</div><div class="doc-badge">FACTURA Nº '+numStr+'</div></div>'
     +'<div class="hdr-right"><img class="logo-circle" src="'+window._LOGO_B64+'"><div class="brand-name">DECOTARA</div><div class="brand-sub">OUTLET</div></div></div>';
   html+='<hr class="divider">';
 
@@ -2432,7 +2432,7 @@ async function saveV(){
       actualizarCampana();
       var msg=vmLineas.length>1?vmLineas.length+' ventas registradas · '+numAlbaran+' ✓':'Venta registrada · '+numAlbaran+' ✓';
       toast(msg);
-      // Generar PDF albarán automáticamente
+      // Generar PDF factura automáticamente
       var cliRes=await GET('/clientes?select=*&id=eq.'+cId);
       var cliPdf=cliRes.length?cliRes[0]:{nombre:'',apellidos:'',ciudad:'',direccion:''};
       var ventasPdf=vmLineas.map(function(l){return {prod_nombre:l.esOtro?l.nombre:(l.nombre||''),prod_cat:l.esOtro?'':l.cat,pvp:l.pvp,cantidad:l.qty,total:+(l.pvp*l.qty*(1-dto/100)).toFixed(2)};});
