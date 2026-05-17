@@ -1890,25 +1890,30 @@ function compartirAlbaran(v){
 function showConnError(msg){
   setConn(false);
   var el=document.getElementById('ctxt');
-  if(el){el.textContent='Error';}
-  var dash=document.getElementById('page-dashboard');
-  if(dash){
-    dash.innerHTML=
-      '<div style="padding:32px 20px;text-align:center;max-width:500px;margin:0 auto">'
-      +'<div style="font-size:52px;margin-bottom:12px">🔌</div>'
-      +'<div style="font-size:17px;font-weight:800;color:#C8372D;margin-bottom:14px">Sin conexión a Supabase</div>'
-      +'<div style="font-size:13px;color:#444;background:#fff3f3;border:1.5px solid #C8372D;border-radius:10px;padding:14px 16px;text-align:left;margin-bottom:18px">'+msg+'</div>'
-      +'<div style="font-size:12px;color:#666;background:#f0f4ff;border-radius:8px;padding:12px 14px;text-align:left;margin-bottom:18px">'
-      +'<b>Pasos:</b> 1) Abre supabase.com y verifica que el proyecto está activo. '
-      +'2) Si pone Paused, pulsa Restore. 3) Espera 2min y pulsa Reintentar.'
-      +'</div>'
-      +'<button onclick="location.reload()" style="background:#C8372D;color:#fff;border:none;padding:12px 32px;border-radius:8px;font-size:15px;cursor:pointer;font-weight:700;width:100%">🔄 Reintentar</button>'
-      +'</div>';
-  }
-  // Show the dashboard page even on error so user sees the message
-  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
-  var dash=document.getElementById('page-dashboard');
-  if(dash)dash.classList.add('active');
+  if(el)el.textContent='Sin conexión';
+
+  // Show error as full overlay so it's impossible to miss
+  var existing=document.getElementById('connErrOverlay');
+  if(existing)existing.remove();
+
+  var overlay=document.createElement('div');
+  overlay.id='connErrOverlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:8000;background:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Barlow,sans-serif';
+  overlay.innerHTML=
+    '<div style="max-width:360px;width:100%;text-align:center">'
+    +'<div style="font-size:56px;margin-bottom:16px">🔌</div>'
+    +'<div style="font-size:20px;font-weight:900;color:#C8372D;margin-bottom:10px">Sin conexión</div>'
+    +'<div style="font-size:13px;color:#555;background:#fff3f3;border:1.5px solid #C8372D;border-radius:10px;padding:14px;text-align:left;margin-bottom:16px;line-height:1.5">'+msg+'</div>'
+    +'<div style="font-size:12px;color:#666;background:#f5f5f5;border-radius:8px;padding:12px;text-align:left;margin-bottom:20px;line-height:1.6">'
+    +'<b>¿Qué hacer?</b><br>'
+    +'1. Entra a <b>supabase.com</b><br>'
+    +'2. Si el proyecto dice <b>Paused</b>, pulsa <b>Restore</b><br>'
+    +'3. Espera 2 minutos y pulsa Reintentar'
+    +'</div>'
+    +'<button onclick="location.reload()" style="background:#C8372D;color:#fff;border:none;padding:14px;border-radius:10px;font-size:15px;cursor:pointer;font-weight:800;width:100%;margin-bottom:10px">🔄 Reintentar</button>'
+    +'<div style="font-size:11px;color:#aaa;margin-top:8px">'+msg+'</div>'
+    +'</div>';
+  document.body.appendChild(overlay);
   console.error('CONN ERROR:', msg);
 }
 
@@ -2064,41 +2069,51 @@ async function initApp(){
   var cajafecha=document.getElementById('caja_fecha');
   if(cajafecha)cajafecha.value=new Date().toISOString().split('T')[0];
 
-  // Mostrar pantalla de carga
-  showLoadingScreen();
+  // Activar dashboard inmediatamente
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  var dash=document.getElementById('page-dashboard');
+  if(dash)dash.classList.add('active');
+
+  // Mostrar overlay de carga
+  var loadDiv=document.createElement('div');
+  loadDiv.id='initLoadOverlay';
+  loadDiv.style.cssText='position:fixed;inset:0;z-index:8000;background:rgba(255,255,255,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:Barlow,sans-serif';
+  loadDiv.innerHTML=
+    '<img src="'+window._LOGO_B64+'" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid #C8372D">'+
+    '<div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:#C8372D">DECOTARA</div>'+
+    '<div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#888">'+
+      '<div style="width:18px;height:18px;border:3px solid #C8372D;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite"></div>'+
+      '<span id="initLoadMsg">Conectando...</span>'+
+    '</div>';
+  document.body.appendChild(loadDiv);
+
+  function setLoadMsg(txt){ var el=document.getElementById('initLoadMsg'); if(el)el.textContent=txt; }
+  function removeOverlay(){ var el=document.getElementById('initLoadOverlay'); if(el)el.remove(); }
+
+  // Timeout manual de 12 segundos
+  var timedOut=false;
+  var globalTimer=setTimeout(function(){
+    timedOut=true;
+    removeOverlay();
+    showConnError('Sin respuesta tras 12 segundos.<br>Puede que el proyecto Supabase esté <b>pausado</b>.<br>Entra a supabase.com y actívalo.');
+  },12000);
 
   try{
-    // Test conexión con timeout 15s
-    var ctrl=new AbortController();
-    var tid=setTimeout(function(){ctrl.abort();},15000);
-    var r;
-    try{
-      r=await fetch(SB+'/productos?select=id&limit=1',{headers:SH,signal:ctrl.signal});
-      clearTimeout(tid);
-    }catch(fe){
-      hideLoadingScreen();
-      if(fe.name==='AbortError'){
-        showConnError('⏱ Sin respuesta (15s). Comprueba WiFi o reactiva el proyecto en supabase.com');
-      }else{
-        showConnError('🌐 Error de red: '+fe.message);
-      }
-      return;
-    }
+    setLoadMsg('Verificando conexión...');
+    var r=await fetch(SB+'/productos?select=id&limit=1',{headers:SH});
+    
+    if(timedOut)return;
+    clearTimeout(globalTimer);
 
-    if(r.status===401||r.status===403){
-      hideLoadingScreen();
-      showConnError('🔑 Error de autenticación ('+r.status+'). La API key puede haber expirado.');
-      return;
-    }
     if(!r.ok){
-      hideLoadingScreen();
-      showConnError('⚠️ Error Supabase '+r.status);
+      removeOverlay();
+      showConnError('Error Supabase '+r.status+'. Revisa la API key en supabase.com → Settings → API.');
       return;
     }
 
     setConn(true);
+    setLoadMsg('Cargando datos...');
 
-    // Cargar todos los datos en paralelo
     await Promise.all([
       GET('/clientes?select=dni&limit=1').then(function(){window._dniOk=true;}).catch(function(){window._dniOk=false;}),
       GET('/ventas?select=forma_pago&limit=1').then(function(){window._pagoOk=true;}).catch(function(){window._pagoOk=false;}),
@@ -2107,38 +2122,15 @@ async function initApp(){
       getCachedProductos()
     ]);
 
-    // Todo listo — mostrar dashboard
-    hideLoadingScreen();
+    if(timedOut)return;
+    removeOverlay();
     navTo('dashboard');
 
   }catch(e){
-    hideLoadingScreen();
-    showConnError('💥 Error inesperado: '+e.message);
-  }
-}
-
-function showLoadingScreen(){
-  // Use the page-dashboard to show loading state
-  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
-  var dash=document.getElementById('page-dashboard');
-  if(dash){
-    dash.classList.add('active');
-    dash.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px">'
-      +'<img src="'+window._LOGO_B64+'" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #C8372D">'
-      +'<div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:#C8372D">DECOTARA</div>'
-      +'<div style="display:flex;align-items:center;gap:10px;color:#888;font-size:14px">'
-        +'<div style="width:20px;height:20px;border:3px solid #C8372D;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></div>'
-        +'Conectando con Supabase...'
-      +'</div>'
-    +'</div>';
-  }
-}
-
-function hideLoadingScreen(){
-  // Reset dashboard content so renderDash can fill it
-  var dash=document.getElementById('page-dashboard');
-  if(dash && dash.innerHTML.indexOf('Conectando') > -1){
-    dash.innerHTML=''; // renderDash will fill it
+    if(timedOut)return;
+    clearTimeout(globalTimer);
+    removeOverlay();
+    showConnError('Error de red: '+e.message+'<br>Comprueba tu conexión a internet.');
   }
 }
 
