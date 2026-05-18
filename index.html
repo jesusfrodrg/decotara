@@ -2244,16 +2244,6 @@ function agregarVendedor(){
 
 // ══════ SISTEMA DE SEGURIDAD / LOGIN ══════
 var _SEC_KEY = 'decotara_security';
-var _SEC_DEFAULTS = {
-  loginEnabled: false,
-  pin: '1234',
-  users: [
-    {user:'admin', pass:secHash('admin123'), role:'admin', nombre:'Administrador'},
-    {user:'diana', pass:secHash('1234'), role:'admin', nombre:'Diana'},
-    {user:'jaime', pass:secHash('1234'), role:'vendedor', nombre:'Jaime'},
-    {user:'samanta', pass:secHash('1234'), role:'vendedor', nombre:'Samanta'}
-  ]
-};
 var _secEditUser = null;
 
 function secHash(s){
@@ -2262,12 +2252,33 @@ function secHash(s){
   return (h>>>0).toString(36);
 }
 
+function getSecDefaults(){
+  return {
+    loginEnabled: false,
+    pin: '1234',
+    users: [
+      {user:'admin', pass:secHash('admin123'), role:'admin', nombre:'Administrador'},
+      {user:'diana', pass:secHash('1234'), role:'admin', nombre:'Diana'},
+      {user:'jaime', pass:secHash('1234'), role:'vendedor', nombre:'Jaime'},
+      {user:'samanta', pass:secHash('1234'), role:'vendedor', nombre:'Samanta'}
+    ]
+  };
+}
+
 function getSec(){
   try{
     var s=localStorage.getItem(_SEC_KEY);
-    if(s){var p=JSON.parse(s);return Object.assign({},_SEC_DEFAULTS,p);}
-  }catch(e){}
-  return Object.assign({},_SEC_DEFAULTS);
+    if(s){
+      var p=JSON.parse(s);
+      var d=getSecDefaults();
+      return {
+        loginEnabled: p.loginEnabled||false,
+        pin: p.pin||d.pin,
+        users: (p.users&&p.users.length)?p.users:d.users
+      };
+    }
+  }catch(e){console.error('getSec error:',e);}
+  return getSecDefaults();
 }
 
 function saveSec(sec){
@@ -2276,14 +2287,17 @@ function saveSec(sec){
 
 // ── Login gate ──
 function checkLoginGate(){
-  var sec=getSec();
-  if(!sec.loginEnabled){
-    // No login needed — go straight to app
-    initApp();
-    return;
+  try{
+    var sec=getSec();
+    if(!sec||!sec.loginEnabled){
+      initApp();
+      return;
+    }
+    showLoginOverlay();
+  }catch(e){
+    console.error('checkLoginGate error:',e);
+    initApp(); // fallback: always load app
   }
-  // Show login overlay
-  showLoginOverlay();
 }
 
 function showLoginOverlay(){
