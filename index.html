@@ -15,6 +15,7 @@
 <style>
 :root{
   --red:#C8372D;--red2:#D94038;--dark-red:#A02820;--red-soft:#FFF0EF;
+  --topbar-grad-start:#B02820;--topbar-grad-end:#D94038;
   --black:#111318;--dark:#1E2028;--mid:#4A4E5A;
   --white:#FFFFFF;--offwhite:#F7F8FA;--light:#EEF0F4;
   --gray:#8890A0;--lgray:#E4E7EE;--xlgray:#F2F4F8;
@@ -31,13 +32,13 @@
 html{
   height:100%;
   width:100%;
-  background:#C8372D; /* Match topbar so no white flash */
+  background:var(--red); /* Match topbar so no white flash */
   -webkit-text-size-adjust:100%;
 }
 body{font-family:'Barlow',sans-serif;background:var(--offwhite);color:var(--black);padding-bottom:calc(72px + env(safe-area-inset-bottom,0px));min-height:100vh;min-height:100svh;overflow-x:hidden;width:100%;max-width:100%;}
 
 /* TOPBAR */
-.topbar{background:linear-gradient(135deg,#B02820 0%,#C8372D 50%,#D94038 100%);padding:0 12px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 16px rgba(176,40,32,.45);width:100%;box-sizing:border-box;overflow:hidden;}
+.topbar{background:linear-gradient(135deg,var(--topbar-grad-start) 0%,var(--red) 50%,var(--topbar-grad-end) 100%);padding:0 12px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 16px rgba(176,40,32,.45);width:100%;box-sizing:border-box;overflow:hidden;}
 .logo-wrap{display:flex;align-items:center;gap:11px}
 .logo-circle{width:40px;height:40px;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .logo-icon{font-size:20px;line-height:1}
@@ -262,7 +263,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 .agenda-search-icon{font-size:15px;color:var(--gray)}
 .ag-section-title{padding:10px 16px 6px;font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;background:var(--xlgray);border-bottom:1px solid var(--lgray)}
 
-<style>body{font-family:Arial,sans-serif;padding:24px;color:#111;max-width:700px;margin:0 auto}.header{display:flex;align-items:center;gap:16px;margin-bottom:20px;border-bottom:3px solid #C8372D;padding-bottom:14px}.logo{width:56px;height:56px;border-radius:50%;object-fit:cover}.brand h1{margin:0;font-size:20px;color:#C8372D;letter-spacing:2px}.brand p{margin:2px 0 0;font-size:10px;color:#888;letter-spacing:3px;text-transform:uppercase}.fecha{font-size:14px;font-weight:700;margin-bottom:16px;color:#333}.resumen{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}.rcard{border:1px solid #eee;border-radius:8px;padding:12px 14px;position:relative;overflow:hidden}.rcard-bar{position:absolute;top:0;left:0;right:0;height:3px}.rl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:700}.rv{font-size:22px;font-weight:900;margin-top:4px}.rs{font-size:10px;color:#888}.total-box{background:#111;color:#fff;padding:14px 18px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.tl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}.tv{font-size:26px;font-weight:700;color:#FFD700}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#C8372D;color:#fff;padding:8px 6px;text-align:left;font-size:10px;text-transform:uppercase}th.r{text-align:right}td{padding:7px 6px;border-bottom:1px solid #f0f0f0}td.r{text-align:right}tr:nth-child(even) td{background:#fafafa}.footer{text-align:center;font-size:10px;color:#bbb;margin-top:20px;border-top:1px solid #eee;padding-top:10px}@media print{button{display:none!important}}
+<style>body{font-family:Arial,sans-serif;padding:24px;color:#111;max-width:700px;margin:0 auto}.header{display:flex;align-items:center;gap:16px;margin-bottom:20px;border-bottom:3px solid var(--red);padding-bottom:14px}.logo{width:56px;height:56px;border-radius:50%;object-fit:cover}.brand h1{margin:0;font-size:20px;color:var(--red);letter-spacing:2px}.brand p{margin:2px 0 0;font-size:10px;color:#888;letter-spacing:3px;text-transform:uppercase}.fecha{font-size:14px;font-weight:700;margin-bottom:16px;color:#333}.resumen{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}.rcard{border:1px solid #eee;border-radius:8px;padding:12px 14px;position:relative;overflow:hidden}.rcard-bar{position:absolute;top:0;left:0;right:0;height:3px}.rl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:700}.rv{font-size:22px;font-weight:900;margin-top:4px}.rs{font-size:10px;color:#888}.total-box{background:#111;color:#fff;padding:14px 18px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.tl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}.tv{font-size:26px;font-weight:700;color:#FFD700}table{width:100%;border-collapse:collapse;font-size:11px}th{background:var(--red);color:#fff;padding:8px 6px;text-align:left;font-size:10px;text-transform:uppercase}th.r{text-align:right}td{padding:7px 6px;border-bottom:1px solid #f0f0f0}td.r{text-align:right}tr:nth-child(even) td{background:#fafafa}.footer{text-align:center;font-size:10px;color:#bbb;margin-top:20px;border-top:1px solid #eee;padding-top:10px}@media print{button{display:none!important}}
 /* ══════════════════════════════════════════════
    FULLSCREEN + RESPONSIVE - TODOS LOS DISPOSITIVOS
 ══════════════════════════════════════════════ */
@@ -1049,6 +1050,96 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <button class="btn bp" onclick="cfgAddCat()" style="white-space:nowrap">+ Añadir</button>
     </div>
 
+    <!-- ACCESO OCULTO A SEGURIDAD -->
+    <div style="text-align:center;margin-top:8px;margin-bottom:4px">
+      <button id="btnSecretSec" style="background:none;border:none;color:var(--xlgray);font-size:11px;cursor:pointer;padding:8px;letter-spacing:1px" title="Mantén pulsado 3s">⚙ ⚙ ⚙</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- PANEL SEGURIDAD OCULTO -->
+<div id="secPanel" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;width:92%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+    <div style="background:linear-gradient(135deg,var(--dark-red),var(--red));padding:18px 20px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between">
+      <div style="color:#fff;font-weight:800;font-size:16px">🔒 Panel de Seguridad</div>
+      <button onclick="document.getElementById('secPanel').style.display='none'" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px">✕</button>
+    </div>
+
+    <!-- PIN de acceso -->
+    <div id="secPinWrap" style="padding:24px 20px">
+      <div style="font-size:13px;color:var(--gray);margin-bottom:14px;text-align:center">Introduce el PIN de administrador para continuar</div>
+      <input type="password" id="secPinInput" placeholder="PIN (4 dígitos)" maxlength="4" inputmode="numeric"
+        style="width:100%;padding:14px;border-radius:10px;border:1.5px solid var(--lgray);font-size:20px;text-align:center;letter-spacing:8px;box-sizing:border-box">
+      <button onclick="checkSecPin()" style="width:100%;margin-top:12px;padding:12px;background:var(--red);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Acceder</button>
+      <div id="secPinErr" style="display:none;color:var(--red);font-size:12px;text-align:center;margin-top:8px;font-weight:600"></div>
+    </div>
+
+    <!-- Contenido seguridad (tras PIN) -->
+    <div id="secContent" style="display:none;padding:0 20px 20px">
+
+      <!-- Login ON/OFF -->
+      <div style="padding:16px 0;border-bottom:1px solid var(--xlgray);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-weight:700;font-size:14px">Sistema de Login</div>
+          <div style="font-size:12px;color:var(--gray);margin-top:2px">Pedir usuario y contraseña al entrar</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer">
+          <input type="checkbox" id="secLoginToggle" style="opacity:0;width:0;height:0" onchange="toggleLoginSystem(this.checked)">
+          <span id="secLoginSlider" style="position:absolute;inset:0;background:var(--lgray);border-radius:26px;transition:.3s"></span>
+          <span id="secLoginKnob" style="position:absolute;left:3px;top:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 4px rgba(0,0,0,.2)"></span>
+        </label>
+      </div>
+
+      <!-- PIN administrador -->
+      <div style="padding:16px 0;border-bottom:1px solid var(--xlgray)">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px">🔑 Cambiar PIN de administrador</div>
+        <div style="display:flex;gap:8px">
+          <input type="password" id="secNewPin" placeholder="Nuevo PIN (4 dígitos)" maxlength="4" inputmode="numeric" style="flex:1;padding:10px 12px;border:1.5px solid var(--lgray);border-radius:8px;font-size:14px">
+          <button onclick="changeSecPin()" class="btn bp" style="white-space:nowrap">Cambiar</button>
+        </div>
+      </div>
+
+      <!-- Gestión usuarios -->
+      <div style="padding:16px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-weight:700;font-size:14px">👥 Usuarios del sistema</div>
+          <button onclick="openSecNewUser()" class="btn bp" style="font-size:12px">+ Nuevo</button>
+        </div>
+        <div id="secUserList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO/EDITAR USUARIO -->
+<div id="secUserModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.5);align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;width:92%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:linear-gradient(135deg,var(--dark-red),var(--red));padding:16px 20px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between">
+      <div style="color:#fff;font-weight:800;font-size:15px" id="secUserModalTitle">Nuevo usuario</div>
+      <button onclick="document.getElementById('secUserModal').style.display='none'" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:20px" class="fg">
+      <div class="fi full"><label>Nombre completo <span style="color:var(--red)">*</span></label><input type="text" id="secU_nombre" placeholder="Ej: Diana García"></div>
+      <div class="fi full"><label>Usuario (login) <span style="color:var(--red)">*</span></label><input type="text" id="secU_user" placeholder="Ej: diana" style="text-transform:lowercase"></div>
+      <div class="fi full"><label>Contraseña <span style="color:var(--red)">*</span></label>
+        <div style="position:relative">
+          <input type="password" id="secU_pass" placeholder="Mínimo 6 caracteres" style="width:100%;box-sizing:border-box;padding-right:40px">
+          <button type="button" onclick="var i=document.getElementById('secU_pass');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer">👁</button>
+        </div>
+        <div id="secU_pass_hint" style="font-size:11px;color:var(--gray);margin-top:4px">Dejar vacío para no cambiar la contraseña</div>
+      </div>
+      <div class="fi full"><label>Rol</label>
+        <select id="secU_rol">
+          <option value="vendedor">Vendedor — solo ventas y agenda</option>
+          <option value="admin">Administrador — acceso total</option>
+        </select>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bs2" onclick="document.getElementById('secUserModal').style.display='none'">Cancelar</button>
+      <button class="btn bp" onclick="saveSecUser()">Guardar</button>
+    </div>
   </div>
 </div>
 
@@ -2151,6 +2242,252 @@ function agregarVendedor(){
 }
 
 
+// ══════ SISTEMA DE SEGURIDAD / LOGIN ══════
+var _SEC_KEY = 'decotara_security';
+var _SEC_DEFAULTS = {
+  loginEnabled: false,
+  pin: '1234',
+  users: [
+    {user:'admin', pass:secHash('admin123'), role:'admin', nombre:'Administrador'},
+    {user:'diana', pass:secHash('1234'), role:'admin', nombre:'Diana'},
+    {user:'jaime', pass:secHash('1234'), role:'vendedor', nombre:'Jaime'},
+    {user:'samanta', pass:secHash('1234'), role:'vendedor', nombre:'Samanta'}
+  ]
+};
+var _secEditUser = null;
+
+function secHash(s){
+  var h=5381;
+  for(var i=0;i<s.length;i++){h=((h<<5)+h)^s.charCodeAt(i);}
+  return (h>>>0).toString(36);
+}
+
+function getSec(){
+  try{
+    var s=localStorage.getItem(_SEC_KEY);
+    if(s){var p=JSON.parse(s);return Object.assign({},_SEC_DEFAULTS,p);}
+  }catch(e){}
+  return Object.assign({},_SEC_DEFAULTS);
+}
+
+function saveSec(sec){
+  localStorage.setItem(_SEC_KEY,JSON.stringify(sec));
+}
+
+// ── Login gate ──
+function checkLoginGate(){
+  var sec=getSec();
+  if(!sec.loginEnabled){
+    // No login needed — go straight to app
+    initApp();
+    return;
+  }
+  // Show login overlay
+  showLoginOverlay();
+}
+
+function showLoginOverlay(){
+  var overlay=document.createElement('div');
+  overlay.id='loginOverlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:9000;background:linear-gradient(135deg,#1a0a0a,#2d1010);display:flex;align-items:center;justify-content:center;font-family:Barlow,sans-serif';
+  overlay.innerHTML=
+    '<div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:40px 32px;width:320px;max-width:90vw">'
+      +'<div style="text-align:center;margin-bottom:28px">'
+        +'<img src="'+window._LOGO_B64+'" style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:3px solid var(--red);display:block;margin:0 auto 12px">'
+        +'<div style="font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:4px;color:var(--red)">DECOTARA</div>'
+        +'<div style="font-size:10px;color:rgba(255,255,255,.4);letter-spacing:3px;margin-top:3px">OUTLET · SISTEMA DE GESTIÓN</div>'
+      +'</div>'
+      +'<div style="margin-bottom:14px">'
+        +'<label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Usuario</label>'
+        +'<input id="lgUser" type="text" placeholder="Tu usuario" autocomplete="username" style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:Barlow,sans-serif;box-sizing:border-box">'
+      +'</div>'
+      +'<div style="margin-bottom:22px">'
+        +'<label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Contraseña</label>'
+        +'<input id="lgPass" type="password" placeholder="••••••••" autocomplete="current-password" style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:Barlow,sans-serif;box-sizing:border-box">'
+      +'</div>'
+      +'<button id="lgBtn" style="width:100%;padding:13px;background:linear-gradient(135deg,var(--dark-red),var(--red));color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer">Entrar</button>'
+      +'<div id="lgErr" style="display:none;text-align:center;margin-top:12px;font-size:13px;color:#ff6b6b;font-weight:600"></div>'
+    +'</div>';
+  document.body.appendChild(overlay);
+
+  function tryLogin(){
+    var u=(document.getElementById('lgUser').value||'').trim().toLowerCase();
+    var p=document.getElementById('lgPass').value||'';
+    var err=document.getElementById('lgErr');
+    if(!u||!p){err.textContent='Completa todos los campos';err.style.display='block';return;}
+    var sec=getSec();
+    var found=sec.users.find(function(x){return x.user===u&&x.pass===secHash(p);});
+    if(!found){err.textContent='Usuario o contraseña incorrectos';err.style.display='block';document.getElementById('lgPass').value='';return;}
+    // Store session
+    sessionStorage.setItem('decotara_session',JSON.stringify({user:found.user,nombre:found.nombre,role:found.role}));
+    overlay.remove();
+    initApp();
+  }
+
+  document.getElementById('lgBtn').addEventListener('click',tryLogin);
+  document.getElementById('lgPass').addEventListener('keydown',function(e){if(e.key==='Enter')tryLogin();});
+}
+
+// ── Security panel ──
+var _secPinTimeout = null;
+
+function initSecretButton(){
+  var btn=document.getElementById('btnSecretSec');
+  if(!btn)return;
+  var pressStart=0;
+  btn.addEventListener('mousedown',function(){pressStart=Date.now();});
+  btn.addEventListener('touchstart',function(){pressStart=Date.now();},{passive:true});
+  btn.addEventListener('mouseup',function(){if(Date.now()-pressStart>=2000)openSecPanel();});
+  btn.addEventListener('touchend',function(){if(Date.now()-pressStart>=2000)openSecPanel();});
+  btn.title='Mantén pulsado 2 segundos';
+}
+
+function openSecPanel(){
+  var panel=document.getElementById('secPanel');
+  if(!panel)return;
+  panel.style.display='flex';
+  document.getElementById('secPinWrap').style.display='block';
+  document.getElementById('secContent').style.display='none';
+  document.getElementById('secPinInput').value='';
+  document.getElementById('secPinErr').style.display='none';
+}
+
+function checkSecPin(){
+  var pin=document.getElementById('secPinInput').value.trim();
+  var sec=getSec();
+  if(pin!==sec.pin){
+    document.getElementById('secPinErr').textContent='PIN incorrecto';
+    document.getElementById('secPinErr').style.display='block';
+    document.getElementById('secPinInput').value='';
+    return;
+  }
+  document.getElementById('secPinWrap').style.display='none';
+  document.getElementById('secContent').style.display='block';
+  renderSecContent();
+}
+
+function renderSecContent(){
+  var sec=getSec();
+
+  // Toggle
+  var toggle=document.getElementById('secLoginToggle');
+  var slider=document.getElementById('secLoginSlider');
+  var knob=document.getElementById('secLoginKnob');
+  toggle.checked=sec.loginEnabled;
+  slider.style.background=sec.loginEnabled?'var(--red)':'var(--lgray)';
+  knob.style.left=sec.loginEnabled?'25px':'3px';
+
+  // Users list
+  renderSecUsers(sec.users);
+}
+
+function toggleLoginSystem(enabled){
+  var sec=getSec();
+  sec.loginEnabled=enabled;
+  saveSec(sec);
+  var slider=document.getElementById('secLoginSlider');
+  var knob=document.getElementById('secLoginKnob');
+  slider.style.background=enabled?'var(--red)':'var(--lgray)';
+  knob.style.left=enabled?'25px':'3px';
+  toast(enabled?'🔒 Login activado':'🔓 Login desactivado');
+}
+
+function changeSecPin(){
+  var newPin=document.getElementById('secNewPin').value.trim();
+  if(!/^[0-9]{4}$/.test(newPin)){toast('El PIN debe ser de 4 dígitos');return;}
+  var sec=getSec();
+  sec.pin=newPin;
+  saveSec(sec);
+  document.getElementById('secNewPin').value='';
+  toast('✅ PIN cambiado correctamente');
+}
+
+function renderSecUsers(users){
+  var el=document.getElementById('secUserList');
+  if(!el)return;
+  var roleColors={admin:'#92400e',vendedor:'#5b21b6'};
+  var roleBg={admin:'#fef3c7',vendedor:'#ede9fe'};
+  el.innerHTML=users.map(function(u,i){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--xlgray)">'
+      +'<div style="width:36px;height:36px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0">'+u.nombre.charAt(0)+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-weight:700;font-size:13px">'+u.nombre+'</div>'
+        +'<div style="font-size:11px;color:var(--gray)">@'+u.user+'</div>'
+        +'<span style="background:'+roleBg[u.role]+';color:'+roleColors[u.role]+';padding:1px 7px;border-radius:20px;font-size:10px;font-weight:700">'+u.role+'</span>'
+      +'</div>'
+      +'<div style="display:flex;gap:5px;flex-shrink:0">'
+        +'<button onclick="openSecEditUser('+i+')" style="background:var(--xlgray);border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px">✏️</button>'
+        +'<button onclick="deleteSecUser('+i+')" style="background:#fee2e2;color:var(--red);border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px">🗑️</button>'
+      +'</div>'
+    +'</div>';
+  }).join('')
+  +'<button onclick="openSecNewUser()" class="btn bp" style="width:100%;margin-top:12px;font-size:13px">+ Nuevo usuario</button>';
+}
+
+function openSecNewUser(){
+  _secEditUser=null;
+  document.getElementById('secUserModalTitle').textContent='Nuevo usuario';
+  document.getElementById('secU_nombre').value='';
+  document.getElementById('secU_user').value='';
+  document.getElementById('secU_pass').value='';
+  document.getElementById('secU_pass_hint').style.display='none';
+  document.getElementById('secU_rol').value='vendedor';
+  document.getElementById('secUserModal').style.display='flex';
+}
+
+function openSecEditUser(i){
+  var sec=getSec();
+  var u=sec.users[i];
+  _secEditUser=i;
+  document.getElementById('secUserModalTitle').textContent='Editar usuario';
+  document.getElementById('secU_nombre').value=u.nombre;
+  document.getElementById('secU_user').value=u.user;
+  document.getElementById('secU_pass').value='';
+  document.getElementById('secU_pass_hint').style.display='block';
+  document.getElementById('secU_rol').value=u.role;
+  document.getElementById('secUserModal').style.display='flex';
+}
+
+function saveSecUser(){
+  var nombre=document.getElementById('secU_nombre').value.trim();
+  var user=document.getElementById('secU_user').value.trim().toLowerCase();
+  var pass=document.getElementById('secU_pass').value;
+  var role=document.getElementById('secU_rol').value;
+  if(!nombre||!user){toast('Nombre y usuario son obligatorios');return;}
+  if(!/^[a-z0-9_]+$/.test(user)){toast('Usuario solo letras, números y _');return;}
+  var sec=getSec();
+  if(_secEditUser!==null){
+    // Edit
+    var conflict=sec.users.find(function(u,i){return u.user===user&&i!==_secEditUser;});
+    if(conflict){toast('Ese usuario ya existe');return;}
+    if(pass&&pass.length<4){toast('Contraseña mínimo 4 caracteres');return;}
+    sec.users[_secEditUser].nombre=nombre;
+    sec.users[_secEditUser].user=user;
+    sec.users[_secEditUser].role=role;
+    if(pass)sec.users[_secEditUser].pass=secHash(pass);
+    toast('✅ Usuario actualizado');
+  } else {
+    // New
+    if(sec.users.find(function(u){return u.user===user;})){toast('Ese usuario ya existe');return;}
+    if(!pass||pass.length<4){toast('La contraseña es obligatoria (mín. 4 caracteres)');return;}
+    sec.users.push({user:user,pass:secHash(pass),role:role,nombre:nombre});
+    toast('✅ Usuario creado: '+nombre);
+  }
+  saveSec(sec);
+  document.getElementById('secUserModal').style.display='none';
+  renderSecUsers(sec.users);
+}
+
+function deleteSecUser(i){
+  var sec=getSec();
+  if(!confirm('¿Eliminar usuario "'+sec.users[i].nombre+'"?'))return;
+  sec.users.splice(i,1);
+  saveSec(sec);
+  renderSecUsers(sec.users);
+  toast('Usuario eliminado');
+}
+
+
 // ══════ CONFIGURACIÓN ══════
 var _CFG_KEY = 'decotara_config';
 
@@ -2188,8 +2525,15 @@ function saveCfg(cfg){
 function applyCfgColor(color){
   if(!color)return;
   var root=document.documentElement;
+  var dark=shadeColor(color,-15);
+  var darker=shadeColor(color,-25);
+  var light=shadeColor(color,15);
   root.style.setProperty('--red',color);
-  root.style.setProperty('--dark-red',shadeColor(color,-20));
+  root.style.setProperty('--red2',light);
+  root.style.setProperty('--dark-red',dark);
+  root.style.setProperty('--topbar-grad-start',darker);
+  root.style.setProperty('--topbar-grad-end',light);
+  root.style.setProperty('--red-soft',color+'15');
 }
 
 function shadeColor(hex,pct){
@@ -2330,8 +2674,16 @@ function saveConfig(){
   cfg.empresa_tel=document.getElementById('cfg_empresa_tel').value.trim();
   cfg.pie_factura=document.getElementById('cfg_pie_factura').value.trim();
   cfg.color=document.getElementById('cfg_color').value;
-  if(window._cfgLogoTemp){cfg.logo=window._cfgLogoTemp;window._LOGO_B64=window._cfgLogoTemp;}
+  if(window._cfgLogoTemp){
+    cfg.logo=window._cfgLogoTemp;
+    window._LOGO_B64=window._cfgLogoTemp;
+    // Update topbar logo
+    var topLogo=document.querySelector('.topbar-logo');
+    if(topLogo)topLogo.src=window._LOGO_B64;
+  }
   saveCfg(cfg);
+  // Apply color immediately to whole app
+  applyCfgColor(cfg.color);
   toast('✅ Configuración guardada');
 }
 
@@ -2901,6 +3253,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('btnNV').addEventListener('click',function(){openVM(null);});
   document.getElementById('btnNC').addEventListener('click',function(){openCM(null);});
   document.getElementById('btnSaveConfig').addEventListener('click',saveConfig);
+  document.getElementById('secPinInput').addEventListener('keydown',function(e){if(e.key==='Enter')checkSecPin();});
   document.getElementById('btnNVend').addEventListener('click',agregarVendedor);
   document.getElementById('btnNP').addEventListener('click',function(){openPM(null);});
   document.getElementById('btnNPcat').addEventListener('click',function(){openPM(null);});
@@ -3085,7 +3438,8 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(a==='dp'){if(confirm('¿Eliminar este producto?'))DEL('/productos?id=eq.'+id).then(function(){toast('Eliminado');loadStockCache();if(curPage==='catalogo')renderCatalogo();else renderProductos();}).catch(function(e){toast('Error: '+e.message);});}
   });
 
-  initApp();
+  checkLoginGate();
+  initSecretButton();
 });
 </script>
 </body>
