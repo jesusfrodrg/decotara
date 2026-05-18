@@ -774,6 +774,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <button class="bn" data-page="clientes" style="min-height:60px;background:var(--white)"><span class="bi">👥</span>Clientes</button>
     <button class="bn" data-page="reportes" style="min-height:60px;background:var(--white)"><span class="bi">📈</span>Reportes</button>
     <button class="bn" data-page="vendedores" style="min-height:60px;background:var(--white)"><span class="bi">👤</span>Vendedores</button>
+    <button class="bn" data-page="config" style="min-height:60px;background:var(--white)"><span class="bi">⚙️</span>Configuración</button>
   </div>
 </div>
 
@@ -996,6 +997,60 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   </div>
 </div>
 
+
+<div class="page" id="page-config">
+  <div class="panel">
+    <div class="ph"><span class="pt">⚙️ Configuración</span><button class="btn bp" id="btnSaveConfig">💾 Guardar todo</button></div>
+
+    <!-- EMPRESA -->
+    <div class="sec-hd" style="margin-top:4px"><div class="sec-hd-line"></div><div class="sec-hd-title">🏢 Datos de la Empresa</div></div>
+    <div class="fg">
+      <div class="fi full"><label>Nombre de la empresa</label><input type="text" id="cfg_empresa_nombre" placeholder="DECOTARA OUTLET"></div>
+      <div class="fi full"><label>Dirección</label><input type="text" id="cfg_empresa_dir" placeholder="Polígono Río Huerva..."></div>
+      <div class="fi"><label>Email</label><input type="email" id="cfg_empresa_email" placeholder="email@empresa.com"></div>
+      <div class="fi"><label>Teléfono</label><input type="text" id="cfg_empresa_tel" placeholder="+34 000 000 000"></div>
+      <div class="fi full"><label>Texto pie de factura</label><input type="text" id="cfg_pie_factura" placeholder="Gracias por su compra..."></div>
+    </div>
+
+    <!-- APARIENCIA -->
+    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🎨 Apariencia</div></div>
+    <div class="fg">
+      <div class="fi"><label>Color principal</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="color" id="cfg_color" value="#C8372D" style="width:50px;height:40px;border:none;border-radius:8px;cursor:pointer;padding:2px">
+          <span id="cfg_color_val" style="font-size:13px;font-weight:700;color:var(--gray)">#C8372D</span>
+        </div>
+      </div>
+      <div class="fi"><label>Logo de la empresa</label>
+        <div style="display:flex;align-items:center;gap:12px">
+          <img id="cfg_logo_preview" src="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--red);display:none">
+          <label style="background:var(--xlgray);border:1.5px dashed var(--lgray);border-radius:8px;padding:10px 16px;cursor:pointer;font-size:13px;color:var(--gray);font-weight:600">
+            📁 Cambiar logo
+            <input type="file" id="cfg_logo_file" accept="image/*" style="display:none">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMAS DE PAGO -->
+    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">💳 Formas de Pago</div></div>
+    <div style="margin-bottom:10px" id="cfg_pagos_list"></div>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <input type="text" id="cfg_pago_new" placeholder="Nueva forma de pago..." style="flex:1">
+      <input type="text" id="cfg_pago_icon" placeholder="Icono (ej: 💰)" style="width:80px">
+      <button class="btn bp" onclick="cfgAddPago()" style="white-space:nowrap">+ Añadir</button>
+    </div>
+
+    <!-- CATEGORÍAS -->
+    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🏷️ Categorías de Productos</div></div>
+    <div style="margin-bottom:10px" id="cfg_cats_list"></div>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <input type="text" id="cfg_cat_new" placeholder="Nueva categoría..." style="flex:1">
+      <button class="btn bp" onclick="cfgAddCat()" style="white-space:nowrap">+ Añadir</button>
+    </div>
+
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -1228,6 +1283,7 @@ function navTo(page){
   else if(page==='caja')renderCaja();
   else if(page==='agenda')renderAgenda();
   else if(page==='vendedores')renderVendedores();
+  else if(page==='config')renderConfig();
 }
 
 // ══════ CAJA DIARIA ══════
@@ -1271,6 +1327,7 @@ async function renderCaja(){
 }
 
 function generarCajaPDF(){
+  var cfg_=getCfg();
   var d=window._cajaData;
   if(!d||!d.rows){toast('Primero carga los datos de caja');return;}
 
@@ -1348,7 +1405,7 @@ function generarCajaPDF(){
   +'</table>';
 
   html+='<div class="sig-wrap"><div class="sig-box"><div class="sig-line">Responsable de caja</div></div></div>';
-  html+='<div class="footer">DECOTARA OUTLET · Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza · DECOTARAOUTLET@gmail.com</div>';
+  html+='<div class="footer">'+cfg_.empresa_nombre+' · '+cfg_.empresa_dir+' · '+cfg_.empresa_email+'</div>';
   html+='<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
   html+='</body></html>';
 
@@ -2094,6 +2151,231 @@ function agregarVendedor(){
 }
 
 
+// ══════ CONFIGURACIÓN ══════
+var _CFG_KEY = 'decotara_config';
+
+var _CFG_DEFAULTS = {
+  empresa_nombre: 'DECOTARA OUTLET',
+  empresa_dir: 'Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza',
+  empresa_email: 'DECOTARAOUTLET@gmail.com',
+  empresa_tel: '',
+  pie_factura: 'Gracias por su compra. Para cualquier consulta contacte con nosotros.',
+  color: '#C8372D',
+  logo: '',
+  pagos: [
+    {label:'Efectivo', icon:'💵'},
+    {label:'Tarjeta', icon:'💳'},
+    {label:'Transferencia', icon:'🏦'},
+    {label:'Financiación', icon:'📋'}
+  ],
+  categorias: ['Sofa','Canape','Colchon','Sillon','Comedor','Dormitorio','Auxiliar','Otros']
+};
+
+function getCfg(){
+  try{
+    var s=localStorage.getItem(_CFG_KEY);
+    if(s) return Object.assign({},_CFG_DEFAULTS,JSON.parse(s));
+  }catch(e){}
+  return Object.assign({},_CFG_DEFAULTS);
+}
+
+function saveCfg(cfg){
+  localStorage.setItem(_CFG_KEY,JSON.stringify(cfg));
+  applyCfgColor(cfg.color);
+  if(cfg.logo) window._LOGO_B64=cfg.logo;
+}
+
+function applyCfgColor(color){
+  if(!color)return;
+  var root=document.documentElement;
+  root.style.setProperty('--red',color);
+  root.style.setProperty('--dark-red',shadeColor(color,-20));
+}
+
+function shadeColor(hex,pct){
+  var n=parseInt(hex.replace('#',''),16);
+  var r=Math.min(255,Math.max(0,((n>>16)&0xff)+Math.round(2.55*pct)));
+  var g=Math.min(255,Math.max(0,((n>>8)&0xff)+Math.round(2.55*pct)));
+  var b=Math.min(255,Math.max(0,(n&0xff)+Math.round(2.55*pct)));
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+
+function cfgEmpresaStr(){
+  var c=getCfg();
+  return c.empresa_nombre+' · '+c.empresa_dir+(c.empresa_tel?' · '+c.empresa_tel:'')+' · '+c.empresa_email;
+}
+
+function renderConfig(){
+  var cfg=getCfg();
+
+  // Fill empresa fields
+  document.getElementById('cfg_empresa_nombre').value=cfg.empresa_nombre||'';
+  document.getElementById('cfg_empresa_dir').value=cfg.empresa_dir||'';
+  document.getElementById('cfg_empresa_email').value=cfg.empresa_email||'';
+  document.getElementById('cfg_empresa_tel').value=cfg.empresa_tel||'';
+  document.getElementById('cfg_pie_factura').value=cfg.pie_factura||'';
+
+  // Color
+  var colorInput=document.getElementById('cfg_color');
+  colorInput.value=cfg.color||'#C8372D';
+  document.getElementById('cfg_color_val').textContent=cfg.color||'#C8372D';
+  colorInput.oninput=function(){
+    document.getElementById('cfg_color_val').textContent=this.value;
+    applyCfgColor(this.value);
+  };
+
+  // Logo
+  var logoPreview=document.getElementById('cfg_logo_preview');
+  if(cfg.logo||window._LOGO_B64){
+    logoPreview.src=cfg.logo||window._LOGO_B64;
+    logoPreview.style.display='block';
+  }
+  document.getElementById('cfg_logo_file').onchange=function(e){
+    var file=e.target.files[0];
+    if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      logoPreview.src=ev.target.result;
+      logoPreview.style.display='block';
+      window._cfgLogoTemp=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Render pagos
+  renderCfgPagos(cfg.pagos);
+
+  // Render categorías
+  renderCfgCats(cfg.categorias);
+}
+
+function renderCfgPagos(pagos){
+  var el=document.getElementById('cfg_pagos_list');
+  if(!el)return;
+  el.innerHTML=pagos.map(function(p,i){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--xlgray)">'
+      +'<span style="font-size:18px;width:28px">'+p.icon+'</span>'
+      +'<span style="font-weight:700;flex:1">'+p.label+'</span>'
+      +(pagos.length>1?'<button onclick="cfgDelPago('+i+')" style="background:#fee2e2;color:#c8372d;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Eliminar</button>':'')
+    +'</div>';
+  }).join('');
+}
+
+function renderCfgCats(cats){
+  var el=document.getElementById('cfg_cats_list');
+  if(!el)return;
+  el.innerHTML=cats.map(function(c,i){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--xlgray)">'
+      +'<span style="flex:1;font-weight:700">'+c+'</span>'
+      +(cats.length>1?'<button onclick="cfgDelCat('+i+')" style="background:#fee2e2;color:#c8372d;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Eliminar</button>':'')
+    +'</div>';
+  }).join('');
+}
+
+function cfgAddPago(){
+  var label=document.getElementById('cfg_pago_new').value.trim();
+  var icon=document.getElementById('cfg_pago_icon').value.trim()||'💰';
+  if(!label){toast('Escribe el nombre de la forma de pago');return;}
+  var cfg=getCfg();
+  if(cfg.pagos.find(function(p){return p.label.toLowerCase()===label.toLowerCase();})){toast('Ya existe');return;}
+  cfg.pagos.push({label:label,icon:icon});
+  saveCfg(cfg);
+  document.getElementById('cfg_pago_new').value='';
+  document.getElementById('cfg_pago_icon').value='';
+  renderCfgPagos(cfg.pagos);
+  fillPagoSelects();
+  toast('Forma de pago añadida ✓');
+}
+
+function cfgDelPago(i){
+  var cfg=getCfg();
+  if(cfg.pagos.length<=1){toast('Debe haber al menos una forma de pago');return;}
+  if(!confirm('¿Eliminar "'+cfg.pagos[i].label+'"?'))return;
+  cfg.pagos.splice(i,1);
+  saveCfg(cfg);
+  renderCfgPagos(cfg.pagos);
+  fillPagoSelects();
+  toast('Eliminada');
+}
+
+function cfgAddCat(){
+  var cat=document.getElementById('cfg_cat_new').value.trim();
+  if(!cat){toast('Escribe el nombre de la categoría');return;}
+  var cfg=getCfg();
+  if(cfg.categorias.indexOf(cat)>=0){toast('Ya existe');return;}
+  cfg.categorias.push(cat);
+  saveCfg(cfg);
+  document.getElementById('cfg_cat_new').value='';
+  renderCfgCats(cfg.categorias);
+  fillCatSelects();
+  toast('Categoría añadida ✓');
+}
+
+function cfgDelCat(i){
+  var cfg=getCfg();
+  if(cfg.categorias.length<=1){toast('Debe haber al menos una categoría');return;}
+  if(!confirm('¿Eliminar categoría "'+cfg.categorias[i]+'"?'))return;
+  cfg.categorias.splice(i,1);
+  saveCfg(cfg);
+  renderCfgCats(cfg.categorias);
+  fillCatSelects();
+  toast('Eliminada');
+}
+
+function saveConfig(){
+  var cfg=getCfg();
+  cfg.empresa_nombre=document.getElementById('cfg_empresa_nombre').value.trim()||cfg.empresa_nombre;
+  cfg.empresa_dir=document.getElementById('cfg_empresa_dir').value.trim()||cfg.empresa_dir;
+  cfg.empresa_email=document.getElementById('cfg_empresa_email').value.trim()||cfg.empresa_email;
+  cfg.empresa_tel=document.getElementById('cfg_empresa_tel').value.trim();
+  cfg.pie_factura=document.getElementById('cfg_pie_factura').value.trim();
+  cfg.color=document.getElementById('cfg_color').value;
+  if(window._cfgLogoTemp){cfg.logo=window._cfgLogoTemp;window._LOGO_B64=window._cfgLogoTemp;}
+  saveCfg(cfg);
+  toast('✅ Configuración guardada');
+}
+
+function fillPagoSelects(){
+  var cfg=getCfg();
+  var pagoIds=['cart_pago','v_pago'];
+  pagoIds.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var cur=el.value;
+    el.innerHTML=cfg.pagos.map(function(p){
+      return '<option value="'+p.label+'"'+(p.label===cur?' selected':'')+'>'+p.icon+' '+p.label+'</option>';
+    }).join('');
+  });
+}
+
+function fillCatSelects(){
+  var cfg=getCfg();
+  var catIds=['prod_cat','vm_prod_cat','cart_prod_cat'];
+  catIds.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var cur=el.value;
+    // Keep "Todos" option if it exists
+    var hasTodos=el.options.length>0&&el.options[0].value==='';
+    el.innerHTML=(hasTodos?'<option value="">Todos</option>':'')
+      +cfg.categorias.map(function(c){
+        return '<option value="'+c+'"'+(c===cur?' selected':'')+'>'+c+'</option>';
+      }).join('');
+  });
+}
+
+function applyConfigOnLoad(){
+  var cfg=getCfg();
+  applyCfgColor(cfg.color);
+  if(cfg.logo) window._LOGO_B64=cfg.logo;
+  // Update topbar logo
+  var topLogo=document.querySelector('.topbar img');
+  if(topLogo&&cfg.logo) topLogo.src=cfg.logo;
+  fillPagoSelects();
+  fillCatSelects();
+}
+
+
 async function renderProductos(){
   var q=(document.getElementById('prodsearch').value||'').toLowerCase();
   try{
@@ -2133,6 +2415,7 @@ async function generarReporte(tipo,desdeParam,hastaParam){
 }
 
 function descargarReportePDF(){
+  var cfg_=getCfg();
   if(!rptData.length){toast('No hay datos para el PDF');return;}
 
   var tot=rptData.reduce(function(s,v){return s+Number(v.total||0);},0);
@@ -2200,7 +2483,7 @@ function descargarReportePDF(){
     +'<tfoot><tr class="tfoot-row"><td colspan="6">Total</td><td class="right">'+fe(tot)+'</td><td></td></tr></tfoot>'
   +'</table>';
 
-  html+='<div class="footer">DECOTARA OUTLET · Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza · DECOTARAOUTLET@gmail.com · Generado el '+new Date().toLocaleDateString('es-ES')+'</div>';
+  html+='<div class="footer">'+cfg_.empresa_nombre+' · '+cfg_.empresa_dir+' · '+cfg_.empresa_email+' · Generado el '+new Date().toLocaleDateString('es-ES')+'</div>';
   html+='<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
   html+='</body></html>';
 
@@ -2290,6 +2573,7 @@ tr:nth-child(even) td{background:#fafafa}
 `;
 
 function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,notas,numAlbaran){
+  var cfg_=getCfg();
   var subtotal=ventas.reduce(function(s,v){return s+v.pvp*v.cantidad;},0);
   var descuentoVal=subtotal*(dto/100);
   var total=ventas.reduce(function(s,v){return s+v.total;},0);
@@ -2327,9 +2611,10 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
       +(cliEmail?'<div class="info-line"><b>Email:</b> '+cliEmail+'</div>':'')
     +'</div>'
     +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos de la Empresa</div>'
-      +'<div class="info-line"><b>Nombre:</b> DECOTARA OUTLET</div>'
-      +'<div class="info-line"><b>Dirección:</b> Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza</div>'
-      +'<div class="info-line"><b>Mail:</b> DECOTARAOUTLET@gmail.com</div>'
+      +'<div class="info-line"><b>Nombre:</b> '+cfg_.empresa_nombre+'</div>'
+      +(cfg_.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg_.empresa_dir+'</div>':'')
+      +(cfg_.empresa_tel?'<div class="info-line"><b>Teléfono:</b> '+cfg_.empresa_tel+'</div>':'')
+      +'<div class="info-line"><b>Mail:</b> '+cfg_.empresa_email+'</div>'
       +'<div class="info-line"><b>Vendedor:</b> '+vendedor+'</div>'
     +'</div>'
   +'</div>';
@@ -2615,6 +2900,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('btnSCart').addEventListener('click',saveCart);
   document.getElementById('btnNV').addEventListener('click',function(){openVM(null);});
   document.getElementById('btnNC').addEventListener('click',function(){openCM(null);});
+  document.getElementById('btnSaveConfig').addEventListener('click',saveConfig);
   document.getElementById('btnNVend').addEventListener('click',agregarVendedor);
   document.getElementById('btnNP').addEventListener('click',function(){openPM(null);});
   document.getElementById('btnNPcat').addEventListener('click',function(){openPM(null);});
