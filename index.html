@@ -612,7 +612,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 <div class="content">
 
   <!-- DASHBOARD -->
-  <div class="page active" id="page-dashboard">
+  <div class="page" id="page-dashboard">
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-accent"></div><div class="kpi-icon">💰</div><div class="kl">Ventas totales</div><div class="kv" id="k1">—</div><div class="ks">completadas</div></div>
       <div class="kpi green"><div class="kpi-accent"></div><div class="kpi-icon">✅</div><div class="kl">Nº ventas</div><div class="kv" id="k2">—</div><div class="ks">completadas</div></div>
@@ -2009,6 +2009,7 @@ async function initApp(){
       getCachedProductos()
     ]);
 
+    window._dashReady = true;
     navTo('dashboard');
 
   }catch(e){
@@ -2018,6 +2019,7 @@ async function initApp(){
 
 
 async function renderDash(){
+  if(!window._dashReady){return;} // Don't render until data is loaded
   try{
     // Stats del mes actual (no toda la historia)
     var hoyD=new Date(),primerDia=new Date(hoyD.getFullYear(),hoyD.getMonth(),1).toISOString().split('T')[0];
