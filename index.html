@@ -1943,34 +1943,63 @@ function showConnError(msg){
 
 
 async function initApp(){
+  fillVendSelects();
+  applyConfigOnLoad();
   var cajafecha=document.getElementById('caja_fecha');
   if(cajafecha)cajafecha.value=new Date().toISOString().split('T')[0];
 
-  var dbg=document.getElementById('dbg-bar');
-  function dbgLog(msg,ok){
-    if(dbg)dbg.innerHTML=(ok===true?'✅ ':ok===false?'❌ ':'⏳ ')+msg;
+  // Mostrar mensaje de diagnóstico visible
+  var dash=document.getElementById('page-dashboard');
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  if(dash){
+    dash.classList.add('active');
+    dash.innerHTML='<div style="padding:30px 20px;text-align:center">'
+      +'<div style="font-size:32px;margin-bottom:12px">🔌</div>'
+      +'<div style="font-size:16px;font-weight:800;margin-bottom:8px" id="connMsg">Conectando a Supabase...</div>'
+      +'<div style="font-size:12px;color:#888" id="connDetail">Iniciando conexión</div>'
+    +'</div>';
   }
-  if(dbg)dbg.style.display='block';
+
+  function setMsg(msg, detail, ok){
+    var m=document.getElementById('connMsg');
+    var d=document.getElementById('connDetail');
+    if(m)m.textContent=(ok===true?'✅ ':ok===false?'❌ ':'⏳ ')+msg;
+    if(d)d.textContent=detail||'';
+    setConn(ok===true);
+  }
 
   try{
-    dbgLog('Probando conexión...');
+    setMsg('Probando red...','Conectando con Supabase');
+    
     var ctrl=new AbortController();
-    var tid=setTimeout(function(){ctrl.abort();},15000);
+    var tid=setTimeout(function(){ctrl.abort();},12000);
     var r;
+    
     try{
       r=await fetch(SB+'/productos?select=id&limit=1',{headers:SH,signal:ctrl.signal});
       clearTimeout(tid);
     }catch(fe){
       clearTimeout(tid);
-      showConnError(fe.name==='AbortError'
-        ?'Sin respuesta (15s). El proyecto Supabase puede estar pausado.'
-        :'Error de red: '+fe.message);
+      var errMsg=fe.name==='AbortError'
+        ?'Sin respuesta en 12s — Supabase puede estar PAUSADO'
+        :'Error de red: '+fe.message;
+      setMsg('Sin conexión',errMsg,false);
+      if(dash)dash.innerHTML+='<div style="margin-top:20px;padding:0 20px">'
+        +'<div style="background:#fee2e2;border-radius:10px;padding:16px;font-size:13px;color:#c8372d;margin-bottom:12px"><b>Causa probable:</b> El proyecto Supabase está pausado.<br><br>1. Ve a <b>supabase.com</b><br>2. Abre tu proyecto<br>3. Pulsa <b>"Restore project"</b><br>4. Espera 2 min y recarga</div>'
+        +'<button onclick="location.reload()" style="width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">🔄 Reintentar</button>'
+      +'</div>';
       return;
     }
-    if(!r.ok){showConnError('Error Supabase '+r.status);return;}
 
-    setConn(true);
-    dbgLog('Conectado — cargando datos...',true);
+    setMsg('Respuesta HTTP '+r.status,'Procesando...');
+    
+    if(!r.ok){
+      var txt=await r.text();
+      setMsg('Error Supabase '+r.status,txt.slice(0,120),false);
+      return;
+    }
+
+    setMsg('Conectado','Cargando datos...',true);
 
     await Promise.all([
       GET('/clientes?select=dni&limit=1').then(function(){window._dniOk=true;}).catch(function(){window._dniOk=false;}),
@@ -1980,12 +2009,10 @@ async function initApp(){
       getCachedProductos()
     ]);
 
-    dbgLog('Listo ✓',true);
     navTo('dashboard');
-    setTimeout(function(){if(dbg)dbg.style.display='none';},1500);
 
   }catch(e){
-    showConnError('Error inesperado: '+e.message);
+    if(dash)dash.innerHTML='<div style="padding:30px;text-align:center"><div style="font-size:32px">💥</div><div style="font-weight:800;color:var(--red);margin:10px 0">Error inesperado</div><div style="font-size:12px;color:#888">'+e.message+'</div><button onclick="location.reload()" style="margin-top:16px;padding:12px 24px;background:var(--red);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Reintentar</button></div>';
   }
 }
 
