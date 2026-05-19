@@ -3456,5 +3456,16 @@ document.addEventListener('DOMContentLoaded',function(){
   initSecretButton();
 });
 </script>
+
+<script>
+// Debug: show any JS errors
+window.onerror = function(msg, src, line, col, err){
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;bottom:60px;left:10px;right:10px;background:#ff0000;color:#fff;padding:10px;border-radius:8px;z-index:9999;font-size:12px;font-family:monospace;word-break:break-all';
+  d.textContent = 'JS ERROR: ' + msg + ' (line ' + line + ')';
+  document.body.appendChild(d);
+  return false;
+};
+</script>
 </body>
 </html>
