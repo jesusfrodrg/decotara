@@ -1329,16 +1329,15 @@ async function renderCaja(){
 }
 
 function generarCajaPDF(){
-  var cfg_=getCfg();
   var d=window._cajaData;
   if(!d||!d.rows){toast('Primero carga los datos de caja');return;}
+  var cfg_=getCfg();
 
   var fecha=d.fecha;
   var rows=d.rows;
   var total=rows.reduce(function(s,v){return s+Number(v.total||0);},0);
   var numVentas=rows.length;
 
-  // Desglose por forma de pago
   var porPago={};
   rows.forEach(function(v){
     var p=v.forma_pago||'Efectivo';
@@ -1347,7 +1346,6 @@ function generarCajaPDF(){
     porPago[p].n++;
   });
 
-  // Desglose por vendedor
   var porVend={};
   rows.forEach(function(v){
     var vend=v.vendedor||'—';
@@ -1362,9 +1360,9 @@ function generarCajaPDF(){
     return '<tr>'
       +'<td><b style="color:#C8372D">'+v.id+'</b></td>'
       +'<td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td>'
-      +'<td>'+getProdNombre(v)+'</td>'
+      +'<td>'+(v.prod_nombre||getProdNombre(v))+'</td>'
       +'<td>'+(v.vendedor||'—')+'</td>'
-      +'<td>'+(pagoIconos[v.forma_pago]||'')+'  '+(v.forma_pago||'—')+'</td>'
+      +'<td>'+(pagoIconos[v.forma_pago]||'')+' '+(v.forma_pago||'—')+'</td>'
       +'<td class="right"><b>'+fe(v.total)+'</b></td>'
       +'</tr>';
   }).join('');
@@ -1374,45 +1372,81 @@ function generarCajaPDF(){
   }).join('');
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cierre de Caja '+fD(fecha)+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
+
+  // Fecha
   html+='<div class="doc-date">Fecha: '+fD(fecha)+'</div>';
-  html+='<div class="hdr"><div class="hdr-left"><div class="doc-type">CIERRE</div><div class="doc-badge">CIERRE DE CAJA · '+fD(fecha)+'</div></div>'
-    +'<div class="hdr-right"><img class="logo-circle" src="'+window._LOGO_B64+'"><div class="brand-name">DECOTARA</div><div class="brand-sub">OUTLET</div></div></div>';
+
+  // Cabecera estilo factura
+  html+='<div class="hdr">'
+    +'<div class="hdr-left">'
+      +'<div class="doc-type">CIERRE</div>'
+      +'<div class="doc-badge">CIERRE DE CAJA · '+fD(fecha)+'</div>'
+    +'</div>'
+    +'<div class="hdr-right">'
+      +'<img class="logo-circle" src="'+window._LOGO_B64+'">'
+      +'<div class="brand-name">'+cfg_.empresa_nombre+'</div>'
+      +'<div class="brand-sub">'+cfg_.empresa_email+'</div>'
+    +'</div>'
+  +'</div>';
   html+='<hr class="divider">';
 
+  // Dirección empresa
+  html+='<div style="font-size:11px;color:#888;margin-bottom:18px">'
+    +cfg_.empresa_nombre
+    +(cfg_.empresa_dir?' &nbsp;·&nbsp; '+cfg_.empresa_dir:'')
+    +(cfg_.empresa_tel?' &nbsp;·&nbsp; '+cfg_.empresa_tel:'')
+    +' &nbsp;·&nbsp; '+cfg_.empresa_email
+  +'</div>';
+
+  // Dos columnas
   html+='<div class="info-grid">'
-    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Resumen del Día</div>'
+    +'<div class="info-box">'
+      +'<div class="info-title"><div class="info-title-bar"></div>Resumen del Día</div>'
       +'<div class="info-line"><b>Fecha:</b> '+fD(fecha)+'</div>'
       +'<div class="info-line"><b>Nº de ventas:</b> '+numVentas+'</div>'
       +'<div class="info-line"><b>Ticket medio:</b> '+fe(numVentas?total/numVentas:0)+'</div>'
     +'</div>'
-    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Por Vendedor</div>'
+    +'<div class="info-box">'
+      +'<div class="info-title"><div class="info-title-bar"></div>Por Vendedor</div>'
       +Object.keys(porVend).map(function(v){
         return '<div class="info-line"><b>'+v+':</b> '+fe(porVend[v].tot)+' ('+porVend[v].n+' ventas)</div>';
       }).join('')
     +'</div>'
   +'</div>';
 
-  // Formas de pago table
+  // Formas de pago
   html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Desglose por Forma de Pago</div>';
   html+='<table><thead><tr><th>Forma de Pago</th><th class="center">Ventas</th><th class="right">Importe</th></tr></thead><tbody>'+pagoRows+'</tbody></table>';
 
+  // Total
   html+='<div class="totals-wrap"><table class="totals-table">'
     +'<tr><td>TOTAL DEL DÍA</td><td>'+fe(total)+'</td></tr>'
   +'</table></div>';
 
-  // Ventas detalle
+  // Detalle ventas
   html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
   html+='<table><thead><tr><th>Nº</th><th>Cliente</th><th>Producto</th><th>Vendedor</th><th>Pago</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody>'
     +'<tfoot><tr class="tfoot-row"><td colspan="5">TOTAL</td><td class="right">'+fe(total)+'</td></tr></tfoot>'
   +'</table>';
 
+  // Firma
   html+='<div class="sig-wrap"><div class="sig-box"><div class="sig-line">Responsable de caja</div></div></div>';
-  html+='<div class="footer">'+cfg_.empresa_nombre+' · '+cfg_.empresa_dir+' · '+cfg_.empresa_email+'</div>';
+
+  // Pie
+  html+='<div class="footer">'
+    +cfg_.empresa_nombre
+    +(cfg_.empresa_dir?' &nbsp;·&nbsp; '+cfg_.empresa_dir:'')
+    +' &nbsp;·&nbsp; '+cfg_.empresa_email
+  +'</div>';
+  if(cfg_.pie_factura){
+    html+='<div style="text-align:center;font-size:11px;color:#aaa;margin-top:6px">'+cfg_.pie_factura+'</div>';
+  }
   html+='<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
   html+='</body></html>';
 
   var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
 }
+
 
 function _agruparAgenda(rows){
   // Group by albaran_num if exists, else by cliente_id+fecha_entrega
@@ -2434,8 +2468,8 @@ async function generarReporte(tipo,desdeParam,hastaParam){
 }
 
 function descargarReportePDF(){
-  var cfg_=getCfg();
   if(!rptData.length){toast('No hay datos para el PDF');return;}
+  var cfg_=getCfg();
 
   var tot=rptData.reduce(function(s,v){return s+Number(v.total||0);},0);
   var numVentas=rptData.length;
@@ -2443,7 +2477,6 @@ function descargarReportePDF(){
   var nComp=rptData.filter(function(v){return v.estado==='Completada';}).length;
   var nPend=rptData.filter(function(v){return v.estado==='Pendiente';}).length;
 
-  // Desglose por vendedor
   var porVend={};
   rptData.forEach(function(v){
     var vend=v.vendedor||'—';
@@ -2460,7 +2493,7 @@ function descargarReportePDF(){
       +'<td><b style="color:#C8372D">'+v.id+'</b></td>'
       +'<td>'+fD(v.fecha)+'</td>'
       +'<td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td>'
-      +'<td>'+getProdNombre(v)+'</td>'
+      +'<td>'+(v.prod_nombre||getProdNombre(v))+'</td>'
       +'<td class="center">'+v.cantidad+'</td>'
       +'<td>'+(v.vendedor||'—')+'</td>'
       +'<td class="right"><b>'+fe(v.total)+'</b></td>'
@@ -2468,46 +2501,79 @@ function descargarReportePDF(){
       +'</tr>';
   }).join('');
 
-  var vendRows=Object.keys(porVend).sort(function(a,b){return porVend[b].tot-porVend[a].tot;}).map(function(vend){
-    return '<tr><td><b>'+vend+'</b></td><td class="center">'+porVend[vend].n+'</td><td class="right"><b>'+fe(porVend[vend].tot)+'</b></td></tr>';
-  }).join('');
-
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+rptTitleStr+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
+
+  // ── Fecha generación ──
   html+='<div class="doc-date">Generado el: '+new Date().toLocaleDateString('es-ES')+'</div>';
-  html+='<div class="hdr"><div class="hdr-left"><div class="doc-type">REPORTE</div><div class="doc-badge">'+rptTitleStr+'</div></div>'
-    +'<div class="hdr-right"><img class="logo-circle" src="'+window._LOGO_B64+'"><div class="brand-name">DECOTARA</div><div class="brand-sub">OUTLET</div></div></div>';
+
+  // ── Cabecera estilo factura ──
+  html+='<div class="hdr">'
+    +'<div class="hdr-left">'
+      +'<div class="doc-type">REPORTE</div>'
+      +'<div class="doc-badge">'+rptTitleStr+'</div>'
+    +'</div>'
+    +'<div class="hdr-right">'
+      +'<img class="logo-circle" src="'+window._LOGO_B64+'">'
+      +'<div class="brand-name">'+cfg_.empresa_nombre+'</div>'
+      +'<div class="brand-sub">'+cfg_.empresa_email+'</div>'
+    +'</div>'
+  +'</div>';
   html+='<hr class="divider">';
 
-  // KPI info boxes
+  // ── Dirección empresa ──
+  html+='<div style="font-size:11px;color:#888;margin-bottom:18px">'
+    +cfg_.empresa_nombre
+    +(cfg_.empresa_dir?' &nbsp;·&nbsp; '+cfg_.empresa_dir:'')
+    +(cfg_.empresa_tel?' &nbsp;·&nbsp; '+cfg_.empresa_tel:'')
+    +' &nbsp;·&nbsp; '+cfg_.empresa_email
+  +'</div>';
+
+  // ── Dos columnas: resumen + vendedores ──
   html+='<div class="info-grid">'
-    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Resumen del Periodo</div>'
+    +'<div class="info-box">'
+      +'<div class="info-title"><div class="info-title-bar"></div>Resumen del Periodo</div>'
       +'<div class="info-line"><b>Total ventas:</b> '+numVentas+'</div>'
       +'<div class="info-line"><b>Completadas:</b> '+nComp+' ('+Math.round(nComp/numVentas*100)+'%)</div>'
       +'<div class="info-line"><b>Pendientes:</b> '+nPend+'</div>'
       +'<div class="info-line"><b>Ticket medio:</b> '+fe(ticketMedio)+'</div>'
     +'</div>'
-    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Desglose por Vendedor</div>'
+    +'<div class="info-box">'
+      +'<div class="info-title"><div class="info-title-bar"></div>Desglose por Vendedor</div>'
       +Object.keys(porVend).sort(function(a,b){return porVend[b].tot-porVend[a].tot;}).map(function(v){
         return '<div class="info-line"><b>'+v+':</b> '+fe(porVend[v].tot)+' ('+porVend[v].n+' ventas)</div>';
       }).join('')
     +'</div>'
   +'</div>';
 
+  // ── Total destacado ──
   html+='<div class="totals-wrap"><table class="totals-table">'
     +'<tr><td>TOTAL DEL PERIODO</td><td>'+fe(tot)+'</td></tr>'
   +'</table></div>';
 
-  html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
-  html+='<table><thead><tr><th>Nº</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th class="center">Cant.</th><th>Vendedor</th><th class="right">Total</th><th>Estado</th></tr></thead><tbody>'+filas+'</tbody>'
-    +'<tfoot><tr class="tfoot-row"><td colspan="6">Total</td><td class="right">'+fe(tot)+'</td><td></td></tr></tfoot>'
+  // ── Tabla detalle ──
+  html+='<div class="info-title" style="margin-bottom:12px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
+  html+='<table>'
+    +'<thead><tr><th>Nº</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th class="center">Cant.</th><th>Vendedor</th><th class="right">Total</th><th>Estado</th></tr></thead>'
+    +'<tbody>'+filas+'</tbody>'
+    +'<tfoot><tr class="tfoot-row"><td colspan="6">TOTAL</td><td class="right">'+fe(tot)+'</td><td></td></tr></tfoot>'
   +'</table>';
 
-  html+='<div class="footer">'+cfg_.empresa_nombre+' · '+cfg_.empresa_dir+' · '+cfg_.empresa_email+' · Generado el '+new Date().toLocaleDateString('es-ES')+'</div>';
+  // ── Pie ──
+  html+='<div class="footer">'
+    +cfg_.empresa_nombre
+    +(cfg_.empresa_dir?' &nbsp;·&nbsp; '+cfg_.empresa_dir:'')
+    +' &nbsp;·&nbsp; '+cfg_.empresa_email
+    +' &nbsp;·&nbsp; Generado el '+new Date().toLocaleDateString('es-ES')
+  +'</div>';
+  if(cfg_.pie_factura){
+    html+='<div style="text-align:center;font-size:11px;color:#aaa;margin-top:6px">'+cfg_.pie_factura+'</div>';
+  }
   html+='<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
   html+='</body></html>';
 
   var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
 }
+
 
 function descargarCSV(){
   if(!rptData.length){toast('No hay datos para descargar');return;}
