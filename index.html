@@ -1414,6 +1414,22 @@ function generarCajaPDF(){
     +'</div>'
   +'</div>';
 
+  // Resumen por artículo
+  var artMapC={};
+  rows.forEach(function(v){
+    var key=v.producto_id||('_'+getProdNombre(v));
+    var nombre=v.prod_nombre||getProdNombre(v,'—');
+    if(!artMapC[key]){artMapC[key]={nombre:nombre,ventas:0,uds:0,total:0};}
+    artMapC[key].ventas++;
+    artMapC[key].uds+=Number(v.cantidad||1);
+    artMapC[key].total+=Number(v.total||0);
+  });
+  var artRowsC=Object.values(artMapC).sort(function(a,b){return b.total-a.total;}).map(function(a){
+    return '<tr><td><b>'+a.nombre+'</b></td><td class="center">'+a.ventas+'</td><td class="center">'+a.uds+'</td><td class="right"><b>'+fe(a.total)+'</b></td></tr>';
+  }).join('');
+  html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Ventas por Artículo</div>';
+  html+='<table><thead><tr><th>Artículo</th><th class="center">Nº Ventas</th><th class="center">Uds.</th><th class="right">Total</th></tr></thead><tbody>'+artRowsC+'</tbody></table>';
+
   // Formas de pago
   html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Desglose por Forma de Pago</div>';
   html+='<table><thead><tr><th>Forma de Pago</th><th class="center">Ventas</th><th class="right">Importe</th></tr></thead><tbody>'+pagoRows+'</tbody></table>';
@@ -1960,9 +1976,9 @@ async function renderDash(){
     var mx=Math.max.apply(null,ct.concat([1]));
     document.getElementById('cchart').innerHTML=cats.map(function(c,i){return '<div class="chart-bar"><div class="cb-label">'+c+'</div><div class="cb-track"><div class="cb-fill" style="width:'+(ct[i]/mx*100).toFixed(1)+'%;background:'+fills[i]+'">'+(ct[i]>50?fe(ct[i]):'')+'</div></div></div>';}).join('');
     var pm={};
-    comp.forEach(function(v){var pid=v.producto_id;if(!pid)return;if(!pm[pid])pm[pid]={n:v.productos?v.productos.nombre:pid,c:getProdCat(v),t:0,u:0};pm[pid].t+=Number(v.total||0);pm[pid].u+=v.cantidad||0;});
+    comp.forEach(function(v){var pid=v.producto_id||('_'+getProdNombre(v));var pn=getProdNombre(v,'—');if(!pm[pid])pm[pid]={n:pn,c:getProdCat(v),t:0,u:0,ventas:0};pm[pid].t+=Number(v.total||0);pm[pid].u+=Number(v.cantidad||1);pm[pid].ventas++;});
     var top=Object.values(pm).sort(function(a,b){return b.t-a.t;}).slice(0,5);
-    document.getElementById('ctop5').innerHTML=top.length?top.map(function(x,i){return '<div class="rr"><div class="rn">'+(i+1)+'</div><div class="ri"><div class="rna">'+x.n+'</div><div class="rc">'+x.c+' · '+x.u+' uds.</div></div><div class="ra">'+fe(x.t)+'</div></div>';}).join(''):'<div class="empty"><div class="empty-i">📦</div>Sin ventas aún</div>';
+    document.getElementById('ctop5').innerHTML=top.length?top.map(function(x,i){return '<div class="rr"><div class="rn">'+(i+1)+'</div><div class="ri"><div class="rna">'+x.n+'</div><div class="rc">'+x.c+' · '+x.ventas+' ventas · '+x.u+' uds.</div></div><div class="ra">'+fe(x.t)+'</div></div>';}).join(''):'<div class="empty"><div class="empty-i">📦</div>Sin ventas aún</div>';
     // Agrupar las últimas ventas por albarán (igual que en ventas)
     var dashGrupos={};var dashOrden=[];
     all.forEach(function(v){
@@ -2544,6 +2560,22 @@ function descargarReportePDF(){
       }).join('')
     +'</div>'
   +'</div>';
+
+  // ── Resumen por artículo ──
+  var artMap={};
+  rptData.forEach(function(v){
+    var key=v.producto_id||('_'+getProdNombre(v));
+    var nombre=v.prod_nombre||getProdNombre(v,'—');
+    if(!artMap[key]){artMap[key]={nombre:nombre,ventas:0,uds:0,total:0};}
+    artMap[key].ventas++;
+    artMap[key].uds+=Number(v.cantidad||1);
+    artMap[key].total+=Number(v.total||0);
+  });
+  var artRows=Object.values(artMap).sort(function(a,b){return b.total-a.total;}).map(function(a){
+    return '<tr><td><b>'+a.nombre+'</b></td><td class="center">'+a.ventas+'</td><td class="center">'+a.uds+'</td><td class="right"><b>'+fe(a.total)+'</b></td></tr>';
+  }).join('');
+  html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Ventas por Artículo</div>';
+  html+='<table><thead><tr><th>Artículo</th><th class="center">Nº Ventas</th><th class="center">Uds.</th><th class="right">Total</th></tr></thead><tbody>'+artRows+'</tbody></table>';
 
   // ── Total destacado ──
   html+='<div class="totals-wrap"><table class="totals-table">'
