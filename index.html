@@ -1054,6 +1054,51 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 </div>
 
 
+<!-- MODAL IMPORTAR STOCK -->
+<div class="modal" id="modal-import" style="display:none">
+  <div class="modal-box" style="max-width:520px">
+    <div class="mh"><span class="mt">📥 Importar Stock</span><button class="mc" onclick="closeM('modal-import')">✕</button></div>
+    <div class="mb">
+
+      <!-- PASO 1: Subir archivo -->
+      <div id="import-step1">
+        <div style="text-align:center;padding:8px 0 20px">
+          <div style="font-size:40px;margin-bottom:10px">📄</div>
+          <div style="font-weight:700;font-size:15px;margin-bottom:6px">Sube tu factura de compra</div>
+          <div style="font-size:12px;color:var(--gray);margin-bottom:20px">PDF, Excel (.xlsx/.xls) o imagen — la IA leerá los productos automáticamente</div>
+          <label id="import-drop-area" style="display:block;border:2px dashed var(--lgray);border-radius:12px;padding:32px 20px;cursor:pointer;transition:all .2s;background:var(--xlgray)">
+            <div style="font-size:28px;margin-bottom:8px">📁</div>
+            <div style="font-weight:700;color:var(--gray)">Toca para seleccionar archivo</div>
+            <div style="font-size:11px;color:var(--gray);margin-top:4px">PDF · Excel · JPG · PNG</div>
+            <input type="file" id="import-file" accept=".pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png" style="display:none">
+          </label>
+          <div id="import-file-name" style="margin-top:10px;font-size:12px;color:var(--gray);display:none"></div>
+        </div>
+        <button id="import-btn-analizar" class="btn bp" style="width:100%;display:none" onclick="analizarArchivoImport()">🤖 Analizar con IA</button>
+      </div>
+
+      <!-- PASO 2: Procesando -->
+      <div id="import-step2" style="display:none;text-align:center;padding:30px 0">
+        <div style="width:48px;height:48px;border:4px solid var(--red);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px"></div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:6px">Analizando con IA...</div>
+        <div style="font-size:12px;color:var(--gray)" id="import-step2-msg">Leyendo el documento</div>
+      </div>
+
+      <!-- PASO 3: Revisión -->
+      <div id="import-step3" style="display:none">
+        <div style="font-weight:700;font-size:14px;margin-bottom:4px">Productos encontrados — revisa antes de importar</div>
+        <div style="font-size:12px;color:var(--gray);margin-bottom:14px" id="import-summary"></div>
+        <div id="import-products-list" style="max-height:320px;overflow-y:auto;border:1px solid var(--xlgray);border-radius:10px"></div>
+      </div>
+
+    </div>
+    <div class="mf" id="import-footer" style="display:none">
+      <button class="btn bs2" onclick="importReset()">← Volver</button>
+      <button class="btn bp" id="import-btn-confirmar" onclick="confirmarImport()">✅ Importar al stock</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -2445,6 +2490,308 @@ function applyConfigOnLoad(){
 }
 
 
+// ══════ IMPORTAR STOCK ══════
+var _importData = []; // parsed products from AI
+
+function openImportStock(){
+  importReset();
+  document.getElementById('modal-import').style.display='flex';
+}
+
+function importReset(){
+  document.getElementById('import-step1').style.display='block';
+  document.getElementById('import-step2').style.display='none';
+  document.getElementById('import-step3').style.display='none';
+  document.getElementById('import-footer').style.display='none';
+  document.getElementById('import-btn-analizar').style.display='none';
+  document.getElementById('import-file-name').style.display='none';
+  document.getElementById('import-file').value='';
+  _importData=[];
+}
+
+function initImportEvents(){
+  var fileInput=document.getElementById('import-file');
+  var dropArea=document.getElementById('import-drop-area');
+  if(!fileInput)return;
+
+  dropArea.addEventListener('click',function(){fileInput.click();});
+  fileInput.addEventListener('change',function(){
+    var file=fileInput.files[0];
+    if(!file)return;
+    var nameEl=document.getElementById('import-file-name');
+    nameEl.textContent='📎 '+file.name+' ('+Math.round(file.size/1024)+' KB)';
+    nameEl.style.display='block';
+    document.getElementById('import-btn-analizar').style.display='block';
+  });
+}
+
+async function analizarArchivoImport(){
+  var file=document.getElementById('import-file').files[0];
+  if(!file){toast('Selecciona un archivo primero');return;}
+
+  document.getElementById('import-step1').style.display='none';
+  document.getElementById('import-step2').style.display='block';
+  document.getElementById('import-step2-msg').textContent='Leyendo el archivo...';
+
+  try{
+    var base64='';
+    var mediaType='';
+
+    // Determine type
+    var ext=file.name.split('.').pop().toLowerCase();
+    var isImage=['jpg','jpeg','png','gif','webp'].indexOf(ext)>=0;
+    var isPdf=ext==='pdf';
+    var isExcel=['xlsx','xls'].indexOf(ext)>=0;
+    var isCsv=ext==='csv';
+
+    if(isExcel||isCsv){
+      // Parse Excel/CSV locally using text extraction
+      document.getElementById('import-step2-msg').textContent='Leyendo hoja de cálculo...';
+      var text=await leerExcelComoTexto(file);
+      await analizarTextoConIA(text, file.name);
+    } else if(isImage){
+      document.getElementById('import-step2-msg').textContent='Leyendo imagen...';
+      base64=await fileToBase64(file);
+      mediaType='image/'+ext.replace('jpg','jpeg');
+      await analizarImagenConIA(base64, mediaType);
+    } else if(isPdf){
+      document.getElementById('import-step2-msg').textContent='Leyendo PDF...';
+      base64=await fileToBase64(file);
+      await analizarPDFConIA(base64);
+    } else {
+      throw new Error('Formato no soportado: '+ext);
+    }
+  }catch(e){
+    document.getElementById('import-step2').style.display='none';
+    document.getElementById('import-step1').style.display='block';
+    toast('Error al analizar: '+e.message, 5000);
+  }
+}
+
+function fileToBase64(file){
+  return new Promise(function(res,rej){
+    var r=new FileReader();
+    r.onload=function(e){res(e.target.result.split(',')[1]);};
+    r.onerror=function(){rej(new Error('Error al leer el archivo'));};
+    r.readAsDataURL(file);
+  });
+}
+
+async function leerExcelComoTexto(file){
+  return new Promise(function(res,rej){
+    var r=new FileReader();
+    r.onload=function(e){
+      // Read as text (CSV) or try to extract text from xlsx
+      var text='';
+      try{
+        var data=new Uint8Array(e.target.result);
+        // Try as text
+        text=new TextDecoder('utf-8',{fatal:false}).decode(data);
+        // Remove non-printable chars
+        text=text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,' ').substring(0,8000);
+      }catch(err){
+        text='No se pudo leer el archivo';
+      }
+      res(text);
+    };
+    r.onerror=function(){rej(new Error('Error al leer Excel'));};
+    r.readAsArrayBuffer(file);
+  });
+}
+
+async function analizarTextoConIA(texto, filename){
+  document.getElementById('import-step2-msg').textContent='Analizando con IA...';
+
+  var prompt='Eres un asistente de gestión de stock para una tienda de muebles llamada DECOTARA OUTLET.\n'
+    +'Analiza este documento ('+filename+') y extrae TODOS los productos/artículos que se compraron.\n'
+    +'Para cada producto devuelve un JSON con estos campos:\n'
+    +'- nombre: nombre del producto\n'
+    +'- categoria: una de estas: Sofa, Canape, Colchon, Sillon, Comedor, Dormitorio, Auxiliar, Otros\n'
+    +'- cantidad: número de unidades compradas (entero)\n'
+    +'- coste: precio de coste unitario (número, 0 si no aparece)\n'
+    +'- pvp: precio de venta recomendado (número, 0 si no aparece)\n'
+    +'- descripcion: descripción breve si aparece\n\n'
+    +'Responde SOLO con un array JSON válido, sin explicaciones ni markdown.\n'
+    +'Ejemplo: [{"nombre":"Sofá 3 plazas","categoria":"Sofa","cantidad":2,"coste":150,"pvp":299,"descripcion":""}]\n\n'
+    +'DOCUMENTO:\n'+texto.substring(0,6000);
+
+  var resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      messages:[{role:'user',content:prompt}]
+    })
+  });
+  var data=await resp.json();
+  var text=data.content&&data.content[0]?data.content[0].text:'[]';
+  procesarRespuestaIA(text);
+}
+
+async function analizarImagenConIA(base64, mediaType){
+  document.getElementById('import-step2-msg').textContent='Analizando imagen con IA...';
+
+  var resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
+        {type:'text',text:'Eres un asistente de gestión de stock para DECOTARA OUTLET (tienda de muebles).\nAnaliza esta imagen de factura/albarán de compra y extrae TODOS los productos.\nPara cada producto devuelve:\n- nombre: nombre del producto\n- categoria: una de: Sofa, Canape, Colchon, Sillon, Comedor, Dormitorio, Auxiliar, Otros\n- cantidad: unidades (entero)\n- coste: precio unitario de coste (número, 0 si no aparece)\n- pvp: precio venta recomendado (0 si no aparece)\n- descripcion: descripción breve\nResponde SOLO con array JSON válido sin markdown ni explicaciones.'}
+      ]}]
+    })
+  });
+  var data=await resp.json();
+  var text=data.content&&data.content[0]?data.content[0].text:'[]';
+  procesarRespuestaIA(text);
+}
+
+async function analizarPDFConIA(base64){
+  document.getElementById('import-step2-msg').textContent='Analizando PDF con IA...';
+
+  var resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      messages:[{role:'user',content:[
+        {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
+        {type:'text',text:'Eres un asistente de gestión de stock para DECOTARA OUTLET (tienda de muebles).\nAnaliza este PDF de factura/albarán de compra y extrae TODOS los productos.\nPara cada producto devuelve:\n- nombre: nombre del producto\n- categoria: una de: Sofa, Canape, Colchon, Sillon, Comedor, Dormitorio, Auxiliar, Otros\n- cantidad: unidades (entero)\n- coste: precio unitario de coste (número, 0 si no aparece)\n- pvp: precio venta recomendado (0 si no aparece)\n- descripcion: descripción breve\nResponde SOLO con array JSON válido sin markdown ni explicaciones.'}
+      ]}]
+    })
+  });
+  var data=await resp.json();
+  var text=data.content&&data.content[0]?data.content[0].text:'[]';
+  procesarRespuestaIA(text);
+}
+
+function procesarRespuestaIA(text){
+  try{
+    // Clean markdown if present
+    text=text.replace(/```json|```/g,'').trim();
+    var productos=JSON.parse(text);
+    if(!Array.isArray(productos)||productos.length===0){
+      throw new Error('No se encontraron productos en el documento');
+    }
+    _importData=productos;
+    mostrarPasoRevision(productos);
+  }catch(e){
+    document.getElementById('import-step2').style.display='none';
+    document.getElementById('import-step1').style.display='block';
+    toast('❌ '+e.message+'. Prueba con otro formato.',5000);
+  }
+}
+
+function mostrarPasoRevision(productos){
+  document.getElementById('import-step2').style.display='none';
+  document.getElementById('import-step3').style.display='block';
+  document.getElementById('import-footer').style.display='flex';
+
+  var totalUds=productos.reduce(function(s,p){return s+(parseInt(p.cantidad)||0);},0);
+  document.getElementById('import-summary').textContent=
+    productos.length+' producto(s) encontrado(s) · '+totalUds+' unidades en total';
+
+  var cats=getCfg().categorias;
+  var catOpts=cats.map(function(c){return '<option>'+c+'</option>';}).join('');
+
+  document.getElementById('import-products-list').innerHTML=productos.map(function(p,i){
+    return '<div style="padding:12px 14px;border-bottom:1px solid var(--xlgray)">'
+      +'<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">'
+        +'<div style="flex:1">'
+          +'<label style="font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase">Nombre</label>'
+          +'<input type="text" value="'+escHtml(p.nombre||'')+'" data-i="'+i+'" data-f="nombre" style="width:100%;padding:6px 8px;border:1.5px solid var(--lgray);border-radius:6px;font-size:13px;box-sizing:border-box;margin-top:2px">'
+        +'</div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 80px 90px 90px;gap:8px">'
+        +'<div>'
+          +'<label style="font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase">Categoría</label>'
+          +'<select data-i="'+i+'" data-f="categoria" style="width:100%;padding:6px;border:1.5px solid var(--lgray);border-radius:6px;font-size:12px;margin-top:2px">'+cats.map(function(c){return '<option'+(c===p.categoria?' selected':'')+'>'+c+'</option>';}).join('')+'</select>'
+        +'</div>'
+        +'<div>'
+          +'<label style="font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase">Uds.</label>'
+          +'<input type="number" value="'+(parseInt(p.cantidad)||1)+'" min="1" data-i="'+i+'" data-f="cantidad" style="width:100%;padding:6px 8px;border:1.5px solid var(--lgray);border-radius:6px;font-size:13px;box-sizing:border-box;margin-top:2px">'
+        +'</div>'
+        +'<div>'
+          +'<label style="font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase">Coste €</label>'
+          +'<input type="number" value="'+(parseFloat(p.coste)||0)+'" min="0" step="0.01" data-i="'+i+'" data-f="coste" style="width:100%;padding:6px 8px;border:1.5px solid var(--lgray);border-radius:6px;font-size:13px;box-sizing:border-box;margin-top:2px">'
+        +'</div>'
+        +'<div>'
+          +'<label style="font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase">PVP €</label>'
+          +'<input type="number" value="'+(parseFloat(p.pvp)||0)+'" min="0" step="0.01" data-i="'+i+'" data-f="pvp" style="width:100%;padding:6px 8px;border:1.5px solid var(--lgray);border-radius:6px;font-size:13px;box-sizing:border-box;margin-top:2px">'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+
+  // Wire input changes
+  document.querySelectorAll('#import-products-list input, #import-products-list select').forEach(function(el){
+    el.addEventListener('change',function(){
+      var i=parseInt(this.dataset.i);
+      var f=this.dataset.f;
+      _importData[i][f]=f==='cantidad'?parseInt(this.value)||1:f==='coste'||f==='pvp'?parseFloat(this.value)||0:this.value;
+    });
+  });
+}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+async function confirmarImport(){
+  if(!_importData.length){toast('No hay productos para importar');return;}
+  var btn=document.getElementById('import-btn-confirmar');
+  btn.disabled=true;btn.textContent='Importando...';
+
+  var cfg=getCfg();
+  var ok=0;var err=0;
+
+  for(var i=0;i<_importData.length;i++){
+    var p=_importData[i];
+    try{
+      var cat=p.categoria||'Otros';
+      var prefixes={Sofa:'SOF-',Canape:'CAN-',Colchon:'COL-',Sillon:'SIL-',Comedor:'COM-',Dormitorio:'DOR-',Auxiliar:'AUX-',Otros:'OTR-'};
+      var pfx=prefixes[cat]||'PRO-';
+
+      // Check if product with same name exists
+      var existing=await GET('/productos?select=id,stock&nombre=eq.'+encodeURIComponent(p.nombre)+'&limit=1');
+      if(existing&&existing.length>0){
+        // Update stock by adding quantity
+        var newStock=(parseInt(existing[0].stock)||0)+(parseInt(p.cantidad)||1);
+        await PATCH('/productos?id=eq.'+existing[0].id,{stock:newStock});
+        ok++;
+      } else {
+        // Create new product
+        var ex=await GET('/productos?select=id&categoria=eq.'+encodeURIComponent(cat)+'&order=id.desc&limit=1');
+        var nv=ex.length?parseInt(ex[0].id.replace(pfx,''))||0:0;
+        var newId=pfx+String(nv+1).padStart(3,'0');
+        await POST('/productos',{
+          id:newId,
+          nombre:p.nombre,
+          categoria:cat,
+          descripcion:p.descripcion||'',
+          pvp:parseFloat(p.pvp)||0,
+          coste:parseFloat(p.coste)||0,
+          stock:parseInt(p.cantidad)||1
+        });
+        ok++;
+      }
+    }catch(e){
+      console.error('Error importando '+p.nombre,e);
+      err++;
+    }
+  }
+
+  btn.disabled=false;btn.textContent='✅ Importar al stock';
+  closeM('modal-import');
+  invalidarCacheProductos();
+  loadStockCache();
+  renderProductos();
+  toast('✅ Importados: '+ok+' productos'+(err?' · ❌ Errores: '+err:''),4000);
+}
+
+
 async function renderProductos(){
   var q=(document.getElementById('prodsearch').value||'').toLowerCase();
   try{
@@ -3020,6 +3367,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('btnSaveConfig').addEventListener('click',saveConfig);
   document.getElementById('btnNVend').addEventListener('click',agregarVendedor);
   document.getElementById('btnNP').addEventListener('click',function(){openPM(null);});
+  document.getElementById('btnImportStock').addEventListener('click',function(){openImportStock();initImportEvents();});
   document.getElementById('btnNPcat').addEventListener('click',function(){openPM(null);});
   document.getElementById('rptDia').addEventListener('click',function(){generarReporte('dia');});
   document.getElementById('rptSem').addEventListener('click',function(){generarReporte('sem');});
