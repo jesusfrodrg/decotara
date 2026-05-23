@@ -1099,6 +1099,27 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   </div>
 </div>
 
+<!-- MODAL DOCUMENTOS DE COMPRA -->
+<div class="modal" id="modal-docs" style="display:none">
+  <div class="modal-box" style="max-width:520px">
+    <div class="mh"><span class="mt">📂 Documentos de Compra</span><button class="mc" onclick="closeM('modal-docs')">✕</button></div>
+    <div class="mb">
+      <div style="font-size:12px;color:var(--gray);margin-bottom:14px">Guarda aquí las facturas y albaranes de tus proveedores para tenerlos siempre a mano.</div>
+
+      <!-- Subir nuevo documento -->
+      <div style="border:1.5px dashed var(--lgray);border-radius:10px;padding:16px;margin-bottom:16px;text-align:center;cursor:pointer" id="docs-drop-area">
+        <div style="font-size:24px;margin-bottom:6px">📎</div>
+        <div style="font-weight:700;font-size:13px;color:var(--gray)">Toca para añadir documento</div>
+        <div style="font-size:11px;color:var(--lgray);margin-top:3px">PDF · Excel · Imagen</div>
+        <input type="file" id="docs-file-input" accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png" style="display:none" multiple>
+      </div>
+
+      <!-- Lista de documentos guardados -->
+      <div id="docs-list"></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1864,8 +1885,8 @@ async function renderAgenda(){
     var dniF2=window._dniOk?',dni':'';
     var base='*,albaran_num,clientes(nombre,apellidos,ciudad'+dniF2+'),productos(nombre,categoria)';
     if(agFiltro==='hoy'){
-      url='/ventas?select='+base+'&fecha_entrega=eq.'+hoyStr+'&estado=neq.Cancelada&entregado=is.null&order=fecha_entrega.asc';
-      urlEnt='/ventas?select='+base+'&fecha_entrega=eq.'+hoyStr+'&estado=neq.Cancelada&entregado=eq.true&order=fecha_entrega.asc';
+      url='/ventas?select='+base+'&or=(fecha_entrega.eq.'+hoyStr+',and(entrega.eq.Transporte y Montaje,fecha_entrega.is.null))&estado=neq.Cancelada&entregado=is.null&order=fecha_entrega.asc';
+      urlEnt='/ventas?select='+base+'&or=(fecha_entrega.eq.'+hoyStr+',and(entrega.eq.Transporte y Montaje,fecha_entrega.is.null))&estado=neq.Cancelada&entregado=eq.true&order=fecha_entrega.asc';
     }else if(agFiltro==='semana'){
       url='/ventas?select='+base+'&fecha_entrega=gte.'+hoyStr+'&fecha_entrega=lte.'+finSemStr+'&estado=neq.Cancelada&entregado=is.null&order=fecha_entrega.asc';
       urlEnt='/ventas?select='+base+'&fecha_entrega=gte.'+hoyStr+'&fecha_entrega=lte.'+finSemStr+'&estado=neq.Cancelada&entregado=eq.true&order=fecha_entrega.asc';
@@ -1877,7 +1898,10 @@ async function renderAgenda(){
       urlEnt='/ventas?select='+base+'&fecha_entrega=gte.'+hoyStr+'&estado=neq.Cancelada&entregado=eq.true&order=fecha_entrega.desc';
     }
     // Cargar pendientes y entregadas en paralelo
-    var [rows,rowsEnt]=await Promise.all([GET(url),GET(urlEnt).catch(function(){return [];})]);
+    var urlTrans='/ventas?select='+base+'&entrega=eq.Transporte y Montaje&fecha_entrega=is.null&estado=neq.Cancelada&entregado=is.null';
+    var [rows,rowsEnt,rowsTrans]=await Promise.all([GET(url),GET(urlEnt).catch(function(){return [];}),GET(urlTrans).catch(function(){return[];})]);
+    var _rids=new Set(rows.map(function(r){return r.id;}));
+    rowsTrans.forEach(function(r){if(!_rids.has(r.id))rows.push(r);});
     _agendaCache=rows;_entregadasCache=rowsEnt;
     // Pendientes
     if(!rows.length){
@@ -2526,7 +2550,8 @@ function initImportEvents(){
 }
 
 async function analizarArchivoImport(){
-  var file=document.getElementById('import-file').files[0];
+  var file=window._importFileOverride||document.getElementById('import-file').files[0];
+  window._importFileOverride=null;
   if(!file){toast('Selecciona un archivo primero');return;}
 
   document.getElementById('import-step1').style.display='none';
@@ -2789,6 +2814,302 @@ async function confirmarImport(){
   loadStockCache();
   renderProductos();
   toast('✅ Importados: '+ok+' productos'+(err?' · ❌ Errores: '+err:''),4000);
+}
+
+
+// ══════ DOCUMENTOS DE COMPRA ══════
+var _DOCS_KEY = 'decotara_docs_index';
+
+function getDocsIndex(){
+  try{var s=localStorage.getItem(_DOCS_KEY);if(s)return JSON.parse(s);}catch(e){}
+  return [];
+}
+
+function saveDocsIndex(docs){
+  // Save only metadata (not file content) to avoid localStorage size limits
+  localStorage.setItem(_DOCS_KEY, JSON.stringify(docs));
+}
+
+function renderDocs(){
+  var docs=getDocsIndex();
+  var el=document.getElementById('docs-list');
+  if(!el)return;
+  if(!docs.length){
+    el.innerHTML='<div style="text-align:center;color:var(--gray);padding:24px;font-size:13px">No hay documentos subidos aún.<br>Sube facturas o albaranes de tus proveedores.</div>';
+    return;
+  }
+  var icons={pdf:'📄',xlsx:'📊',xls:'📊',jpg:'🖼️',jpeg:'🖼️',png:'🖼️',csv:'📊'};
+  el.innerHTML=docs.map(function(d,i){
+    var ext=(d.name.split('.').pop()||'').toLowerCase();
+    var icon=icons[ext]||'📎';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--xlgray)">'
+      +'<div style="font-size:26px;flex-shrink:0">'+icon+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.name+'</div>'
+        +'<div style="font-size:11px;color:var(--gray);margin-top:2px">'+d.fecha+' · '+d.size+'</div>'
+        +(d.nota?'<div style="font-size:11px;color:var(--gray);margin-top:1px;font-style:italic">'+d.nota+'</div>':'')
+      +'</div>'
+      +'<div style="display:flex;gap:6px;flex-shrink:0">'
+        +'<button onclick="verDoc('+i+')" style="background:var(--xlgray);border:none;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:12px" title="Ver">👁</button>'
+        +'<button onclick="importarDesdeDoc('+i+')" style="background:#ede9fe;color:#5b21b6;border:none;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700" title="Importar stock desde este doc">📥</button>'
+        +'<button onclick="eliminarDoc('+i+')" style="background:#fee2e2;color:var(--red);border:none;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:12px" title="Eliminar">🗑️</button>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function initDocEvents(){
+  var btn=document.getElementById('btnSubirDoc');
+  var input=document.getElementById('doc-file-input');
+  if(!btn||!input)return;
+  btn.onclick=function(){input.click();};
+  input.onchange=function(){
+    Array.from(input.files).forEach(function(file){subirDoc(file);});
+    input.value='';
+  };
+}
+
+function subirDoc(file){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var b64=e.target.result; // full data URL
+    var key='decotara_doc_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    try{
+      localStorage.setItem(key, b64);
+    }catch(err){
+      toast('❌ Archivo demasiado grande para guardar (máx ~4MB)');
+      return;
+    }
+    var docs=getDocsIndex();
+    var size=file.size>1048576?(file.size/1048576).toFixed(1)+' MB':(file.size/1024).toFixed(0)+' KB';
+    docs.unshift({name:file.name,fecha:new Date().toLocaleDateString('es-ES'),size:size,key:key,nota:''});
+    saveDocsIndex(docs);
+    renderDocs();
+    toast('✅ '+file.name+' guardado');
+  };
+  reader.readAsDataURL(file);
+}
+
+function verDoc(i){
+  var docs=getDocsIndex();
+  var d=docs[i];
+  if(!d)return;
+  try{
+    var data=localStorage.getItem(d.key);
+    if(!data){toast('Archivo no encontrado');return;}
+    var ext=(d.name.split('.').pop()||'').toLowerCase();
+    if(['jpg','jpeg','png','gif','webp'].indexOf(ext)>=0){
+      var w=window.open('','_blank');
+      w.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+data+'" style="max-width:100%;max-height:100vh;object-fit:contain"></body></html>');
+    } else if(ext==='pdf'){
+      var w=window.open('','_blank');
+      w.document.write('<html><body style="margin:0"><embed src="'+data+'" type="application/pdf" width="100%" height="100%" style="position:fixed;inset:0"></body></html>');
+    } else {
+      // Download
+      var a=document.createElement('a');
+      a.href=data;a.download=d.name;a.click();
+    }
+  }catch(e){toast('Error al abrir: '+e.message);}
+}
+
+function importarDesdeDoc(i){
+  var docs=getDocsIndex();
+  var d=docs[i];
+  if(!d)return;
+  try{
+    var data=localStorage.getItem(d.key);
+    if(!data){toast('Archivo no encontrado');return;}
+    // Open import modal pre-loaded with this file
+    openImportStock();
+    initImportEvents();
+    // Set file name display
+    var nameEl=document.getElementById('import-file-name');
+    if(nameEl){nameEl.textContent='📎 '+d.name;nameEl.style.display='block';}
+    var btnAn=document.getElementById('import-btn-analizar');
+    if(btnAn)btnAn.style.display='block';
+    // Store data for analysis
+    window._importPreloadedFile={name:d.name,data:data};
+    // Override the analizar button
+    if(btnAn){
+      btnAn.onclick=function(){
+        analizarPreloadedFile(window._importPreloadedFile);
+      };
+    }
+    toast('Pulsa "Analizar con IA" para importar desde '+d.name);
+  }catch(e){toast('Error: '+e.message);}
+}
+
+async function analizarPreloadedFile(f){
+  if(!f)return;
+  document.getElementById('import-step1').style.display='none';
+  document.getElementById('import-step2').style.display='block';
+  var ext=(f.name.split('.').pop()||'').toLowerCase();
+  var base64=f.data.split(',')[1];
+  var mediaType=f.data.split(',')[0].split(':')[1].split(';')[0];
+  try{
+    if(['jpg','jpeg','png','gif','webp'].indexOf(ext)>=0){
+      await analizarImagenConIA(base64,mediaType);
+    } else if(ext==='pdf'){
+      await analizarPDFConIA(base64);
+    } else {
+      var text=atob(base64);
+      await analizarTextoConIA(text,f.name);
+    }
+  }catch(e){
+    document.getElementById('import-step2').style.display='none';
+    document.getElementById('import-step1').style.display='block';
+    toast('Error: '+e.message);
+  }
+}
+
+function eliminarDoc(i){
+  var docs=getDocsIndex();
+  if(!confirm('¿Eliminar "'+docs[i].name+'"?'))return;
+  try{localStorage.removeItem(docs[i].key);}catch(e){}
+  docs.splice(i,1);
+  saveDocsIndex(docs);
+  renderDocs();
+  toast('Documento eliminado');
+}
+
+
+// ══════ DOCUMENTOS DE COMPRA ══════
+var _DOCS_KEY = 'decotara_docs_v2';
+
+function getDocs(){
+  try{var d=localStorage.getItem(_DOCS_KEY);if(d)return JSON.parse(d);}catch(e){}
+  return [];
+}
+
+function saveDocs(docs){
+  try{localStorage.setItem(_DOCS_KEY,JSON.stringify(docs));}
+  catch(e){toast('Error guardando: archivo demasiado grande para el almacenamiento local',5000);}
+}
+
+function openDocsModal(){
+  document.getElementById('modal-docs').style.display='flex';
+  renderDocsList();
+  initDocsEvents();
+}
+
+function initDocsEvents(){
+  var area=document.getElementById('docs-drop-area');
+  var input=document.getElementById('docs-file-input');
+  if(area._docsInited)return;
+  area._docsInited=true;
+  area.addEventListener('click',function(){input.click();});
+  input.addEventListener('change',function(){
+    Array.from(input.files).forEach(function(file){subirDoc(file);});
+    input.value='';
+  });
+}
+
+function subirDoc(file){
+  var maxMB=4;
+  if(file.size>maxMB*1024*1024){
+    toast('❌ Archivo demasiado grande (máx '+maxMB+'MB): '+file.name,4000);
+    return;
+  }
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var docs=getDocs();
+    var ext=file.name.split('.').pop().toLowerCase();
+    var tipo=ext==='pdf'?'pdf':['xlsx','xls'].indexOf(ext)>=0?'excel':['jpg','jpeg','png'].indexOf(ext)>=0?'imagen':'otro';
+    docs.unshift({
+      id:Date.now(),
+      nombre:file.name,
+      tipo:tipo,
+      fecha:new Date().toLocaleDateString('es-ES'),
+      data:e.target.result,
+      size:Math.round(file.size/1024)
+    });
+    saveDocs(docs);
+    renderDocsList();
+    toast('✅ '+file.name+' guardado');
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderDocsList(){
+  var docs=getDocs();
+  var el=document.getElementById('docs-list');
+  if(!el)return;
+  if(!docs.length){
+    el.innerHTML='<div style="text-align:center;color:var(--gray);padding:24px;font-size:13px">No hay documentos guardados.<br>Sube tu primera factura de proveedor.</div>';
+    return;
+  }
+  var iconos={pdf:'📄',excel:'📊',imagen:'🖼️',otro:'📎'};
+  el.innerHTML=docs.map(function(d){
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--xlgray)">'
+      +'<div style="font-size:28px;flex-shrink:0">'+( iconos[d.tipo]||'📎')+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.nombre+'</div>'
+        +'<div style="font-size:11px;color:var(--gray);margin-top:2px">'+d.fecha+' · '+d.size+' KB</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;flex-shrink:0">'
+        +'<button onclick="abrirDoc('+d.id+')" style="background:var(--xlgray);border:none;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:13px" title="Abrir">👁</button>'
+        +'<button onclick="descargarDoc('+d.id+')" style="background:var(--xlgray);border:none;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:13px" title="Descargar">⬇️</button>'
+        +'<button onclick="importarDesdeDoc('+d.id+')" style="background:#e0f2fe;color:#0369a1;border:none;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700" title="Importar al stock">📥</button>'
+        +'<button onclick="eliminarDoc('+d.id+')" style="background:#fee2e2;color:var(--red);border:none;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:13px" title="Eliminar">🗑️</button>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function abrirDoc(id){
+  var docs=getDocs();
+  var d=docs.find(function(x){return x.id===id;});
+  if(!d)return;
+  var w=window.open('','_blank');
+  if(d.tipo==='imagen'){
+    w.document.write('<html><body style="margin:0;background:#000;display:flex;justify-content:center"><img src="'+d.data+'" style="max-width:100%;max-height:100vh"></body></html>');
+  } else {
+    var embed=d.tipo==='pdf'?'<embed src="'+d.data+'" type="application/pdf" width="100%" height="100%">':'<p style="color:#fff;padding:20px">Descarga el archivo para abrirlo</p>';
+    w.document.write('<html><body style="margin:0">'+embed+'</body></html>');
+  }
+  w.document.close();
+}
+
+function descargarDoc(id){
+  var docs=getDocs();
+  var d=docs.find(function(x){return x.id===id;});
+  if(!d)return;
+  var a=document.createElement('a');
+  a.href=d.data;
+  a.download=d.nombre;
+  a.click();
+}
+
+function eliminarDoc(id){
+  if(!confirm('¿Eliminar este documento?'))return;
+  var docs=getDocs().filter(function(d){return d.id!==id;});
+  saveDocs(docs);
+  renderDocsList();
+  toast('Documento eliminado');
+}
+
+function importarDesdeDoc(id){
+  var docs=getDocs();
+  var d=docs.find(function(x){return x.id===id;});
+  if(!d)return;
+  closeM('modal-docs');
+  // Pre-load the file into the import modal
+  openImportStock();
+  setTimeout(function(){
+    initImportEvents();
+    // Simulate file from stored data
+    fetch(d.data)
+      .then(function(r){return r.blob();})
+      .then(function(blob){
+        var file=new File([blob],d.nombre,{type:blob.type});
+        var nameEl=document.getElementById('import-file-name');
+        if(nameEl){nameEl.textContent='📎 '+d.nombre;nameEl.style.display='block';}
+        var btn=document.getElementById('import-btn-analizar');
+        if(btn)btn.style.display='block';
+        // Store for analysis
+        window._importFileOverride=file;
+      });
+  },300);
 }
 
 
@@ -3335,6 +3656,7 @@ document.addEventListener('DOMContentLoaded',function(){
   });
   document.addEventListener('click',function(e){
   if(e.target.closest('#btnImportStock')){openImportStock();initImportEvents();return;}
+  if(e.target.closest('#btnVerDocs')){openDocsModal();return;}
     var m=document.getElementById('masMenu');
     if(m&&m.style.display!=='none'&&!m.contains(e.target)&&!document.getElementById('btnMas').contains(e.target)){m.style.display='none';}
   });
