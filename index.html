@@ -3334,6 +3334,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(btn){document.getElementById('masMenu').style.display='none';navTo(btn.dataset.page);}
   });
   document.addEventListener('click',function(e){
+  if(e.target.closest('#btnImportStock')){openImportStock();initImportEvents();return;}
     var m=document.getElementById('masMenu');
     if(m&&m.style.display!=='none'&&!m.contains(e.target)&&!document.getElementById('btnMas').contains(e.target)){m.style.display='none';}
   });
@@ -3367,7 +3368,6 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('btnSaveConfig').addEventListener('click',saveConfig);
   document.getElementById('btnNVend').addEventListener('click',agregarVendedor);
   document.getElementById('btnNP').addEventListener('click',function(){openPM(null);});
-  document.getElementById('btnImportStock').addEventListener('click',function(){openImportStock();initImportEvents();});
   document.getElementById('btnNPcat').addEventListener('click',function(){openPM(null);});
   document.getElementById('rptDia').addEventListener('click',function(){generarReporte('dia');});
   document.getElementById('rptSem').addEventListener('click',function(){generarReporte('sem');});
