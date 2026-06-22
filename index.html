@@ -2810,7 +2810,6 @@ function mostrarPasoRevision(productos){
   });
 }
 
-function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 async function confirmarImport(){
   if(!_importData.length){toast('No hay productos para importar');return;}
