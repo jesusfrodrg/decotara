@@ -2202,7 +2202,7 @@ async function renderVentas(){
         '<td><div style="display:flex;gap:3px">'+
           '<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff;width:30px;height:30px;padding:0" title="Ver artículos de la compra" data-action="vergrupo" data-expand="'+expandId+'">👁</button>'+
           (grupo.length>1
-            ?'<button class="btn btn-sm bic" style="background:var(--green);color:#fff" title="Factura PDF compra completa ('+albNum+')" data-action="pdfgrupo" data-key="'+key+'">🧾</button>'
+            ?'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdfgrupo" data-key="'+key+'">📄</button>'+'<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff" title="Factura Legal" data-action="factura-legal" data-id="'+v0.id+'">🧾</button>'
             :'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdf" data-id="'+v0.id+'">📄</button>'+'<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff" title="Factura Legal" data-action="factura-legal" data-id="'+v0.id+'">🧾</button>')+
           '<button class="btn btn-sm bs2 bic" data-action="ev" data-id="'+v0.id+'">✏️</button>'+
           '<button class="btn btn-sm bd bic" data-action="dv" data-id="'+v0.id+'">🗑</button>'+
