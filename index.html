@@ -1650,6 +1650,115 @@ async function nextVentaId(){
 // ══════ MODAL VENTA - NUEVO SELECTOR CATÁLOGO ══════
 // ══════ FACTURA LEGAL ══════
 
+
+async function iniciarCambioArticulo(ventaId){
+  toast('Cargando artículos...');
+  try{
+    var rows=await GET('/ventas?select=*,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,telefono,email,dni),productos(nombre,categoria,ref_propia)&id=eq.'+ventaId);
+    if(!rows||!rows.length){toast('Venta no encontrada');return;}
+    var v=rows[0];
+    var ventas=[v];
+    if(v.albaran_num){
+      var grupo=await GET('/ventas?select=*,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,telefono,email,dni),productos(nombre,categoria,ref_propia)&albaran_num=eq.'+encodeURIComponent(v.albaran_num));
+      if(grupo.length>1)ventas=grupo;
+    }
+    window._rectVentas=ventas;
+    window._rectVentaId=ventaId;
+    window._rectModo='cambio';
+    // Renderizar artículos con checkboxes y campos editables
+    var cont=document.getElementById('rectArticulos');
+    cont.innerHTML=ventas.map(function(x,i){
+      var nom=(x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo';
+      var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'';
+      var pvp=Number(x.pvp||0);
+      return '<div style="background:#f9f9f9;border:1.5px solid #e0e0e0;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">'        +'<label style="display:flex;align-items:center;gap:10px;cursor:pointer">'          +'<input type="checkbox" data-ri="'+i+'" class="rect-chk" style="width:18px;height:18px;accent-color:#059669" checked>'          +'<div style="flex:1;font-weight:700;font-size:13px">'+escHtml(nom)+'</div>'          +(ref?'<span style="font-size:10px;color:#b45309;font-weight:700">'+escHtml(ref)+'</span>':'')        +'</label>'        +'<div style="display:grid;grid-template-columns:1fr auto;gap:8px;padding-left:28px">'          +'<div>'            +'<div style="font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:2px">Descripción</div>'            +'<input type="text" data-desc="'+i+'" value="'+escHtml(nom)+'" style="width:100%;padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px">'          +'</div>'          +'<div>'            +'<div style="font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:2px">Precio €</div>'            +'<input type="number" data-pvp="'+i+'" value="'+pvp+'" step="0.01" min="0" style="width:80px;padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;text-align:right;color:#b45309;font-weight:700">'          +'</div>'        +'</div>'      +'</div>';
+    }).join('');
+    // Cambiar título y botón del modal
+    document.querySelector('#rectM .mt').textContent='Cambio de Artículo';
+    document.querySelector('#rectM .modal-stripe').style.background='#059669';
+    var btnGen=document.querySelector('#rectM .btn.bp');
+    btnGen.style.background='#059669';
+    btnGen.textContent='🔄 Generar Rectificativa + Nueva Venta';
+    btnGen.onclick=confirmarCambioArticulo;
+    document.getElementById('rectMotivo').value='Cambio de artículo';
+    document.getElementById('rectM').style.display='flex';
+  }catch(e){toast('Error: '+e.message);}
+}
+
+async function confirmarCambioArticulo(){
+  var motivo=(document.getElementById('rectMotivo').value||'').trim()||'Cambio de artículo';
+  var checks=document.querySelectorAll('.rect-chk:checked');
+  if(!checks.length){toast('Selecciona al menos un artículo a devolver');return;}
+  var ventas=window._rectVentas;
+  var ventaId=window._rectVentaId;
+  var seleccionadas=Array.from(checks).map(function(c){var ri=parseInt(c.dataset.ri);var x=Object.assign({},ventas[ri]);x._ri=ri;return x;});
+  document.getElementById('rectM').style.display='none';
+  // Resetear modal para próximo uso
+  document.querySelector('#rectM .mt').textContent='Factura Rectificativa';
+  document.querySelector('#rectM .modal-stripe').style.background='#b45309';
+  var btnGen=document.querySelector('#rectM .btn.bp');
+  btnGen.style.background='#b45309';
+  btnGen.textContent='↩️ Generar Rectificativa';
+  btnGen.onclick=confirmarRectificativa;
+
+  var cfg=getCfg();
+  var v=ventas[0];
+  var cli=v.clientes||{};
+  // Número rectificativa
+  var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
+  var allNums=Object.values(facturas).filter(function(n){return /^RECT-/.test(n);});
+  var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace('RECT-',''))||0;return num>max?num:max;},0);
+  var numRect='RECT-'+String(lastNum+1).padStart(4,'0');
+  facturas['rect_'+ventaId+'_'+Date.now()]=numRect;
+  localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
+  var factOrig=facturas[v.albaran_num||v.id]||'—';
+  var fechaStr=fD(v.fecha);
+
+  var filas=seleccionadas.map(function(x){
+    var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'—';
+    var descEl=document.querySelector('[data-desc="'+x._ri+'"]');
+    var pvpEl=document.querySelector('[data-pvp="'+x._ri+'"]');
+    var nom=descEl?descEl.value:((x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo');
+    var pvp=pvpEl?Math.max(0,parseFloat(pvpEl.value)||0):Number(x.pvp||0);
+    var qty=Number(x.cantidad||1);
+    var tot=pvp*qty;
+    x._nomEdit=nom; x._pvpEdit=pvp; x._totEdit=tot;
+    return '<tr>'      +'<td style="color:#b45309;font-weight:700;font-size:11px">'+escHtml(ref)+'</td>'      +'<td>'+escHtml(nom)+'</td>'      +'<td class="center">'+qty+'</td>'      +'<td class="right">'+fe(pvp)+'</td>'      +'<td class="right" style="color:#b45309;font-weight:700">'+fe(-tot)+'</td>'      +'</tr>';
+  }).join('');
+  var totalRect=seleccionadas.reduce(function(s,x){return s+(x._totEdit||0);},0);
+
+  // Generar PDF rectificativa
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rectificativa '+numRect+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
+  html+='<div class="doc-date">Fecha: '+fD(new Date().toISOString().slice(0,10))+'</div>';
+  html+='<div class="hdr">'    +'<div class="hdr-left">'      +'<div class="doc-type" style="color:#b45309">RECTIFICATIVA</div>'      +'<div class="doc-badge" style="background:#b45309">'+numRect+' · Cambio de artículo</div>'    +'</div>'    +'<div class="hdr-right">'      +'<img class="logo-circle" src="'+window._LOGO_B64+'">'      +'<div class="brand-name">'+cfg.empresa_nombre+'</div>'      +'<div class="brand-sub">'+cfg.empresa_email+'</div>'    +'</div>'  +'</div>';
+  html+='<hr class="divider">';
+  html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente</div>'      +'<div class="info-line"><b>Nombre:</b> '+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</div>'      +(cli.dni?'<div class="info-line"><b>DNI/NIF:</b> '+cli.dni+'</div>':'')      +(cli.telefono?'<div class="info-line"><b>Teléfono:</b> '+cli.telefono+'</div>':'')      +(cli.email?'<div class="info-line"><b>Email:</b> '+cli.email+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#b45309"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'      +'<div class="info-line"><b>Motivo:</b> Cambio de artículo</div>'    +'</div>'  +'</div>';
+  html+='<table><thead><tr><th>Ref.</th><th>Artículo devuelto</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
+  html+='<div class="totals-wrap"><table class="totals-table">'    +'<tr class="tot-sub"><td>Subtotal</td><td>'+fe(-totalRect)+'</td></tr>'    +'<tr><td>TOTAL RECTIFICADO</td><td style="color:#b45309">'+fe(-totalRect)+'</td></tr>'  +'</table></div>';
+  html+='<div style="margin-top:14px;padding:12px;background:#f0fdf4;border:1.5px solid #059669;border-radius:8px;font-size:12px;color:#065f46">'    +'<b>📋 Paso 2:</b> Cierra este documento e introduce la nueva venta del artículo de sustitución. El cliente '+escHtml((cli.nombre||'')+' '+(cli.apellidos||''))+' ya estará seleccionado.'  +'</div>';
+  html+='<div class="footer">'+cfg.empresa_nombre+(cfg.empresa_dir?' &nbsp;·&nbsp; '+cfg.empresa_dir:'')+' &nbsp;·&nbsp; '+cfg.empresa_email+'</div>';
+  html+='<br><center class="no-print"><button onclick="window.print()" style="background:#b45309;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
+  html+='</body></html>';
+  var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
+
+  // Abrir nueva venta con el cliente preseleccionado
+  setTimeout(function(){
+    showPage('ventas');
+    setTimeout(function(){
+      var btnNV=document.getElementById('btnNV');
+      if(btnNV)btnNV.click();
+      setTimeout(function(){
+        var sel=document.getElementById('v_cli');
+        if(sel&&v.cliente_id){
+          sel.value=v.cliente_id;
+          sel.dispatchEvent(new Event('change'));
+        }
+        toast('✅ Rectificativa generada. Ahora añade el artículo de sustitución.',4000);
+      },400);
+    },300);
+  },800);
+}
+
 async function generarFacturaRectificativa(ventaId){
   toast('Cargando artículos...');
   try{
@@ -2375,8 +2484,8 @@ async function renderVentas(){
         '<td><div style="display:flex;gap:3px">'+
           '<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff;width:30px;height:30px;padding:0" title="Ver artículos de la compra" data-action="vergrupo" data-expand="'+expandId+'">👁</button>'+
           (grupo.length>1
-            ?'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdfgrupo" data-key="'+key+'">📄</button>'+'<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff" title="Factura Legal" data-action="factura-legal" data-id="'+v0.id+'">🧾</button>'+'<button class="btn btn-sm bic" style="background:#b45309;color:#fff" title="Factura Rectificativa" data-action="factura-rect" data-id="'+v0.id+'">↩️</button>'
-            :'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdf" data-id="'+v0.id+'">📄</button>'+'<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff" title="Factura Legal" data-action="factura-legal" data-id="'+v0.id+'">🧾</button>'+'<button class="btn btn-sm bic" style="background:#b45309;color:#fff" title="Factura Rectificativa" data-action="factura-rect" data-id="'+v0.id+'">↩️</button>')+
+            ?'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdfgrupo" data-key="'+key+'">📄</button>'+'<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff" title="Factura Legal" data-action="factura-legal" data-id="'+v0.id+'">🧾</button>'+'<button class="btn btn-sm bic" style="background:#b45309;color:#fff" title="Factura Rectificativa" data-action="factura-rect" data-id="'+v0.id+'">↩️</button>'+'<button class="btn btn-sm bic" style="background:#059669;color:#fff" title="Cambio de artículo" data-action="cambio-articulo" data-id="'+v0.id+'">🔄</button>'
+            :'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdf" data-id="'+v0.id+'">📄</button>'+'<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff" title="Factura Legal" data-action="factura-legal" data-id="'+v0.id+'">🧾</button>'+'<button class="btn btn-sm bic" style="background:#b45309;color:#fff" title="Factura Rectificativa" data-action="factura-rect" data-id="'+v0.id+'">↩️</button>'+'<button class="btn btn-sm bic" style="background:#059669;color:#fff" title="Cambio de artículo" data-action="cambio-articulo" data-id="'+v0.id+'">🔄</button>')+
           '<button class="btn btn-sm bs2 bic" data-action="ev" data-id="'+v0.id+'">✏️</button>'+
           '<button class="btn btn-sm bd bic" data-action="dv" data-id="'+v0.id+'">🗑</button>'+
         '</div></td>'+
@@ -4215,6 +4324,7 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(a==='ev')openVM(id);
     else if(a==='factura-legal')generarFacturaLegal(id);
     else if(a==='factura-rect')generarFacturaRectificativa(id);
+    else if(a==='cambio-articulo')iniciarCambioArticulo(id);
     else if(a==='ec')openCM(id);
     else if(a==='ep')openPM(id);
     else if(a==='dv'){
