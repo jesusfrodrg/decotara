@@ -4559,8 +4559,12 @@ document.addEventListener('DOMContentLoaded',function(){
             if(!ventasRestantes.length){
               localStorage.removeItem('decotara_facturas');
               localStorage.removeItem('decotara_ref_counter');
-              toast('✅ Venta eliminada · Contadores reseteados (no quedan ventas)');
+              // Borrar también todas las rectificativas
+              try{await DEL('/rectificativas?id=neq.NINGUNA');}catch(e){}
+              toast('✅ Venta eliminada · Contadores y rectificativas reseteados');
             } else {
+              // Borrar rectificativas asociadas a esta venta
+              try{await DEL('/rectificativas?venta_id=eq.'+id);}catch(e){}
               toast('✅ Venta eliminada y stock repuesto');
             }
             renderVentas();
