@@ -4362,7 +4362,7 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(act==='del'){cart.splice(idx,1);}
     cartUpdate();cartRender();
   });
-  ['vm','cm','pm','cartM'].forEach(function(id){document.getElementById(id).addEventListener('click',function(e){if(e.target===this)closeM(id);});});
+  ['vm','cm','pm','cartM','rectM'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('click',function(e){if(e.target===this)closeM(id);});});
   document.getElementById('btnCVM').addEventListener('click',function(){closeM('vm');});
   document.getElementById('btnCCM').addEventListener('click',function(){closeM('cm');});
   document.getElementById('btnCPM').addEventListener('click',function(){closeM('pm');});
