@@ -4176,19 +4176,21 @@ async function saveV(){
 }
 
 async function openCartModal(){
-  cartRender();
-  cartProdsCache=[];
-  loadCartProds();
-  var cl=await getCachedClientes(true);
-  document.getElementById('cart_cli').innerHTML='<option value="">Seleccionar cliente...</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.nombre+' '+c.apellidos+'</option>';}).join('');
-  document.getElementById('cart_fecha').value=new Date().toISOString().split('T')[0];
-  document.getElementById('cart_dto').value=0;
-  setVendedorActual();
-  document.getElementById('cart_pago').value='Efectivo';
-  document.getElementById('cart_entrega').value='Recogida por el Cliente';
-  document.getElementById('cart_fecha_entrega').value='';
-  document.getElementById('cart_not').value='';
-  openM('cartM');
+  try{
+    cartRender();
+    cartProdsCache=[];
+    loadCartProds();
+    var cl=await getCachedClientes(true);
+    document.getElementById('cart_cli').innerHTML='<option value="">Seleccionar cliente...</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.nombre+' '+c.apellidos+'</option>';}).join('');
+    document.getElementById('cart_fecha').value=new Date().toISOString().split('T')[0];
+    document.getElementById('cart_dto').value=0;
+    setVendedorActual();
+    document.getElementById('cart_pago').value='Efectivo';
+    document.getElementById('cart_entrega').value='Recogida por el Cliente';
+    document.getElementById('cart_fecha_entrega').value='';
+    document.getElementById('cart_not').value='';
+    openM('cartM');
+  }catch(e){toast('Error abriendo carrito: '+e.message);}
 }
 async function saveCart(){
   var cId=document.getElementById('cart_cli').value,fecha=document.getElementById('cart_fecha').value,dto=parseFloat(document.getElementById('cart_dto').value)||0,notas=document.getElementById('cart_not').value,vend=document.getElementById('cart_vend').value,pago=document.getElementById('cart_pago').value,entrega=document.getElementById('cart_entrega').value,fechaEntrega=document.getElementById('cart_fecha_entrega').value;
