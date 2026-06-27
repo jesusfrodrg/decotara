@@ -971,6 +971,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <div class="fi"><label>Email</label><input type="email" id="c_ema"></div>
     <div class="fi"><label>DNI / NIE <span style="color:var(--red)">*</span></label><input type="text" id="c_dni" placeholder="12345678A" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
     <div class="fi"><label>Ciudad</label><input type="text" id="c_ciu"></div>
+    <div class="fi"><label>Código Postal</label><input type="text" id="c_cp" maxlength="10"></div>
     <div class="fi full"><label>Dirección</label><input type="text" id="c_dir"></div>
   </div>
   <div class="mf"><button class="btn bs2" id="btnCCM">Cancelar</button><button class="btn bp" id="btnSC">Guardar</button></div>
@@ -1719,8 +1720,8 @@ async function generarFacturaLegal(ventaId){
       +'<div class="top"><div><img class="logo-img" src="'+window._LOGO_B64+'"><div class="logo-name">'+cfg.empresa_nombre+'</div></div><div class="factura-title">FACTURA</div></div>'
       +'<div class="info-grid"><div class="empresa-info">'+'CIF: B21652037<br>'+(cfg.empresa_dir?cfg.empresa_dir+'<br>':'')+(cfg.empresa_tel?cfg.empresa_tel+'<br>':'')+cfg.empresa_email+'</div>'
       +'<table class="meta-table"><tr><td class="meta-hd">Nº de Factura</td><td class="meta-hd">Fecha</td></tr><tr><td class="meta-val" style="font-weight:700;color:#C8372D">'+numFact+'</td><td class="meta-val">'+fecha+'</td></tr><tr><td class="meta-hd">Vendedor</td><td class="meta-hd">Forma de Pago</td></tr><tr><td class="meta-val">'+(v.vendedor||'—')+'</td><td class="meta-val">'+(v.forma_pago||'—')+'</td></tr></table></div>'
-      +'<div class="addr-grid"><div><div class="addr-hd">Facturar a:</div><div class="addr-body">'+(cli.nombre?'<b>'+cli.nombre+' '+cli.apellidos+'</b><br>':'')+(cli.dni?'DNI/NIF: '+cli.dni+'<br>':'')+(cli.direccion?cli.direccion+(cli.ciudad?', '+cli.ciudad:'')+'<br>':'')+(cli.telefono?cli.telefono+'<br>':'')+(cli.email?cli.email:'')+'</div></div>'
-      +'<div><div class="addr-hd">Dirección de entrega:</div><div class="addr-body">'+(cli.nombre?'<b>'+cli.nombre+' '+cli.apellidos+'</b><br>':'')+(cli.direccion?cli.direccion+(cli.ciudad?', '+cli.ciudad:'')+'<br>':'')+(v.entrega?'<b>Entrega:</b> '+v.entrega+(v.fecha_entrega?' — '+fD(v.fecha_entrega):''):'')+'</div></div></div>'
+      +'<div class="addr-grid"><div><div class="addr-hd">Facturar a:</div><div class="addr-body">'+(cli.nombre?'<b>'+cli.nombre+' '+cli.apellidos+'</b><br>':'')+(cli.dni?'DNI/NIF: '+cli.dni+'<br>':'')+(cli.direccion?cli.direccion+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'<br>':'')+(cli.telefono?cli.telefono+'<br>':'')+(cli.email?cli.email:'')+'</div></div>'
+      +'<div><div class="addr-hd">Dirección de entrega:</div><div class="addr-body">'+(cli.nombre?'<b>'+cli.nombre+' '+cli.apellidos+'</b><br>':'')+(cli.direccion?cli.direccion+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'<br>':'')+(v.entrega?'<b>Entrega:</b> '+v.entrega+(v.fecha_entrega?' — '+fD(v.fecha_entrega):''):'')+'</div></div></div>'
       +'<table class="items"><thead><tr><td class="th" style="width:12%">Referencia</td><td class="th" style="width:43%">Descripción</td><td class="th" style="width:12%;text-align:center">Cantidad</td><td class="th" style="width:16%;text-align:right">Precio Unit.</td><td class="th" style="width:17%;text-align:right">Monto</td></tr></thead><tbody>'+filas+emptyRows+'</tbody></table>'
       +'<div class="bottom"><div class="gracias">GRACIAS</div><div><div class="tot-row"><span>Subtotal</span><span>'+fe(subtotal)+'</span></div>'+(dto>0?'<div class="tot-row"><span>Descuento ('+dto+'%)</span><span>- '+fe(descuentoVal)+'</span></div>':'')+'<div class="tot-final"><span>TOTAL</span><span>'+fe(total)+'</span></div></div></div>'
       +'<div class="footer-note">'+(cfg.pie_factura?cfg.pie_factura+'<br>':'')+cfg.empresa_nombre+' · '+cfg.empresa_email+(cfg.empresa_tel?' · '+cfg.empresa_tel:'')+'</div>'
@@ -2237,7 +2238,7 @@ async function renderVentas(){
   var q=(document.getElementById('vsearch').value||'').toLowerCase();
   var est=document.getElementById('vfest').value;
   try{
-    var dniField=window._dniOk?',dni':''; var url='/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,direccion'+dniField+'),productos(nombre,categoria,ref_propia)&order=created_at.desc';
+    var dniField=window._dniOk?',dni':''; var url='/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,codigo_postal,direccion'+dniField+'),productos(nombre,categoria,ref_propia)&order=created_at.desc';
     if(est)url+='&estado=eq.'+encodeURIComponent(est);
     // Si hay búsqueda de texto, aplicar filtros server-side
     if(q&&q.length>=2){
@@ -3585,7 +3586,7 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
   var numStr=numAlbaran||'—';
   var fechaStr=fD(fecha);
   var cliNom=cli?(cli.nombre+' '+cli.apellidos):'—';
-  var cliDir=cli?[cli.direccion,cli.ciudad].filter(Boolean).join(', '):'';
+  var cliDir=cli?[cli.direccion,(cli.codigo_postal||'')+(cli.ciudad?' '+cli.ciudad:'')].filter(Boolean).join(', '):'';
   var cliDni=cli?cli.dni||'':'';
   var cliTel=cli?cli.telefono||'':'';
   var cliEmail=cli?cli.email||'':'';
@@ -3781,7 +3782,7 @@ async function saveV(){
       toast(msg);
       // Generar PDF factura automáticamente
       var cliRes=await GET('/clientes?select=*&id=eq.'+cId);
-      var cliPdf=cliRes.length?cliRes[0]:{nombre:'',apellidos:'',ciudad:'',direccion:''};
+      var cliPdf=cliRes.length?cliRes[0]:{nombre:'',apellidos:'',ciudad:'',codigo_postal:'',direccion:''};
       var ventasPdf=vmLineas.map(function(l){return {prod_nombre:l.esOtro?l.nombre:(l.nombre||''),prod_cat:l.esOtro?'':l.cat,pvp:l.pvp,cantidad:l.qty,total:+(l.pvp*l.qty*(1-dto/100)).toFixed(2),ref_propia:l.ref_propia||'',proveedor:l.proveedor||''};});
       generarAlbaran(ventasPdf,cliPdf,fecha,dto,vend,pago,entrega,fechaE||'',notas,numAlbaran);
     }
@@ -3846,7 +3847,7 @@ async function saveCart(){
       GET('/clientes?select=*&id=eq.'+cId)
     ]);
     invalidarCacheClientes();
-    var cli=cliRows.length?cliRows[0]:{nombre:'',apellidos:'',ciudad:'',direccion:''};
+    var cli=cliRows.length?cliRows[0]:{nombre:'',apellidos:'',ciudad:'',codigo_postal:'',direccion:''};
     generarAlbaran(ventasGuardadas,cli,fecha,dto,vend,pago,entrega,fechaEntrega,notas,numAlbaran);
     toast('Venta registrada: '+cart.length+' producto(s) ✓');
     cart=[];cartUpdate();closeM('cartM');
@@ -3860,8 +3861,8 @@ async function saveCart(){
 async function openCM(id){
   ceditId=id||null;
   document.getElementById('cm-t').textContent=id?'Editar cliente':'Nuevo cliente';
-  if(id){var rows=await GET('/clientes?select=*&id=eq.'+id);var c=rows[0];if(c){document.getElementById('c_nom').value=c.nombre||'';document.getElementById('c_ape').value=c.apellidos||'';if(window._dniOk)document.getElementById('c_dni').value=c.dni||'';document.getElementById('c_tel').value=c.telefono||'';document.getElementById('c_ema').value=c.email||'';document.getElementById('c_ciu').value=c.ciudad||'';document.getElementById('c_dir').value=c.direccion||'';}}
-  else{['c_nom','c_ape','c_dni','c_tel','c_ema','c_ciu','c_dir'].forEach(function(f){document.getElementById(f).value='';})}
+  if(id){var rows=await GET('/clientes?select=*&id=eq.'+id);var c=rows[0];if(c){document.getElementById('c_nom').value=c.nombre||'';document.getElementById('c_ape').value=c.apellidos||'';if(window._dniOk)document.getElementById('c_dni').value=c.dni||'';document.getElementById('c_tel').value=c.telefono||'';document.getElementById('c_ema').value=c.email||'';document.getElementById('c_ciu').value=c.ciudad||'';document.getElementById('c_cp').value=c.codigo_postal||'';document.getElementById('c_dir').value=c.direccion||'';}}
+  else{['c_nom','c_ape','c_dni','c_tel','c_ema','c_ciu','c_cp','c_dir'].forEach(function(f){document.getElementById(f).value='';})}
   openM('cm');
 }
 async function saveC(){
@@ -3869,7 +3870,7 @@ async function saveC(){
   if(!nombre||!apellidos){toast('Nombre y apellidos requeridos');return;}
   var dniInput=document.getElementById('c_dni').value.trim();
   if(!dniInput){toast('⚠️ El DNI/NIF es obligatorio');document.getElementById('c_dni').focus();return;}
-  var payload={nombre:nombre,apellidos:apellidos,...(window._dniOk?{dni:dniInput}:{}),telefono:document.getElementById('c_tel').value||null,email:document.getElementById('c_ema').value||null,ciudad:document.getElementById('c_ciu').value||null,direccion:document.getElementById('c_dir').value||null};
+  var payload={nombre:nombre,apellidos:apellidos,...(window._dniOk?{dni:dniInput}:{}),telefono:document.getElementById('c_tel').value||null,email:document.getElementById('c_ema').value||null,ciudad:document.getElementById('c_ciu').value||null,codigo_postal:document.getElementById('c_cp').value||null,direccion:document.getElementById('c_dir').value||null};
   var btn=document.getElementById('btnSC');btn.disabled=true;btn.textContent='Guardando...';
   try{
     if(ceditId){await PATCH('/clientes?id=eq.'+ceditId,payload);toast('Cliente actualizado ✓');closeM('cm');invalidarCacheClientes();renderClientes();}
@@ -4057,7 +4058,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(a==='pdf'){
       var vRows=window._ventasCache||[];var v=vRows.find(function(x){return x.id===id;});
       if(!v){toast('Recarga la página de ventas');return;}
-      var cli2={nombre:(v.clientes?v.clientes.nombre:''),apellidos:(v.clientes?v.clientes.apellidos:''),dni:(v.clientes?v.clientes.dni:''),ciudad:(v.clientes?v.clientes.ciudad:''),direccion:(v.clientes?v.clientes.direccion:'')};
+      var cli2={nombre:(v.clientes?v.clientes.nombre:''),apellidos:(v.clientes?v.clientes.apellidos:''),dni:(v.clientes?v.clientes.dni:''),ciudad:(v.clientes?v.clientes.ciudad:''),codigo_postal:(v.clientes?v.clientes.codigo_postal:''),direccion:(v.clientes?v.clientes.direccion:'')};
       var vent=[{prod_nombre:getProdNombre(v,'Producto'),prod_cat:getProdCat(v),cantidad:v.cantidad,pvp:v.pvp,total:v.total,ref_propia:v.ref_propia||''}];
       generarAlbaran(vent,cli2,v.fecha,v.descuento||0,v.vendedor||'',v.forma_pago||'Efectivo',v.entrega||'Recogida por el Cliente',v.fecha_entrega||'',v.notas||'','ALB-'+id);
       return;
@@ -4079,7 +4080,7 @@ document.addEventListener('DOMContentLoaded',function(){
       var grupo=compras[key]||[];
       if(!grupo.length){toast('Datos no disponibles, recarga ventas');return;}
       var v0=grupo[0];
-      var cli2={nombre:(v0.clientes?v0.clientes.nombre:''),apellidos:(v0.clientes?v0.clientes.apellidos:''),dni:(v0.clientes?v0.clientes.dni:''),ciudad:(v0.clientes?v0.clientes.ciudad:''),direccion:(v0.clientes?v0.clientes.direccion:'')};
+      var cli2={nombre:(v0.clientes?v0.clientes.nombre:''),apellidos:(v0.clientes?v0.clientes.apellidos:''),dni:(v0.clientes?v0.clientes.dni:''),ciudad:(v0.clientes?v0.clientes.ciudad:''),codigo_postal:(v0.clientes?v0.clientes.codigo_postal:''),direccion:(v0.clientes?v0.clientes.direccion:'')};
       var vent=grupo.map(function(v){return {prod_nombre:getProdNombre(v,'Producto'),prod_cat:getProdCat(v),cantidad:v.cantidad,pvp:v.pvp,total:v.total,ref_propia:v.ref_propia||(v.productos&&v.productos.ref_propia)||''};});
       var dto=v0.descuento||0;
       var totalGrupo=grupo.reduce(function(s,v){return s+Number(v.total||0);},0);
@@ -4130,10 +4131,10 @@ document.addEventListener('DOMContentLoaded',function(){
           var vv;
           if(albKey&&albKey!==('ALB-'+id)){
             // Group albaran: fetch all ventas with same albaran_num
-            vv=await GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,direccion,dni),productos(nombre,categoria)&albaran_num=eq.'+encodeURIComponent(albKey));
+            vv=await GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,dni),productos(nombre,categoria)&albaran_num=eq.'+encodeURIComponent(albKey));
           }
           if(!vv||!vv.length){
-            vv=await GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,direccion,dni),productos(nombre,categoria)&id=eq.'+id);
+            vv=await GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,dni),productos(nombre,categoria)&id=eq.'+id);
           }
           if(!vv.length){toast('Venta no encontrada');return;}
           var v0=vv[0];
