@@ -1847,7 +1847,7 @@ function regenerarRectificativa(r){
     html+='<div style="background:#fff5f5;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#C8372D"><b>✏️ Factura rectificativa por subsanación</b> — Sustituye y anula la factura <b>'+escHtml(r.factura_origen||'—')+'</b>. Motivo: '+escHtml(motivoReal)+'</div>';
   }
   // Cliente
-  html+='<div class="info-grid"><div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente'+(esSubsanacion?' <span style="font-size:10px;background:#fee2e2;color:#C8372D;padding:1px 6px;border-radius:4px;margin-left:4px">CORREGIDO</span>':'')+'</div><div class="info-line"><b>Nombre:</b> '+escHtml(r.cliente_nombre||'—')+'</div>'+(r.cliente_dni?'<div class="info-line"><b>DNI/NIF:</b> '+escHtml(r.cliente_dni)+'</div>':'')+'</div>';
+  html+='<div class="info-grid"><div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente'+(esSubsanacion?' <span style="font-size:10px;background:#fee2e2;color:#C8372D;padding:1px 6px;border-radius:4px;margin-left:4px">CORREGIDO</span>':'')+'</div><div class="info-line"><b>Nombre:</b> '+escHtml(r.cliente_nombre||'—')+'</div>'+(r.cliente_dni?'<div class="info-line"><b>DNI/NIF:</b> '+escHtml(r.cliente_dni)+'</div>':'')+(r.cliente_telefono?'<div class="info-line"><b>Teléfono:</b> '+escHtml(r.cliente_telefono)+'</div>':'')+(r.cliente_email?'<div class="info-line"><b>Email:</b> '+escHtml(r.cliente_email)+'</div>':'')+(r.cliente_direccion||r.cliente_ciudad?'<div class="info-line"><b>Dirección:</b> '+escHtml(r.cliente_direccion||'')+(r.cliente_cp?' '+escHtml(r.cliente_cp):'')+(r.cliente_ciudad?', '+escHtml(r.cliente_ciudad):'')+'</div>':'')+'</div>';
   html+='<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#b45309"></div>Datos de la Empresa</div><div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div><div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'+(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')+'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div><div class="info-line"><b>Rectifica a:</b> '+escHtml(r.factura_origen||'—')+'</div>'+(esSubsanacion?'':('<div class="info-line"><b>Motivo:</b> '+escHtml(r.motivo||'')+'</div>'))+'</div></div>';
   // Tabla artículos
   var filas=arts.map(function(a){
@@ -1980,7 +1980,7 @@ async function confirmarSubsanacion(){
   // Guardar en Supabase
   try{
     var rectId='RECT-'+Date.now();
-    await POST('/rectificativas',{id:rectId,numero:numRect,fecha:new Date().toISOString().slice(0,10),factura_origen:factOrig,venta_id:ventaId,cliente_nombre:nombre,cliente_dni:dni||null,motivo:'Subsanación: '+motivo,articulos:ventas.map(function(x){return {ref:x.ref_propia||'',nombre:(x.productos&&x.productos.nombre)||x.prod_nombre||'',cantidad:Number(x.cantidad||1),pvp:Number(x.pvp||0),total:Number(x.total||0)};}),importe:totalVenta,vendedor:v.vendedor||null});
+    await POST('/rectificativas',{id:rectId,numero:numRect,fecha:new Date().toISOString().slice(0,10),factura_origen:factOrig,venta_id:ventaId,cliente_nombre:nombre,cliente_dni:dni||null,cliente_telefono:cli.telefono||null,cliente_email:email||null,cliente_direccion:dir||null,cliente_cp:cp||null,cliente_ciudad:ciudad||null,motivo:'Subsanación: '+motivo,articulos:ventas.map(function(x){return {ref:x.ref_propia||'',nombre:(x.productos&&x.productos.nombre)||x.prod_nombre||'',cantidad:Number(x.cantidad||1),pvp:Number(x.pvp||0),total:Number(x.total||0)};}),importe:totalVenta,vendedor:v.vendedor||null});
   }catch(e){console.warn('No se pudo guardar en BD:',e.message);}
 
   var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
@@ -2025,7 +2025,7 @@ async function confirmarRectificativa(){
   try{
     var rectId='RECT-'+Date.now();
     var artsSave=seleccionadas.map(function(x){return {ref:x.ref_propia||(x.productos&&x.productos.ref_propia)||'',nombre:x._nomEdit,cantidad:Number(x.cantidad||1),pvp:x._pvpEdit,total:x._totEdit};});
-    await POST('/rectificativas',{id:rectId,numero:numRect,fecha:new Date().toISOString().slice(0,10),factura_origen:factOrig,venta_id:ventaId,cliente_nombre:(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:''),cliente_dni:cli.dni||null,motivo:motivo,articulos:artsSave,importe:totalRect,vendedor:v.vendedor||null});
+    await POST('/rectificativas',{id:rectId,numero:numRect,fecha:new Date().toISOString().slice(0,10),factura_origen:factOrig,venta_id:ventaId,cliente_nombre:(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:''),cliente_dni:cli.dni||null,cliente_telefono:cli.telefono||null,cliente_email:cli.email||null,cliente_direccion:cli.direccion||null,cliente_cp:cli.codigo_postal||null,cliente_ciudad:cli.ciudad||null,motivo:motivo,articulos:artsSave,importe:totalRect,vendedor:v.vendedor||null});
   }catch(e){console.warn('No se pudo guardar rectificativa en BD:',e.message);}
 
   var filas=seleccionadas.map(function(x){
