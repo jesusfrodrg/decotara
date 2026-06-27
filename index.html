@@ -4357,7 +4357,6 @@ document.addEventListener('DOMContentLoaded',function(){
     var m=document.getElementById('masMenu');
     if(m&&m.style.display!=='none'&&!m.contains(e.target)&&!document.getElementById('btnMas').contains(e.target)){m.style.display='none';}
   });
-  document.getElementById('cartBtn').addEventListener('click',function(){openCartModal();});
   document.getElementById('bellBtn').addEventListener('click',function(e){e.stopPropagation();document.getElementById('stockAlertPanel').classList.toggle('open');});
   document.getElementById('closeSAP').addEventListener('click',function(){document.getElementById('stockAlertPanel').classList.remove('open');});
   document.addEventListener('click',function(e){
