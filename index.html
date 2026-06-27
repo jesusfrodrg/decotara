@@ -3554,7 +3554,9 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
   var cliEmail=cli?cli.email||'':'';
 
   var filas=ventas.map(function(v){
+    var ref=v.ref_propia||'—';
     return '<tr>'
+      +'<td style="color:#7c3aed;font-weight:700;font-size:11px">'+ref+'</td>'
       +'<td>'+(v.prod_nombre||getProdNombre(v)||'—')+'</td>'
       +'<td class="center">'+v.cantidad+'</td>'
       +'<td class="right">'+fe(v.pvp)+'</td>'
@@ -3590,7 +3592,7 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
   if(notas){html+='<div class="desc-box">'+notas+'</div>';}
 
   html+='<table><thead><tr><th>Producto</th><th class="center">Cant.</th><th class="right">Precio</th>'+(dto>0?'<th class="right">Dto.</th>':'')+'<th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody>'
-    +'<tfoot><tr class="tfoot-row"><td colspan="'+(dto>0?4:3)+'">Total</td><td></td><td class="right">'+fe(total)+'</td></tr></tfoot>'
+    +'<tfoot><tr class="tfoot-row"><td colspan="'+(dto>0?5:4)+'">Total</td><td class="right">'+fe(total)+'</td></tr></tfoot>'
   +'</table>';
 
   html+='<div class="totals-wrap"><table class="totals-table">'
@@ -4015,7 +4017,7 @@ document.addEventListener('DOMContentLoaded',function(){
       var vRows=window._ventasCache||[];var v=vRows.find(function(x){return x.id===id;});
       if(!v){toast('Recarga la página de ventas');return;}
       var cli2={nombre:(v.clientes?v.clientes.nombre:''),apellidos:(v.clientes?v.clientes.apellidos:''),dni:(v.clientes?v.clientes.dni:''),ciudad:(v.clientes?v.clientes.ciudad:''),direccion:(v.clientes?v.clientes.direccion:'')};
-      var vent=[{prod_nombre:getProdNombre(v,'Producto'),prod_cat:getProdCat(v),cantidad:v.cantidad,pvp:v.pvp,total:v.total}];
+      var vent=[{prod_nombre:getProdNombre(v,'Producto'),prod_cat:getProdCat(v),cantidad:v.cantidad,pvp:v.pvp,total:v.total,ref_propia:v.ref_propia||''}];
       generarAlbaran(vent,cli2,v.fecha,v.descuento||0,v.vendedor||'',v.forma_pago||'Efectivo',v.entrega||'Recogida por el Cliente',v.fecha_entrega||'',v.notas||'','ALB-'+id);
       return;
     }
