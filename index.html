@@ -1008,11 +1008,11 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
         </div>
       </div>
     <div class="fi"><label>Proveedor</label><select id="p_prov" onchange="autoGenRef()"><option value="">Sin proveedor</option><option>Casa Viva</option><option>Kave Home</option><option>Bizzotto</option><option>Tamdis</option><option>Distrigal</option><option>Otro</option></select></div>
-    <div class="fi full"><label>Ref. proveedor</label><input type="text" id="p_ref_prov" placeholder="Referencia del proveedor"></div>
-    <div class="fi full"><label>Descripción</label><textarea id="p_des"></textarea></div>
+    <input type="hidden" id="p_ref_prov">
+    <input type="hidden" id="p_des">
+    <input type="hidden" id="p_cos">
+    <input type="hidden" id="p_mar">
     <div class="fi"><label>PVP euros</label><input type="number" id="p_pvp" step="0.01"></div>
-    <div class="fi"><label>Coste euros</label><input type="number" id="p_cos" step="0.01"></div>
-    <div class="fi"><label>Margen %</label><input type="text" id="p_mar" readonly></div>
   </div>
   <div class="mf"><button class="btn bs2" id="btnCPM">Cancelar</button><button class="btn bp" id="btnSP">Guardar</button></div>
 </div></div>
