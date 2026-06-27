@@ -949,11 +949,10 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     </div>
 
     <!-- Campos operativos -->
-    <div class="fi"><label>Descuento global %</label><input type="number" id="v_dto" min="0" max="100" value="0" oninput="calcVMTotal()"></div>
     <div class="fi"><label>Total</label><input type="text" id="v_tot" readonly></div>
     <div class="fi"><label>Forma de pago</label><select id="v_pago"><option value="Efectivo">💵 Efectivo</option><option value="Tarjeta">💳 Tarjeta</option><option value="Transferencia">🏦 Transferencia</option><option value="Efectivo + Tarjeta">💵+💳 Efectivo y Tarjeta</option><option value="Efectivo + Transferencia">💵+🏦 Efectivo y Transferencia</option></select></div>
     <div class="fi"><label>Entrega</label><select id="v_entrega"><option value="Recogida por el Cliente">🚶 Recogida por el Cliente</option><option value="Transporte y Montaje">🚚 Transporte y Montaje</option></select></div>
-    <div class="fi"><label>Fecha entrega</label><input type="date" id="v_fecha_entrega"></div>
+    <div class="fi"><label>Fecha entrega</label><input type="date" id="v_fecha_entrega" placeholder="A concretar"></div>
     <div class="fi"><label>Estado</label><select id="v_est"><option>Completada</option><option>Pendiente</option><option>Cancelada</option></select></div>
     <div class="fi full"><label>Observaciones</label><textarea id="v_not" placeholder="Observaciones..."></textarea></div>
     <!-- Campos legacy ocultos para compatibilidad edición venta individual -->
@@ -3626,7 +3625,7 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
 
   html+='<div class="pay-box"><div class="pay-title"><div class="info-title-bar"></div>Información de Pago</div>'
     +'<div class="pay-line"><b>Forma de pago:</b> '+pago+'</div>'
-    +(entrega?'<div class="pay-line"><b>Entrega:</b> '+entrega+(fechaEntrega?' — '+fD(fechaEntrega):'')+'</div>':'')
+    +(entrega?'<div class="pay-line"><b>Entrega:</b> '+entrega+(fechaEntrega?' — '+fD(fechaEntrega):' — A concretar')+'</div>':'')
   +'</div>';
 
   if(notas){
