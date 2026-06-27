@@ -639,7 +639,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   <!-- CATALOGO -->
   <div class="page" id="page-catalogo">
     <div class="panel">
-      <div class="ph"><span class="pt" id="cat-title">🛋️ Catálogo</span><button class="btn bp" id="btnNPcat">+ Añadir</button></div>
+      <div class="ph"><span class="pt" id="cat-title">📦 Stock Almacén</span><button class="btn bp" id="btnNPcat">+ Añadir</button></div>
       <div class="sr">
         <div class="sw"><span class="si">🔍</span><input type="text" placeholder="Buscar..." id="catsearch"></div>
         <select id="catfilt" style="width:100px"><option value="">Todos</option><option>Sofa</option><option>Canape</option><option>Colchon</option><option>Otros</option></select>
@@ -2708,7 +2708,7 @@ async function renderVentas(){
 async function renderCatalogo(){
   var q=(document.getElementById('catsearch').value||'').toLowerCase();
   var cat=document.getElementById('catfilt').value;
-  document.getElementById('cat-title').textContent=(cat?cat+'s':'🛋️ Catálogo');
+  document.getElementById('cat-title').textContent=(cat?cat+'s':'📦 Stock Almacén');
   try{
     var url='/productos?select=*&order=id.asc';
     if(cat)url+='&categoria=eq.'+encodeURIComponent(cat);
