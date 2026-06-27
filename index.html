@@ -1310,7 +1310,7 @@ function filterCartProds(){
     return;
   }
   list.innerHTML='<table class="cpt-table"><thead><tr>'
-    +'<th>Código</th><th>Artículo</th><th>Cat.</th><th>PVP</th><th>Stock</th><th></th>'
+    +'<th>Código</th><th>Ref.</th><th>Artículo</th><th>Cat.</th><th>PVP</th><th>Stock</th><th></th>'
     +'</tr></thead><tbody>'
     +prods.map(function(p){
       var inCart=cart.find(function(i){return i.id===p.id;});
@@ -1319,10 +1319,11 @@ function filterCartProds(){
       var stockCls=disp>3?'cpt-stock-ok':disp>0?'cpt-stock-low':'cpt-stock-no';
       var stockTxt=disp>0?disp:'–';
       var btnHtml=disp>0
-        ?'<button class="add-to-cart" data-cid="'+p.id+'" data-cnom="'+escHtml(p.nombre)+'" data-ccat="'+escHtml(p.categoria)+'" data-cpvp="'+p.pvp+'" onclick="var d=this.dataset;cartAddItem({id:d.cid,nombre:d.cnom,categoria:d.ccat,pvp:+d.cpvp});filterCartProds()" style="padding:5px 10px;font-size:11px">+ Añadir</button>'
+        ?'<button class="add-to-cart" data-cid="'+p.id+'" data-cnom="'+escHtml(p.nombre)+'" data-ccat="'+escHtml(p.categoria)+'" data-cpvp="'+p.pvp+'" data-cref="'+escHtml(p.ref_propia||'')+'" data-cprov="'+escHtml(p.proveedor||'')+'" style="padding:5px 10px;font-size:11px">+ Añadir</button>'
         :'<button class="add-to-cart" disabled style="padding:5px 10px;font-size:11px;opacity:.45">Sin stock</button>';
       return '<tr>'
         +'<td><b style="color:var(--blue);font-size:11px">'+p.id+'</b></td>'
+        +'<td style="font-size:11px;color:#7c3aed;font-weight:700">'+(p.ref_propia||'—')+'</td>'
         +'<td class="cpt-name">'+p.nombre+'</td>'
         +'<td>'+cb(p.categoria)+'</td>'
         +'<td class="cpt-price">'+fe(p.pvp)+'</td>'
@@ -1744,6 +1745,8 @@ async function renderVMCatalog(){
   });
   if(!filtered.length){grid.innerHTML='<div style="padding:20px;text-align:center;color:var(--gray);font-size:12px">Sin resultados</div>';return;}
   var CAT_ICON={'Sofa':'🛋️','Canape':'🛏️','Colchon':'💤','Sillon':'🪑','Comedor':'🍽️','Dormitorio':'🌙','Auxiliar':'📦','Otros':'🏷️'};
+  grid.removeEventListener('click', _vmCatalogClick);
+  grid.addEventListener('click', _vmCatalogClick);
   grid.innerHTML=filtered.map(function(p){
     var inOrder=vmLineas.find(function(l){return l.id===p.id;});
     var stk=stockCache[p.id]!==undefined?stockCache[p.id]:p.stock||0;
@@ -1752,19 +1755,26 @@ async function renderVMCatalog(){
     var addIcon=inOrder?'✓':'+';
     var icon=CAT_ICON[p.categoria]||'🏷️';
     var stkLabel=noStk?'Sin stock':(stk<=3?'⚠️ '+stk+' ud':'📦 '+stk+' ud');
-    return '<div class="'+cls+'" data-pid="'+p.id+'" data-pnom="'+escHtml(p.nombre)+'" data-pcat="'+escHtml(p.categoria)+'" data-ppvp="'+p.pvp+'" onclick="var d=this.dataset;toggleVMProduct(d.pid,d.pnom,d.pcat,+d.ppvp)">'
+    return '<div class="'+cls+' vmc-clickable" data-pid="'+p.id+'" data-pnom="'+escHtml(p.nombre)+'" data-pcat="'+escHtml(p.categoria)+'" data-ppvp="'+p.pvp+'" data-ref="'+escHtml(p.ref_propia||'')+'">'
       +'<span class="vmc-icon">'+icon+'</span>'
       +'<div class="vmc-info">'
       +'<div class="vmc-nom">'+escHtml(p.nombre)+'</div>'
-      +'<div class="vmc-cat">'+escHtml(p.categoria||'')+'</div>'
+      +'<div class="vmc-cat">'+escHtml(p.categoria||'')+(p.ref_propia?'<span style="background:#ede9fe;color:#5b21b6;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">'+escHtml(p.ref_propia)+'</span>':'')+'</div>'
       +'</div>'
       +'<div class="vmc-footer">'
       +'<span class="vmc-pvp">'+fe(p.pvp)+'</span>'
       +'<span class="vmc-stk '+(stk<=3&&stk>0?'stock-low':'')+'">'+stkLabel+'</span>'
       +'</div>'
-      +'<button class="vmc-add" onclick="event.stopPropagation();var d=this.closest(\"[data-pid]\").dataset;toggleVMProduct(d.pid,d.pnom,d.pcat,+d.ppvp)">'+addIcon+'</button>'
+      +'<button class="vmc-add btn-vmc-add">'+addIcon+'</button>'
       +'</div>';
   }).join('');
+}
+
+function _vmCatalogClick(e){
+  var card=e.target.closest('.vmc-clickable');
+  if(!card)return;
+  var d=card.dataset;
+  toggleVMProduct(d.pid,d.pnom,d.pcat,+d.ppvp);
 }
 
 function escHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
@@ -1810,23 +1820,60 @@ function renderVMLineas(){
   if(!vmLineas.length){wrap.style.display='none';if(totRow)totRow.style.display='none';calcVMTotal();return;}
   wrap.style.display='';
   cont.innerHTML=vmLineas.map(function(l,i){
-    return '<div class="vm-linea">'
-      +'<div style="flex:1"><div class="vl-nom">'+escHtml(l.nombre)+'</div><div class="vl-cat">'+escHtml(l.cat)+'</div></div>'
-      +'<input type="number" min="1" value="'+l.qty+'" style="width:52px" onchange="vmQtyChange('+i+',this.value)">'
+    var refBadge=l.ref_propia?'<span style="background:#ede9fe;color:#5b21b6;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">'+escHtml(l.ref_propia)+'</span>':'';
+    var provOpts='<option value="">Proveedor...</option><option value="Casa Viva">Casa Viva</option><option value="Kave Home">Kave Home</option><option value="Bizzotto">Bizzotto</option><option value="Tamdis">Tamdis</option><option value="Distrigal">Distrigal</option><option value="Otro">Otro</option>';
+    return '<div class="vm-linea" style="flex-wrap:wrap;gap:4px">'
+      +'<div style="flex:1;min-width:0"><div class="vl-nom">'+escHtml(l.nombre)+refBadge+'</div>'
+      +'<div style="display:flex;gap:6px;margin-top:4px;align-items:center">'
+      +'<select data-li="'+i+'" class="vm-prov-sel" style="font-size:11px;padding:3px 6px;border:1.5px solid var(--lgray);border-radius:6px;max-width:130px">'+provOpts+'</select>'
+      +'</div></div>'
+      +'<input type="number" min="1" value="'+l.qty+'" style="width:52px" data-qi="'+i+'" class="vm-qty-inp">'
       +'<div class="vl-pvp">'+fe(l.pvp)+'</div>'
       +'<div class="vl-sub">'+fe(l.pvp*l.qty)+'</div>'
-      +'<button class="vl-del" onclick="vmRemoveLine('+i+')" title="Quitar">✕</button>'
+      +'<button class="vl-del" data-di="'+i+'">✕</button>'
       +'</div>';
   }).join('');
+  // Set proveedor selects to current values
+  cont.querySelectorAll('.vm-prov-sel').forEach(function(sel){
+    var li=parseInt(sel.dataset.li);
+    if(vmLineas[li]&&vmLineas[li].proveedor) sel.value=vmLineas[li].proveedor;
+  });
   var sub=vmLineas.reduce(function(s,l){return s+l.pvp*l.qty;},0);
   if(totRow){totRow.style.display='flex';}
   if(subLbl){subLbl.textContent=fe(sub);}
   calcVMTotal();
+  // Wire events via delegation
+  cont.onclick=function(e){
+    var del=e.target.closest('.vl-del');
+    if(del){vmRemoveLine(parseInt(del.dataset.di));return;}
+  };
+  cont.oninput=function(e){
+    var qty=e.target.closest('.vm-qty-inp');
+    if(qty){vmQtyChange(parseInt(qty.dataset.qi),qty.value);return;}
+  };
+  cont.onchange=function(e){
+    var sel=e.target.closest('.vm-prov-sel');
+    if(sel){vmSetProveedor(parseInt(sel.dataset.li),sel.value);return;}
+  };
 }
 
 function vmQtyChange(i,val){
   var qty=Math.max(1,parseInt(val)||1);
   vmLineas[i].qty=qty;
+  renderVMLineas();
+}
+
+function vmSetProveedor(i, prov){
+  vmLineas[i].proveedor=prov;
+  // Auto-generate ref
+  var pfx={'Casa Viva':'DCV','Kave Home':'DKH','Bizzotto':'DBIZ','Tamdis':'DTAM','Distrigal':'DDIS','Otro':'DOTR'}[prov]||'';
+  if(pfx && !vmLineas[i].ref_propia){
+    // Count existing refs with this prefix in current order
+    var count=vmLineas.filter(function(l){return l.proveedor===prov;}).length;
+    vmLineas[i].ref_propia=pfx+'-'+String(count).padStart(3,'0');
+  } else if(!prov){
+    vmLineas[i].ref_propia='';
+  }
   renderVMLineas();
 }
 
@@ -3809,7 +3856,7 @@ async function openPM(id){
 }
 function calcM(){var p=parseFloat(document.getElementById('p_pvp').value)||0,c=parseFloat(document.getElementById('p_cos').value)||0;document.getElementById('p_mar').value=mg(p,c);}
 
-var _PROV_PREFIX={'Casa Viva':'CV','Kave Home':'KH','Bizzotto':'BIZ','Tamdis':'TAM','Distrigal':'DIS','Otro':'OTR'};
+var _PROV_PREFIX={'Casa Viva':'DCV','Kave Home':'DKH','Bizzotto':'DBIZ','Tamdis':'DTAM','Distrigal':'DDIS','Otro':'DOTR'};
 
 async function autoGenRef(){
   var prov=document.getElementById('p_prov').value;
