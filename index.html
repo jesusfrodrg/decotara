@@ -1857,10 +1857,10 @@ function renderVMLineas(){
   cont.oninput=function(e){
     var qty=e.target.closest('.vm-qty-inp');
     if(qty){vmQtyChange(parseInt(qty.dataset.qi),qty.value);return;}
-    var pvp=e.target.closest('.vm-pvp-inp');
-    if(pvp){vmPvpChange(parseInt(pvp.dataset.pi),pvp.value);return;}
   };
   cont.onchange=function(e){
+    var pvp=e.target.closest('.vm-pvp-inp');
+    if(pvp){vmPvpChange(parseInt(pvp.dataset.pi),pvp.value);return;}
     var sel=e.target.closest('.vm-prov-sel');
     if(sel){vmSetProveedor(parseInt(sel.dataset.li),sel.value);return;}
   };
