@@ -1699,7 +1699,6 @@ async function confirmarRectificativa(){
   localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
 
   var factOrig=facturas[v.albaran_num||v.id]||'—';
-  var totalRect=seleccionadas.reduce(function(s,x){return s+(x._totEdit!==undefined?x._totEdit:Number(x.total||0));},0);
   var fechaStr=fD(v.fecha);
 
   var filas=seleccionadas.map(function(x){
@@ -1720,6 +1719,7 @@ async function confirmarRectificativa(){
   html+='<hr class="divider">';
   html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente</div>'      +'<div class="info-line"><b>Nombre:</b> '+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</div>'      +(cli.dni?'<div class="info-line"><b>DNI/NIF:</b> '+cli.dni+'</div>':'')      +(cli.telefono?'<div class="info-line"><b>Teléfono:</b> '+cli.telefono+'</div>':'')      +(cli.email?'<div class="info-line"><b>Email:</b> '+cli.email+'</div>':'')      +((cli.direccion||cli.ciudad)?'<div class="info-line"><b>Dirección:</b> '+(cli.direccion||'')+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#b45309"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'      +'<div class="info-line"><b>Motivo:</b> '+escHtml(motivo)+'</div>'    +'</div>'  +'</div>';
   html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
+  var totalRect=seleccionadas.reduce(function(s,x){return s+(x._totEdit!==undefined?x._totEdit:Number(x.total||0));},0);
   html+='<div class="totals-wrap"><table class="totals-table">'    +'<tr class="tot-sub"><td>Subtotal</td><td>'+fe(-totalRect)+'</td></tr>'    +'<tr><td>TOTAL RECTIFICADO</td><td style="color:#b45309">'+fe(-totalRect)+'</td></tr>'  +'</table></div>';
   html+='<div style="margin-top:18px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px">'    +'Esta factura rectificativa anula los importes indicados de la factura <b>'+factOrig+'</b> de fecha <b>'+fechaStr+'</b>.'  +'</div>';
   html+='<div class="footer">'+cfg.empresa_nombre+(cfg.empresa_dir?' &nbsp;·&nbsp; '+cfg.empresa_dir:'')+' &nbsp;·&nbsp; '+cfg.empresa_email+'</div>';
