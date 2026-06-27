@@ -2454,7 +2454,7 @@ function verFacturasEmitidas(){
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--xlgray);font-size:12px">'
         +'<span style="font-weight:700;color:var(--red)">'+e[1]+'</span>'
         +'<span style="color:var(--gray)">'+e[0]+'</span>'
-        +'<button onclick="eliminarNumFactura(''+e[0]+'')" style="background:#fee2e2;color:var(--red);border:none;padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer">✕</button>'
+        +'<button data-fackey="'+e[0]+'" onclick="eliminarNumFactura(this.dataset.fackey)" style="background:#fee2e2;color:var(--red);border:none;padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer">✕</button>'
       +'</div>';
     }).join('');
   }
