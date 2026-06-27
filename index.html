@@ -1767,7 +1767,7 @@ async function renderVMCatalog(){
   }).join('');
 }
 
-function escHtml(s){return (s||'').replace(/'/g,"&#39;").replace(/"/g,"&quot;");}
+function escHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
 
 // Obtiene el nombre del producto de una venta:
 // - Si tiene productos (join), usa ese nombre
@@ -3253,7 +3253,7 @@ async function renderProductos(){
       data=[...data].sort(function(a,b){return (a.id||'').localeCompare(b.id||'');});
     }else{
       // Con búsqueda: ir al servidor con filtro
-      data=await GET('/productos?select=*&order=id.asc&or=(nombre.ilike.*'+encodeURIComponent(q)+'*,ref_propia.ilike.*'+encodeURIComponent(q)+'*,ref_proveedor.ilike.*'+encodeURIComponent(q)+'*,proveedor.ilike.*'+encodeURIComponent(q)+'*)');
+      data=await GET('/productos?select=*&order=id.asc&nombre=ilike.*'+encodeURIComponent(q)+'*');
     }
     document.getElementById('prodtbody').innerHTML=data.length?data.map(function(p){
       var refBadge=p.ref_propia?'<span style="background:#ede9fe;color:#5b21b6;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">'+p.ref_propia+'</span>':'';
