@@ -2034,7 +2034,7 @@ async function renderAgenda(){
     var finSemStr=finSem.toISOString().split('T')[0];
     var url,urlEnt;
     var dniF2=window._dniOk?',dni':'';
-    var base='*,albaran_num,clientes(nombre,apellidos,ciudad'+dniF2+'),productos(nombre,categoria)';
+    var base='*,albaran_num,clientes(nombre,apellidos,ciudad,codigo_postal'+dniF2+'),productos(nombre,categoria,ref_propia)';
     if(agFiltro==='hoy'){
       url='/ventas?select='+base+'&or=(fecha_entrega.eq.'+hoyStr+',and(entrega.eq.Transporte y Montaje,fecha_entrega.is.null))&estado=neq.Cancelada&entregado=is.null&order=fecha_entrega.asc';
       urlEnt='/ventas?select='+base+'&or=(fecha_entrega.eq.'+hoyStr+',and(entrega.eq.Transporte y Montaje,fecha_entrega.is.null))&estado=neq.Cancelada&entregado=eq.true&order=fecha_entrega.asc';
@@ -4131,14 +4131,14 @@ document.addEventListener('DOMContentLoaded',function(){
           var vv;
           if(albKey&&albKey!==('ALB-'+id)){
             // Group albaran: fetch all ventas with same albaran_num
-            vv=await GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,dni),productos(nombre,categoria)&albaran_num=eq.'+encodeURIComponent(albKey));
+            vv=await GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,dni),productos(nombre,categoria,ref_propia)&albaran_num=eq.'+encodeURIComponent(albKey));
           }
           if(!vv||!vv.length){
-            vv=await GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,dni),productos(nombre,categoria)&id=eq.'+id);
+            vv=await GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,dni),productos(nombre,categoria,ref_propia)&id=eq.'+id);
           }
           if(!vv.length){toast('Venta no encontrada');return;}
           var v0=vv[0];
-          var cli2={nombre:(v0.clientes?v0.clientes.nombre:''),apellidos:(v0.clientes?v0.clientes.apellidos:''),dni:(v0.clientes?v0.clientes.dni:''),ciudad:(v0.clientes?v0.clientes.ciudad:''),direccion:(v0.clientes?v0.clientes.direccion:'')};
+          var cli2={nombre:(v0.clientes?v0.clientes.nombre:''),apellidos:(v0.clientes?v0.clientes.apellidos:''),dni:(v0.clientes?v0.clientes.dni:''),ciudad:(v0.clientes?v0.clientes.ciudad:''),codigo_postal:(v0.clientes?v0.clientes.codigo_postal:''),direccion:(v0.clientes?v0.clientes.direccion:'')};
           var vent=vv.map(function(v){return {prod_nombre:getProdNombre(v,'Producto'),prod_cat:getProdCat(v),cantidad:v.cantidad,pvp:v.pvp,total:v.total};});
           var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?('ALB-'+m[1]):'ALB-'+v0.id;})();
           generarAlbaran(vent,cli2,v0.fecha,v0.descuento||0,v0.vendedor||'',v0.forma_pago||'Efectivo',v0.entrega||'Recogida por el Cliente',v0.fecha_entrega||'',v0.notas||'',albNum);
