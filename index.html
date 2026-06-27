@@ -2047,6 +2047,10 @@ function showConnError(msg){
     +'<div style="font-size:11px;color:#aaa;margin-top:8px">'+msg+'</div>'
     +'</div>';
   document.body.appendChild(overlay);
+  // Show the dashboard page even on error
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  var _d=document.getElementById('page-dashboard');
+  if(_d)_d.classList.add('active');
   console.error('CONN ERROR:', msg);
 }
 
@@ -2057,10 +2061,24 @@ async function initApp(){
   var cajafecha=document.getElementById('caja_fecha');
   if(cajafecha)cajafecha.value=new Date().toISOString().split('T')[0];
 
+  // Show connecting message on dashboard
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  var _dash=document.getElementById('page-dashboard');
+  if(_dash){
+    _dash.classList.add('active');
+    _dash.innerHTML='<div style="padding:60px 20px;text-align:center">'
+      +'<img src="'+window._LOGO_B64+'" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--red);margin-bottom:16px">'
+      +'<div style="font-size:14px;font-weight:700;color:var(--gray);margin-bottom:6px">⏳ Conectando con Supabase...</div>'
+      +'<div id="conn-status" style="font-size:12px;color:var(--gray)">Iniciando conexión</div>'
+    +'</div>';
+  }
+  function setStatus(msg){var el=document.getElementById('conn-status');if(el)el.textContent=msg;}
+
   var dbg=document.getElementById('dbg-bar');
   if(dbg){dbg.style.display='block';}
   function dbgLog(msg,ok){
     if(dbg)dbg.innerHTML=(ok===true?'✅ ':ok===false?'❌ ':'⏳ ')+msg;
+    setStatus(msg);
   }
 
   try{
