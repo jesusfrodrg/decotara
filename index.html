@@ -4126,6 +4126,7 @@ async function saveV(){
   var fechaE=document.getElementById('v_fecha_entrega').value;
   if(!cId||!fecha){toast('Selecciona cliente y fecha');return;}
   if(!vend){toast('Selecciona un vendedor');document.getElementById('v_vend').focus();return;}
+  localStorage.setItem('decotara_ultimo_vendedor',vend);
   if(!vmLineas.length){toast('Añade al menos un artículo');return;}
   var btn=document.getElementById('btnSV');btn.disabled=true;btn.textContent='Guardando...';
   try{
@@ -4173,6 +4174,14 @@ async function saveV(){
     closeM('vm');renderVentas();
   }catch(e){toast('Error: '+e.message);}
   btn.disabled=false;btn.textContent='Guardar';
+}
+
+function setVendedorActual(){
+  var ultimo=localStorage.getItem('decotara_ultimo_vendedor')||'';
+  var sv=document.getElementById('cart_vend');
+  if(sv&&ultimo){sv.value=ultimo;}
+  var sv2=document.getElementById('v_vend');
+  if(sv2&&ultimo){sv2.value=ultimo;}
 }
 
 async function openCartModal(){
