@@ -1882,10 +1882,94 @@ async function generarFacturaRectificativa(ventaId){
       return '<div style="background:#f9f9f9;border:1.5px solid #e0e0e0;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">'        +'<label style="display:flex;align-items:center;gap:10px;cursor:pointer">'          +'<input type="checkbox" data-ri="'+i+'" class="rect-chk" style="width:18px;height:18px;accent-color:#b45309" checked>'          +'<div style="flex:1;font-weight:700;font-size:13px">'+escHtml(nom)+'</div>'          +(ref?'<span style="font-size:10px;color:#b45309;font-weight:700">'+escHtml(ref)+'</span>':'')        +'</label>'        +'<div style="display:grid;grid-template-columns:1fr auto;gap:8px;padding-left:28px">'          +'<div>'            +'<div style="font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:2px">Descripción</div>'            +'<input type="text" data-desc="'+i+'" value="'+escHtml(nom)+'" style="width:100%;padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px">'          +'</div>'          +'<div>'            +'<div style="font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:2px">Precio €</div>'            +'<input type="number" data-pvp="'+i+'" value="'+pvp+'" step="0.01" min="0" style="width:80px;padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;text-align:right;color:#b45309;font-weight:700">'          +'</div>'        +'</div>'      +'</div>';
     }).join('');
     document.getElementById('rectMotivo').value='';
+    window._rectTipo='devolucion';
+    setRectTipo('devolucion');
+    // Pre-rellenar subsanación con datos actuales
+    var cli0=ventas[0].clientes||{};
+    document.getElementById('rect_sub_nombre').value=(cli0.nombre||'')+' '+(cli0.apellidos||'');
+    document.getElementById('rect_sub_dni').value=cli0.dni||'';
+    document.getElementById('rect_sub_dir').value=cli0.direccion||'';
+    document.getElementById('rect_sub_ciudad').value=cli0.ciudad||'';
+    document.getElementById('rect_sub_cp').value=cli0.codigo_postal||'';
+    document.getElementById('rect_sub_email').value=cli0.email||'';
     document.getElementById('rectM').style.display='flex';
   }catch(e){toast('Error: '+e.message);}
 }
 
+
+
+function setRectTipo(tipo){
+  window._rectTipo=tipo;
+  var esDevolucion=tipo==='devolucion';
+  document.getElementById('rectTipoA').style.border=esDevolucion?'2px solid #b45309':'2px solid #ddd';
+  document.getElementById('rectTipoA').style.background=esDevolucion?'#fff7ed':'#f9fafb';
+  document.getElementById('rectTipoA').querySelector('div:nth-child(2)').style.color=esDevolucion?'#b45309':'#555';
+  document.getElementById('rectTipoB').style.border=!esDevolucion?'2px solid #1d4ed8':'2px solid #ddd';
+  document.getElementById('rectTipoB').style.background=!esDevolucion?'#eff6ff':'#f9fafb';
+  document.getElementById('rectTipoB').querySelector('div:nth-child(2)').style.color=!esDevolucion?'#1d4ed8':'#555';
+  document.getElementById('rectPanelDevolucion').style.display=esDevolucion?'block':'none';
+  document.getElementById('rectPanelSubsanacion').style.display=!esDevolucion?'block':'none';
+  var btn=document.getElementById('rectBtnConfirmar');
+  if(esDevolucion){btn.textContent='↩️ Generar Rectificativa';btn.style.background='#b45309';btn.onclick=confirmarRectificativa;}
+  else{btn.textContent='✏️ Generar Corrección';btn.style.background='#1d4ed8';btn.onclick=confirmarSubsanacion;}
+}
+
+async function confirmarSubsanacion(){
+  var motivo=(document.getElementById('rectMotivo').value||'').trim();
+  if(!motivo){toast('Escribe el motivo');document.getElementById('rectMotivo').focus();return;}
+  var ventas=window._rectVentas;
+  var ventaId=window._rectVentaId;
+  var v=ventas[0];
+  var cli=v.clientes||{};
+  // Recoger datos corregidos (usar original si vacío)
+  var nombre=document.getElementById('rect_sub_nombre').value.trim()||(cli.nombre||'')+' '+(cli.apellidos||'');
+  var dni=document.getElementById('rect_sub_dni').value.trim()||cli.dni||'';
+  var dir=document.getElementById('rect_sub_dir').value.trim()||cli.direccion||'';
+  var ciudad=document.getElementById('rect_sub_ciudad').value.trim()||cli.ciudad||'';
+  var cp=document.getElementById('rect_sub_cp').value.trim()||cli.codigo_postal||'';
+  var email=document.getElementById('rect_sub_email').value.trim()||cli.email||'';
+
+  document.getElementById('rectM').style.display='none';
+  var cfg=getCfg();
+  // Número rectificativa
+  var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
+  var allNums=Object.values(facturas).filter(function(n){return /^RECT-/.test(n);});
+  var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace('RECT-',''))||0;return num>max?num:max;},0);
+  var numRect='RECT-'+String(lastNum+1).padStart(4,'0');
+  facturas['rect_'+ventaId+'_'+Date.now()]=numRect;
+  localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
+  var factOrig=facturas[v.albaran_num||v.id]||'—';
+
+  // Artículos de la venta original (sin cambio de importe)
+  var totalVenta=ventas.reduce(function(s,x){return s+Number(x.total||0);},0);
+  var dto=v.descuento||0;
+  var filas=ventas.map(function(x){
+    var nom=(x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo';
+    var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'—';
+    return '<tr>'      +'<td style="color:#1d4ed8;font-weight:700;font-size:11px">'+escHtml(ref)+'</td>'      +'<td>'+escHtml(nom)+'</td>'      +'<td class="center">'+Number(x.cantidad||1)+'</td>'      +'<td class="right">'+fe(Number(x.pvp||0))+'</td>'      +'<td class="right" style="font-weight:700">'+fe(Number(x.total||0))+'</td>'    +'</tr>';
+  }).join('');
+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rectificativa '+numRect+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
+  html+='<div class="doc-date">Fecha: '+fD(new Date().toISOString().slice(0,10))+'</div>';
+  html+='<div class="hdr">'    +'<div class="hdr-left">'      +'<div class="doc-type" style="color:#1d4ed8">RECTIFICATIVA</div>'      +'<div class="doc-badge" style="background:#1d4ed8">'+numRect+' · Subsanación</div>'    +'</div>'    +'<div class="hdr-right">'      +'<img class="logo-circle" src="'+window._LOGO_B64+'">'      +'<div class="brand-name">'+cfg.empresa_nombre+'</div>'      +'<div class="brand-sub">'+cfg.empresa_email+'</div>'    +'</div>'  +'</div>';
+  html+='<hr class="divider">';
+  html+='<div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#1d4ed8">'    +'<b>✏️ Factura rectificativa por subsanación</b> — Sustituye y anula la factura <b>'+factOrig+'</b>. Motivo: '+escHtml(motivo)+  '</div>';
+  html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#1d4ed8"></div>Datos del Cliente <span style="font-size:10px;background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:4px;margin-left:4px">CORREGIDO</span></div>'      +'<div class="info-line"><b>Nombre:</b> '+escHtml(nombre)+'</div>'      +(dni?'<div class="info-line"><b>DNI/NIF:</b> '+escHtml(dni)+'</div>':'')      +(email?'<div class="info-line"><b>Email:</b> '+escHtml(email)+'</div>':'')      +((dir||ciudad)?'<div class="info-line"><b>Dirección:</b> '+escHtml(dir)+(cp?' '+escHtml(cp):'')+(ciudad?', '+escHtml(ciudad):'')+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#1d4ed8"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'    +'</div>'  +'</div>';
+  html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
+  html+='<div class="totals-wrap"><table class="totals-table">'    +'<tr class="tot-sub"><td>Subtotal</td><td>'+fe(totalVenta)+'</td></tr>'    +(dto?'<tr class="tot-sub"><td>Descuento ('+dto+'%)</td><td>-'+fe(totalVenta*dto/100)+'</td></tr>':'')    +'<tr style="background:#1d4ed8"><td style="background:#1d4ed8;color:#fff">TOTAL</td><td style="background:#1d4ed8;color:#fff;text-align:right;font-weight:800">'+fe(totalVenta*(1-dto/100))+'</td></tr>'  +'</table></div>';
+  html+='<div style="margin-top:18px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px">'    +'Esta factura rectificativa por subsanación <b>sustituye íntegramente</b> a la factura <b>'+factOrig+'</b>, quedando esta última sin efecto.'  +'</div>';
+  html+='<div class="footer">'+cfg.empresa_nombre+(cfg.empresa_dir?' &nbsp;·&nbsp; '+cfg.empresa_dir:'')+' &nbsp;·&nbsp; '+cfg.empresa_email+'</div>';
+  html+='<br><center class="no-print"><button onclick="window.print()" style="background:#1d4ed8;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
+  html+='</body></html>';
+
+  // Guardar en Supabase
+  try{
+    var rectId='RECT-'+Date.now();
+    await POST('/rectificativas',{id:rectId,numero:numRect,fecha:new Date().toISOString().slice(0,10),factura_origen:factOrig,venta_id:ventaId,cliente_nombre:nombre,cliente_dni:dni||null,motivo:'Subsanación: '+motivo,articulos:ventas.map(function(x){return {ref:x.ref_propia||'',nombre:(x.productos&&x.productos.nombre)||x.prod_nombre||'',cantidad:Number(x.cantidad||1),pvp:Number(x.pvp||0),total:Number(x.total||0)};}),importe:totalVenta,vendedor:v.vendedor||null});
+  }catch(e){console.warn('No se pudo guardar en BD:',e.message);}
+
+  var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
+}
 
 async function confirmarRectificativa(){
   var motivo=(document.getElementById('rectMotivo').value||'').trim();
@@ -4482,14 +4566,42 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="drag-handle"></div>
   <div class="modal-header"><div class="modal-stripe" style="background:#b45309"></div><div class="mt">Factura Rectificativa</div></div>
   <div style="flex:1;overflow-y:auto;padding:16px">
-    <div style="font-size:12px;color:#666;margin-bottom:12px">Selecciona los artículos a rectificar:</div>
-    <div id="rectArticulos" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
-    <div class="fi full" style="margin-top:8px">
+    <!-- Selector tipo -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <label id="rectTipoA" onclick="setRectTipo('devolucion')" style="cursor:pointer;border:2px solid #b45309;border-radius:10px;padding:10px;text-align:center;background:#fff7ed">
+        <div style="font-size:20px">↩️</div>
+        <div style="font-weight:700;font-size:12px;color:#b45309;margin-top:4px">Devolución / Anulación</div>
+        <div style="font-size:10px;color:#666;margin-top:2px">Importes en negativo</div>
+      </label>
+      <label id="rectTipoB" onclick="setRectTipo('subsanacion')" style="cursor:pointer;border:2px solid #ddd;border-radius:10px;padding:10px;text-align:center;background:#f9fafb">
+        <div style="font-size:20px">✏️</div>
+        <div style="font-weight:700;font-size:12px;color:#555;margin-top:4px">Corrección de datos</div>
+        <div style="font-size:10px;color:#666;margin-top:2px">Sustituye la original</div>
+      </label>
+    </div>
+    <!-- Panel devolución -->
+    <div id="rectPanelDevolucion">
+      <div style="font-size:12px;color:#666;margin-bottom:8px">Selecciona los artículos a rectificar:</div>
+      <div id="rectArticulos" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+    </div>
+    <!-- Panel subsanación -->
+    <div id="rectPanelSubsanacion" style="display:none">
+      <div style="font-size:12px;color:#666;margin-bottom:10px">Corrige los datos erróneos de la factura original:</div>
+      <div class="fg" style="gap:8px">
+        <div class="fi"><label style="font-size:11px">Nombre cliente</label><input type="text" id="rect_sub_nombre" style="margin-top:4px"></div>
+        <div class="fi"><label style="font-size:11px">DNI/NIF</label><input type="text" id="rect_sub_dni" style="margin-top:4px"></div>
+        <div class="fi"><label style="font-size:11px">Dirección</label><input type="text" id="rect_sub_dir" style="margin-top:4px"></div>
+        <div class="fi"><label style="font-size:11px">Ciudad</label><input type="text" id="rect_sub_ciudad" style="margin-top:4px"></div>
+        <div class="fi"><label style="font-size:11px">CP</label><input type="text" id="rect_sub_cp" style="margin-top:4px"></div>
+        <div class="fi"><label style="font-size:11px">Email</label><input type="text" id="rect_sub_email" style="margin-top:4px"></div>
+      </div>
+    </div>
+    <div class="fi full" style="margin-top:10px">
       <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#666">Motivo *</label>
-      <input type="text" id="rectMotivo" placeholder="ej: Devolución, Error de precio..." style="margin-top:4px">
+      <input type="text" id="rectMotivo" placeholder="ej: Devolución, Error en DNI..." style="margin-top:4px">
     </div>
   </div>
-  <div class="mf"><button class="btn bs2" onclick="document.getElementById('rectM').style.display='none'">Cancelar</button><button class="btn bp" style="background:#b45309" onclick="confirmarRectificativa()">↩️ Generar Rectificativa</button></div>
+  <div class="mf"><button class="btn bs2" onclick="document.getElementById('rectM').style.display='none'">Cancelar</button><button class="btn bp" style="background:#b45309" id="rectBtnConfirmar" onclick="confirmarRectificativa()">↩️ Generar Rectificativa</button></div>
 </div></div>
 
 </body>
