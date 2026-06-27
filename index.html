@@ -1359,7 +1359,7 @@ function cartAddItem(prod){
   cartUpdate();updateStockBtn(prod.id);toast('Añadido: '+prod.nombre+' (quedan '+(disponible-1)+')',1800);
 }
 
-var curPage='dashboard',veditId=null,ceditId=null,peditId=null;
+var curPage='dashboard',veditId=null,ceditId=null,peditId=null,agFiltro='proximas';
 var rptData=[];var rptTitleStr='';
 
 function fe(v){return Number(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR';}
