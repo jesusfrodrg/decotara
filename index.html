@@ -4164,7 +4164,15 @@ document.addEventListener('DOMContentLoaded',function(){
             }
             await DEL('/ventas?id=eq.'+id);
             await loadStockCache();
-            toast('✅ Venta eliminada y stock repuesto');
+            // Si no quedan ventas, resetear contadores de factura y referencias
+            var ventasRestantes=await GET('/ventas?select=id&limit=1');
+            if(!ventasRestantes.length){
+              localStorage.removeItem('decotara_facturas');
+              localStorage.removeItem('decotara_ref_counter');
+              toast('✅ Venta eliminada · Contadores reseteados (no quedan ventas)');
+            } else {
+              toast('✅ Venta eliminada y stock repuesto');
+            }
             renderVentas();
           }catch(e){toast('Error: '+e.message);}
         })();
