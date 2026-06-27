@@ -872,7 +872,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <div class="fi"><label>Entrega</label><select id="cart_entrega"><option value="Recogida por el Cliente">🚶 Recogida por el Cliente</option><option value="Transporte y Montaje">🚚 Transporte y Montaje</option></select></div>
       <div class="fi"><label>Fecha entrega</label><input type="date" id="cart_fecha_entrega"></div>
       <div class="fi"><label>Fecha venta</label><input type="date" id="cart_fecha"></div>
-      <div class="fi"><label>Descuento %</label><input type="number" id="cart_dto" min="0" max="100" value="0"></div>
+      <input type="hidden" id="cart_dto" value="0">
     </div>
     <div class="fi" style="margin-bottom:12px"><label>Observaciones</label><textarea id="cart_not" placeholder="Observaciones..." style="min-height:44px"></textarea></div>
     <div class="mf"><button class="btn bs2" id="btnCCart">Cancelar</button><button class="btn bp" id="btnSCart">Registrar venta</button></div>
