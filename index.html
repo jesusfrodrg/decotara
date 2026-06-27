@@ -1683,7 +1683,8 @@ async function generarFacturaRectificativa(ventaId){
     cont.innerHTML=ventas.map(function(x,i){
       var nom=(x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo';
       var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'';
-      return '<label style="display:flex;align-items:center;gap:10px;background:#f9f9f9;border:1.5px solid #e0e0e0;border-radius:8px;padding:10px;cursor:pointer">'        +'<input type="checkbox" data-ri="'+i+'" class="rect-chk" style="width:18px;height:18px;accent-color:#b45309" checked>'        +'<div style="flex:1">'          +'<div style="font-weight:700;font-size:13px">'+escHtml(nom)+'</div>'          +(ref?'<div style="font-size:10px;color:#b45309;font-weight:700">'+escHtml(ref)+'</div>':'')        +'</div>'        +'<div style="font-weight:700;color:#b45309">'+fe(Number(x.total||0))+'</div>'        +'</label>';
+      var pvp=Number(x.pvp||0);
+      return '<div style="background:#f9f9f9;border:1.5px solid #e0e0e0;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">'        +'<label style="display:flex;align-items:center;gap:10px;cursor:pointer">'          +'<input type="checkbox" data-ri="'+i+'" class="rect-chk" style="width:18px;height:18px;accent-color:#b45309" checked>'          +'<div style="flex:1;font-weight:700;font-size:13px">'+escHtml(nom)+'</div>'          +(ref?'<span style="font-size:10px;color:#b45309;font-weight:700">'+escHtml(ref)+'</span>':'')        +'</label>'        +'<div style="display:grid;grid-template-columns:1fr auto;gap:8px;padding-left:28px">'          +'<div>'            +'<div style="font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:2px">Descripción</div>'            +'<input type="text" data-desc="'+i+'" value="'+escHtml(nom)+'" style="width:100%;padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px">'          +'</div>'          +'<div>'            +'<div style="font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:2px">Precio €</div>'            +'<input type="number" data-pvp="'+i+'" value="'+pvp+'" step="0.01" min="0" style="width:80px;padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;text-align:right;color:#b45309;font-weight:700">'          +'</div>'        +'</div>'      +'</div>';
     }).join('');
     document.getElementById('rectMotivo').value='';
     document.getElementById('rectM').style.display='flex';
@@ -1698,7 +1699,7 @@ async function confirmarRectificativa(){
   if(!checks.length){toast('Selecciona al menos un artículo');return;}
   var ventas=window._rectVentas;
   var ventaId=window._rectVentaId;
-  var seleccionadas=Array.from(checks).map(function(c){return ventas[parseInt(c.dataset.ri)];});
+  var seleccionadas=Array.from(checks).map(function(c){var ri=parseInt(c.dataset.ri);var x=Object.assign({},ventas[ri]);x._ri=ri;return x;});
   document.getElementById('rectM').style.display='none';
 
   var cfg=getCfg();
@@ -1713,13 +1714,19 @@ async function confirmarRectificativa(){
   localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
 
   var factOrig=facturas[v.albaran_num||v.id]||'—';
-  var totalRect=seleccionadas.reduce(function(s,x){return s+Number(x.total||0);},0);
+  var totalRect=seleccionadas.reduce(function(s,x){return s+(x._totEdit!==undefined?x._totEdit:Number(x.total||0));},0);
   var fechaStr=fD(v.fecha);
 
   var filas=seleccionadas.map(function(x){
-    var nom=(x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo';
     var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'—';
-    return '<tr>'      +'<td style="color:#b45309;font-weight:700;font-size:11px">'+escHtml(ref)+'</td>'      +'<td>'+escHtml(nom)+'</td>'      +'<td class="center">'+Number(x.cantidad||1)+'</td>'      +'<td class="right">'+fe(Number(x.pvp||0))+'</td>'      +'<td class="right" style="color:#b45309;font-weight:700">'+fe(-Number(x.total||0))+'</td>'      +'</tr>';
+    var descEl=document.querySelector('[data-desc="'+x._ri+'"]');
+    var pvpEl=document.querySelector('[data-pvp="'+x._ri+'"]');
+    var nom=descEl?descEl.value:((x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo');
+    var pvp=pvpEl?Math.max(0,parseFloat(pvpEl.value)||0):Number(x.pvp||0);
+    var qty=Number(x.cantidad||1);
+    var tot=pvp*qty;
+    x._nomEdit=nom; x._pvpEdit=pvp; x._totEdit=tot;
+    return '<tr>'      +'<td style="color:#b45309;font-weight:700;font-size:11px">'+escHtml(ref)+'</td>'      +'<td>'+escHtml(nom)+'</td>'      +'<td class="center">'+qty+'</td>'      +'<td class="right">'+fe(pvp)+'</td>'      +'<td class="right" style="color:#b45309;font-weight:700">'+fe(-tot)+'</td>'      +'</tr>';
   }).join('');
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura Rectificativa '+numRect+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
