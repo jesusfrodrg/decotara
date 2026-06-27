@@ -2237,7 +2237,7 @@ async function renderVentas(){
   var q=(document.getElementById('vsearch').value||'').toLowerCase();
   var est=document.getElementById('vfest').value;
   try{
-    var dniField=window._dniOk?',dni':''; var url='/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,direccion'+dniField+'),productos(nombre,categoria)&order=created_at.desc';
+    var dniField=window._dniOk?',dni':''; var url='/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,direccion'+dniField+'),productos(nombre,categoria,ref_propia)&order=created_at.desc';
     if(est)url+='&estado=eq.'+encodeURIComponent(est);
     // Si hay búsqueda de texto, aplicar filtros server-side
     if(q&&q.length>=2){
@@ -4080,7 +4080,7 @@ document.addEventListener('DOMContentLoaded',function(){
       if(!grupo.length){toast('Datos no disponibles, recarga ventas');return;}
       var v0=grupo[0];
       var cli2={nombre:(v0.clientes?v0.clientes.nombre:''),apellidos:(v0.clientes?v0.clientes.apellidos:''),dni:(v0.clientes?v0.clientes.dni:''),ciudad:(v0.clientes?v0.clientes.ciudad:''),direccion:(v0.clientes?v0.clientes.direccion:'')};
-      var vent=grupo.map(function(v){return {prod_nombre:getProdNombre(v,'Producto'),prod_cat:getProdCat(v),cantidad:v.cantidad,pvp:v.pvp,total:v.total};});
+      var vent=grupo.map(function(v){return {prod_nombre:getProdNombre(v,'Producto'),prod_cat:getProdCat(v),cantidad:v.cantidad,pvp:v.pvp,total:v.total,ref_propia:v.ref_propia||(v.productos&&v.productos.ref_propia)||''};});
       var dto=v0.descuento||0;
       var totalGrupo=grupo.reduce(function(s,v){return s+Number(v.total||0);},0);
       // Recalculate each item total without discount for subtotal
