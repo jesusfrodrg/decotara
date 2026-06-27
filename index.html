@@ -859,7 +859,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <div class="fi"><label>Fecha venta</label><input type="date" id="cart_fecha"></div>
       <div class="fi"><label>Descuento %</label><input type="number" id="cart_dto" min="0" max="100" value="0"></div>
     </div>
-    <div class="fi" style="margin-bottom:12px"><label>Notas</label><textarea id="cart_not" placeholder="Observaciones..." style="min-height:44px"></textarea></div>
+    <div class="fi" style="margin-bottom:12px"><label>Observaciones</label><textarea id="cart_not" placeholder="Observaciones..." style="min-height:44px"></textarea></div>
     <div class="mf"><button class="btn bs2" id="btnCCart">Cancelar</button><button class="btn bp" id="btnSCart">Registrar venta</button></div>
   </div>
 </div></div>
@@ -953,7 +953,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <div class="fi"><label>Entrega</label><select id="v_entrega"><option value="Recogida por el Cliente">🚶 Recogida por el Cliente</option><option value="Transporte y Montaje">🚚 Transporte y Montaje</option></select></div>
     <div class="fi"><label>Fecha entrega</label><input type="date" id="v_fecha_entrega"></div>
     <div class="fi"><label>Estado</label><select id="v_est"><option>Completada</option><option>Pendiente</option><option>Cancelada</option></select></div>
-    <div class="fi full"><label>Notas</label><textarea id="v_not" placeholder="Observaciones..."></textarea></div>
+    <div class="fi full"><label>Observaciones</label><textarea id="v_not" placeholder="Observaciones..."></textarea></div>
     <!-- Campos legacy ocultos para compatibilidad edición venta individual -->
     <input type="hidden" id="v_prod"><input type="hidden" id="v_cant" value="1"><input type="hidden" id="v_pvp">
   </div>
@@ -984,6 +984,14 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <div class="fi full"><label>Nombre</label><input type="text" id="p_nom"></div>
     <div class="fi"><label>Categoría</label><select id="p_cat"><option>Sofa</option><option>Canape</option><option>Colchon</option><option>Otros</option></select></div>
     <div class="fi"><label>Stock</label><input type="number" id="p_sto" min="0" value="0"></div>
+    <div class="fi"><label>Referencia propia</label>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="p_ref" placeholder="Ej: CV-001" style="flex:1">
+          <button type="button" onclick="document.getElementById('p_ref').value='';autoGenRef();" style="background:var(--xlgray);border:1px solid var(--lgray);border-radius:8px;padding:0 10px;cursor:pointer;font-size:13px;white-space:nowrap" title="Generar automáticamente">🔄</button>
+        </div>
+      </div>
+    <div class="fi"><label>Proveedor</label><select id="p_prov" onchange="autoGenRef()"><option value="">Sin proveedor</option><option>Casa Viva</option><option>Kave Home</option><option>Bizzotto</option><option>Tamdis</option><option>Distrigal</option><option>Otro</option></select></div>
+    <div class="fi full"><label>Ref. proveedor</label><input type="text" id="p_ref_prov" placeholder="Referencia del proveedor"></div>
     <div class="fi full"><label>Descripción</label><textarea id="p_des"></textarea></div>
     <div class="fi"><label>PVP euros</label><input type="number" id="p_pvp" step="0.01"></div>
     <div class="fi"><label>Coste euros</label><input type="number" id="p_cos" step="0.01"></div>
@@ -1318,7 +1326,7 @@ function cartAddItem(prod){
   var inCart=0;var ex=cart.find(function(i){return i.id===prod.id;});if(ex)inCart=ex.qty;
   var disponible=(stockCache[prod.id]||0)-inCart;
   if(disponible<=0){toast('Sin stock disponible para '+prod.nombre,2000);return;}
-  if(ex){ex.qty++;}else{cart.push({id:prod.id,nombre:prod.nombre,categoria:prod.categoria,pvp:prod.pvp,qty:1});}
+  if(ex){ex.qty++;}else{cart.push({id:prod.id,nombre:prod.nombre,categoria:prod.categoria,pvp:prod.pvp,qty:1,ref_propia:prod.ref_propia||'',proveedor:prod.proveedor||''});}
   cartUpdate();updateStockBtn(prod.id);toast('Añadido: '+prod.nombre+' (quedan '+(disponible-1)+')',1800);
 }
 
@@ -1459,7 +1467,7 @@ function generarCajaPDF(){
 
   // Dirección empresa
   html+='<div style="font-size:11px;color:#888;margin-bottom:18px">'
-    +cfg_.empresa_nombre
+    +cfg_.empresa_nombre+' &nbsp;·&nbsp; CIF: B21652037'
     +(cfg_.empresa_dir?' &nbsp;·&nbsp; '+cfg_.empresa_dir:'')
     +(cfg_.empresa_tel?' &nbsp;·&nbsp; '+cfg_.empresa_tel:'')
     +' &nbsp;·&nbsp; '+cfg_.empresa_email
@@ -1659,27 +1667,49 @@ async function generarFacturaLegal(ventaId){
     var dto=Number(v.descuento||0);
     var descuentoVal=subtotal*(dto/100);
     var total=ventas.reduce(function(s,x){return s+Number(x.total||0);},0);
-    var numFact=v.albaran_num||v.id;
+    // ── Número de factura propio ──
+    var _FAC_KEY='decotara_facturas';
+    function getFacturas(){try{var s=localStorage.getItem(_FAC_KEY);if(s)return JSON.parse(s);}catch(e){}return {};}
+    function saveFacturas(f){localStorage.setItem(_FAC_KEY,JSON.stringify(f));}
+    // Use albaran_num or ventaId as key to reuse same factura number if reprinted
+    var factKey=v.albaran_num||v.id;
+    var facturas=getFacturas();
+    var numFact;
+    if(facturas[factKey]){
+      // Already has a factura number — reuse it
+      numFact=facturas[factKey];
+    } else {
+      // Generate new sequential number
+      var allNums=Object.values(facturas).filter(function(n){return /^FAC-/.test(n);});
+      var lastNum=allNums.reduce(function(max,n){
+        var num=parseInt(n.replace('FAC-',''))||0;
+        return num>max?num:max;
+      },0);
+      numFact='FAC-'+String(lastNum+1).padStart(4,'0');
+      facturas[factKey]=numFact;
+      saveFacturas(facturas);
+    }
     var fecha=fD(v.fecha);
     var filas=ventas.map(function(x){
       var nom=x.prod_nombre||getProdNombre(x,'—');
-      return '<tr><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">'+nom+(x.notas?'<div style="font-size:11px;color:#888;margin-top:2px">'+x.notas+'</div>':'')+'</td>'
+      var refVal=x.ref_propia||(x.productos&&x.productos.ref_propia?x.productos.ref_propia:'—');
+      return '<tr><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;color:#7c3aed;font-weight:700;font-size:11px">'+refVal+'</td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">'+nom+(x.notas?'<div style="font-size:11px;color:#888;margin-top:2px">'+x.notas+'</div>':'')+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:center">'+x.cantidad+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right">'+fe(x.pvp)+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right">'+fe(Number(x.total||0))+'</td></tr>';
     }).join('');
     var emptyRows='';
     for(var i=0;i<Math.max(0,6-ventas.length);i++){
-      emptyRows+='<tr><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">&nbsp;</td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td></tr>';
+      emptyRows+='<tr><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">&nbsp;</td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td></tr>';
     }
     var CSS='*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#fff;padding:32px 36px;max-width:800px;margin:0 auto}.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}.logo-img{width:76px;height:76px;border-radius:50%;object-fit:cover;border:3px solid #C8372D}.logo-name{font-size:12px;color:#C8372D;font-weight:700;margin-top:5px}.factura-title{font-size:42px;font-weight:900;color:#C8372D;text-align:right}.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}.empresa-info{font-size:12px;color:#C8372D;line-height:1.9}.meta-table{border-collapse:collapse;width:100%}.meta-hd{background:#C8372D;color:#fff;font-weight:700;font-size:11px;padding:5px 10px;text-transform:uppercase;letter-spacing:.5px}.meta-val{padding:6px 10px;background:#fff;border:1px solid #C8372D;font-size:12px}.addr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}.addr-hd{background:#C8372D;color:#fff;font-weight:700;font-size:11px;padding:5px 10px;text-transform:uppercase;letter-spacing:.5px}.addr-body{font-size:12px;line-height:1.8;padding:8px 10px;border:1px solid #e0e0e0;border-top:none;min-height:90px}table.items{width:100%;border-collapse:collapse}table.items .th{background:#C8372D;color:#fff;font-weight:700;font-size:11px;padding:8px 12px;text-transform:uppercase;letter-spacing:.5px}.bottom{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:0;align-items:center}.gracias{font-size:28px;font-weight:900;color:#C8372D;text-align:center}.tot-row{display:flex;justify-content:space-between;padding:6px 12px;font-size:13px;border-bottom:1px solid #e8e8e8}.tot-final{display:flex;justify-content:space-between;padding:9px 12px;font-size:15px;font-weight:900;background:#C8372D;color:#fff}.footer-note{text-align:center;font-size:11px;color:#888;margin-top:16px;font-style:italic;border-top:1px solid #eee;padding-top:12px}@media print{.no-print{display:none!important}}';
     var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura '+numFact+'</title><style>'+CSS+'</style></head><body>'
       +'<div class="top"><div><img class="logo-img" src="'+window._LOGO_B64+'"><div class="logo-name">'+cfg.empresa_nombre+'</div></div><div class="factura-title">FACTURA</div></div>'
-      +'<div class="info-grid"><div class="empresa-info">'+(cfg.empresa_dir?cfg.empresa_dir+'<br>':'')+(cfg.empresa_tel?cfg.empresa_tel+'<br>':'')+cfg.empresa_email+'</div>'
+      +'<div class="info-grid"><div class="empresa-info">''CIF: B21652037<br>''CIF: B21652037<br>'+(cfg.empresa_dir?cfg.empresa_dir+'<br>':'')+(cfg.empresa_tel?cfg.empresa_tel+'<br>':'')+cfg.empresa_email+'</div>'
       +'<table class="meta-table"><tr><td class="meta-hd">Nº de Factura</td><td class="meta-hd">Fecha</td></tr><tr><td class="meta-val" style="font-weight:700;color:#C8372D">'+numFact+'</td><td class="meta-val">'+fecha+'</td></tr><tr><td class="meta-hd">Vendedor</td><td class="meta-hd">Forma de Pago</td></tr><tr><td class="meta-val">'+(v.vendedor||'—')+'</td><td class="meta-val">'+(v.forma_pago||'—')+'</td></tr></table></div>'
       +'<div class="addr-grid"><div><div class="addr-hd">Facturar a:</div><div class="addr-body">'+(cli.nombre?'<b>'+cli.nombre+' '+cli.apellidos+'</b><br>':'')+(cli.dni?'DNI/NIF: '+cli.dni+'<br>':'')+(cli.direccion?cli.direccion+(cli.ciudad?', '+cli.ciudad:'')+'<br>':'')+(cli.telefono?cli.telefono+'<br>':'')+(cli.email?cli.email:'')+'</div></div>'
       +'<div><div class="addr-hd">Dirección de entrega:</div><div class="addr-body">'+(cli.nombre?'<b>'+cli.nombre+' '+cli.apellidos+'</b><br>':'')+(cli.direccion?cli.direccion+(cli.ciudad?', '+cli.ciudad:'')+'<br>':'')+(v.entrega?'<b>Entrega:</b> '+v.entrega+(v.fecha_entrega?' — '+fD(v.fecha_entrega):''):'')+'</div></div></div>'
-      +'<table class="items"><thead><tr><td class="th" style="width:55%">Descripción</td><td class="th" style="width:12%;text-align:center">Cantidad</td><td class="th" style="width:16%;text-align:right">Precio Unit.</td><td class="th" style="width:17%;text-align:right">Monto</td></tr></thead><tbody>'+filas+emptyRows+'</tbody></table>'
+      +'<table class="items"><thead><tr><td class="th" style="width:12%">Referencia</td><td class="th" style="width:43%">Descripción</td><td class="th" style="width:12%;text-align:center">Cantidad</td><td class="th" style="width:16%;text-align:right">Precio Unit.</td><td class="th" style="width:17%;text-align:right">Monto</td></tr></thead><tbody>'+filas+emptyRows+'</tbody></table>'
       +'<div class="bottom"><div class="gracias">GRACIAS</div><div><div class="tot-row"><span>Subtotal</span><span>'+fe(subtotal)+'</span></div>'+(dto>0?'<div class="tot-row"><span>Descuento ('+dto+'%)</span><span>- '+fe(descuentoVal)+'</span></div>':'')+'<div class="tot-final"><span>TOTAL</span><span>'+fe(total)+'</span></div></div></div>'
       +'<div class="footer-note">'+(cfg.pie_factura?cfg.pie_factura+'<br>':'')+cfg.empresa_nombre+' · '+cfg.empresa_email+(cfg.empresa_tel?' · '+cfg.empresa_tel:'')+'</div>'
       +'<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>'
@@ -1754,7 +1784,8 @@ function toggleVMProduct(id,nom,cat,pvp){
   } else {
     var stk=stockCache[id]!==undefined?stockCache[id]:99;
     if(stk<=0){toast('Sin stock disponible');return;}
-    vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false});
+    var _vmprod=vmProductos.find(function(x){return x.id===id;})||{};
+    vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:_vmprod.ref_propia||'',proveedor:_vmprod.proveedor||''});
   }
   renderVMLineas();
   renderVMCatalog();
@@ -2383,8 +2414,45 @@ function cfgEmpresaStr(){
   return c.empresa_nombre+' · '+c.empresa_dir+(c.empresa_tel?' · '+c.empresa_tel:'')+' · '+c.empresa_email;
 }
 
+function verFacturasEmitidas(){
+  var list=document.getElementById('cfg_facturas_list');
+  if(!list)return;
+  var facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');
+  var entries=Object.entries(facturas).sort(function(a,b){return b[1].localeCompare(a[1]);});
+  if(!entries.length){list.innerHTML='<div style="padding:12px;color:var(--gray);font-size:13px">No hay facturas emitidas aún</div>';}
+  else{
+    list.innerHTML=entries.map(function(e){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--xlgray);font-size:12px">'
+        +'<span style="font-weight:700;color:var(--red)">'+e[1]+'</span>'
+        +'<span style="color:var(--gray)">'+e[0]+'</span>'
+        +'<button onclick="eliminarNumFactura(''+e[0]+'')" style="background:#fee2e2;color:var(--red);border:none;padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer">✕</button>'
+      +'</div>';
+    }).join('');
+  }
+  list.style.display=list.style.display==='none'?'block':'none';
+}
+
+function eliminarNumFactura(key){
+  if(!confirm('¿Eliminar este número de factura? La próxima vez que se genere la factura de esta venta se asignará un nuevo número.'))return;
+  var facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');
+  delete facturas[key];
+  localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
+  verFacturasEmitidas();
+  toast('Número eliminado');
+}
+
 function renderConfig(){
   var cfg=getCfg();
+
+  // Factura count
+  var facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');
+  var facCount=Object.keys(facturas).length;
+  var facInfo=document.getElementById('cfg_facturas_info');
+  if(facInfo){
+    var nums=Object.values(facturas).filter(function(n){return /^FAC-/.test(n);});
+    var lastNum=nums.length?nums.sort().pop():'—';
+    facInfo.textContent=facCount+' facturas emitidas · Última: '+lastNum;
+  }
 
   // Fill empresa fields
   document.getElementById('cfg_empresa_nombre').value=cfg.empresa_nombre||'';
@@ -3170,9 +3238,14 @@ async function renderProductos(){
       data=[...data].sort(function(a,b){return (a.id||'').localeCompare(b.id||'');});
     }else{
       // Con búsqueda: ir al servidor con filtro
-      data=await GET('/productos?select=*&order=id.asc&nombre=ilike.*'+encodeURIComponent(q)+'*');
+      data=await GET('/productos?select=*&order=id.asc&or=(nombre.ilike.*'+encodeURIComponent(q)+'*,ref_propia.ilike.*'+encodeURIComponent(q)+'*,ref_proveedor.ilike.*'+encodeURIComponent(q)+'*,proveedor.ilike.*'+encodeURIComponent(q)+'*)');
     }
-    document.getElementById('prodtbody').innerHTML=data.length?data.map(function(p){return '<tr><td><b style="color:var(--blue)">'+p.id+'</b></td><td>'+p.nombre+'</td><td>'+cb(p.categoria)+'</td><td class="price">'+fe(p.pvp)+'</td><td class="'+sc(p.stock||0)+'">'+(p.stock||0)+'</td><td><div style="display:flex;gap:3px"><button class="btn btn-sm bs2 bic" data-action="ep" data-id="'+p.id+'">✏️</button><button class="btn btn-sm bd bic" data-action="dp" data-id="'+p.id+'">🗑</button></div></td></tr>';}).join(''):EM(6,'📦','Sin productos');
+    document.getElementById('prodtbody').innerHTML=data.length?data.map(function(p){
+      var refBadge=p.ref_propia?'<span style="background:#ede9fe;color:#5b21b6;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">'+p.ref_propia+'</span>':'';
+      var provBadge=p.proveedor?'<span style="background:#f0fdf4;color:#15803d;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">'+p.proveedor+'</span>':'';
+      var refProv=p.ref_proveedor?'<div style="font-size:10px;color:var(--gray)">Ref. prov: '+p.ref_proveedor+'</div>':'';
+      return '<tr><td><b style="color:var(--blue)">'+p.id+'</b>'+refBadge+'</td><td>'+p.nombre+refProv+provBadge+'</td><td>'+cb(p.categoria)+'</td><td class="price">'+fe(p.pvp)+'</td><td class="'+sc(p.stock||0)+'">'+(p.stock||0)+'</td><td><div style="display:flex;gap:3px"><button class="btn btn-sm bs2 bic" data-action="ep" data-id="'+p.id+'">✏️</button><button class="btn btn-sm bd bic" data-action="dp" data-id="'+p.id+'">🗑</button></div></td></tr>';
+    }).join(''):EM(6,'📦','Sin productos');
   }catch(e){toast('Error: '+e.message);}
 }
 
@@ -3253,7 +3326,7 @@ function descargarReportePDF(){
 
   // ── Dirección empresa ──
   html+='<div style="font-size:11px;color:#888;margin-bottom:18px">'
-    +cfg_.empresa_nombre
+    +cfg_.empresa_nombre+' &nbsp;·&nbsp; CIF: B21652037'
     +(cfg_.empresa_dir?' &nbsp;·&nbsp; '+cfg_.empresa_dir:'')
     +(cfg_.empresa_tel?' &nbsp;·&nbsp; '+cfg_.empresa_tel:'')
     +' &nbsp;·&nbsp; '+cfg_.empresa_email
@@ -3324,7 +3397,7 @@ function descargarReportePDF(){
 
 function descargarCSV(){
   if(!rptData.length){toast('No hay datos para descargar');return;}
-  var rows=[['ID','Fecha','Cliente','Producto','Cantidad','PVP','Descuento','Total','Vendedor','Estado','Notas']];
+  var rows=[['ID','Fecha','Cliente','Producto','Cantidad','PVP','Descuento','Total','Vendedor','Estado','Observaciones']];
   rptData.forEach(function(v){rows.push([v.id,v.fecha,(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:''),(getProdNombre(v,'')),v.cantidad,v.pvp,v.descuento,v.total,(v.vendedor||''),v.estado,v.notas||'']);});
   var csv=rows.map(function(r){return r.map(function(c){return '"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
@@ -3444,6 +3517,9 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
     +'</div>'
     +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos de la Empresa</div>'
       +'<div class="info-line"><b>Nombre:</b> '+cfg_.empresa_nombre+'</div>'
+      +'<div class="info-line"><b>CIF:</b> B21652037</div>'
+      +'<div class="info-line"><b>CIF:</b> B21652037</div>'
+      +'<div class="info-line"><b>CIF:</b> B21652037</div>'
       +(cfg_.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg_.empresa_dir+'</div>':'')
       +(cfg_.empresa_tel?'<div class="info-line"><b>Teléfono:</b> '+cfg_.empresa_tel+'</div>':'')
       +'<div class="info-line"><b>Mail:</b> '+cfg_.empresa_email+'</div>'
@@ -3454,7 +3530,7 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
   if(notas){html+='<div class="desc-box">'+notas+'</div>';}
 
   html+='<table><thead><tr><th>Producto</th><th class="center">Cant.</th><th class="right">Precio</th>'+(dto>0?'<th class="right">Dto.</th>':'')+'<th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody>'
-    +'<tfoot><tr class="tfoot-row"><td colspan="'+(dto>0?3:2)+'">Total</td><td></td><td class="right">'+fe(total)+'</td></tr></tfoot>'
+    +'<tfoot><tr class="tfoot-row"><td colspan="'+(dto>0?4:3)+'">Total</td><td></td><td class="right">'+fe(total)+'</td></tr></tfoot>'
   +'</table>';
 
   html+='<div class="totals-wrap"><table class="totals-table">'
@@ -3603,7 +3679,7 @@ async function saveV(){
       // Generar PDF factura automáticamente
       var cliRes=await GET('/clientes?select=*&id=eq.'+cId);
       var cliPdf=cliRes.length?cliRes[0]:{nombre:'',apellidos:'',ciudad:'',direccion:''};
-      var ventasPdf=vmLineas.map(function(l){return {prod_nombre:l.esOtro?l.nombre:(l.nombre||''),prod_cat:l.esOtro?'':l.cat,pvp:l.pvp,cantidad:l.qty,total:+(l.pvp*l.qty*(1-dto/100)).toFixed(2)};});
+      var ventasPdf=vmLineas.map(function(l){return {prod_nombre:l.esOtro?l.nombre:(l.nombre||''),prod_cat:l.esOtro?'':l.cat,pvp:l.pvp,cantidad:l.qty,total:+(l.pvp*l.qty*(1-dto/100)).toFixed(2),ref_propia:l.ref_propia||'',proveedor:l.proveedor||''};});
       generarAlbaran(ventasPdf,cliPdf,fecha,dto,vend,pago,entrega,fechaE||'',notas,numAlbaran);
     }
     closeM('vm');renderVentas();
@@ -3660,7 +3736,7 @@ async function saveCart(){
       stockCache[item.id]=Math.max(0,(stockCache[item.id]||0)-item.qty);
       return descontarStock(item.id,item.qty);
     }));
-    var ventasGuardadas=ventasPayload.map(function(v,i){return Object.assign({},v,{prod_nombre:cart[i].nombre,prod_cat:cart[i].categoria});});
+    var ventasGuardadas=ventasPayload.map(function(v,i){return Object.assign({},v,{prod_nombre:cart[i].nombre,prod_cat:cart[i].categoria,ref_propia:cart[i].ref_propia||'',proveedor:cart[i].proveedor||''});});
     // Recargar alertas y cliente en paralelo
     var [,cliRows]=await Promise.all([
       loadStockCache(),
@@ -3714,15 +3790,38 @@ async function saveC(){
 async function openPM(id){
   peditId=id||null;
   document.getElementById('pm-t').textContent=id?'Editar producto':'Nuevo producto';
-  if(id){var rows=await GET('/productos?select=*&id=eq.'+id);var p=rows[0];if(p){document.getElementById('p_nom').value=p.nombre||'';document.getElementById('p_cat').value=p.categoria||'Sofa';document.getElementById('p_des').value=p.descripcion||'';document.getElementById('p_pvp').value=p.pvp||'';document.getElementById('p_cos').value=p.coste||'';document.getElementById('p_sto').value=p.stock||0;calcM();}}
-  else{['p_nom','p_des','p_pvp','p_cos','p_mar'].forEach(function(f){document.getElementById(f).value=''});document.getElementById('p_cat').value='Sofa';document.getElementById('p_sto').value=0;}
+  if(id){var rows=await GET('/productos?select=*&id=eq.'+id);var p=rows[0];if(p){document.getElementById('p_nom').value=p.nombre||'';document.getElementById('p_cat').value=p.categoria||'Sofa';document.getElementById('p_des').value=p.descripcion||'';document.getElementById('p_pvp').value=p.pvp||'';document.getElementById('p_cos').value=p.coste||'';document.getElementById('p_sto').value=p.stock||0;document.getElementById('p_ref').value=p.ref_propia||'';document.getElementById('p_prov').value=p.proveedor||'';document.getElementById('p_ref_prov').value=p.ref_proveedor||'';calcM();}}
+  else{['p_nom','p_des','p_pvp','p_cos','p_mar','p_ref','p_ref_prov'].forEach(function(f){document.getElementById(f).value='';});document.getElementById('p_prov').value='';document.getElementById('p_cat').value='Sofa';document.getElementById('p_sto').value=0;}
   openM('pm');
 }
 function calcM(){var p=parseFloat(document.getElementById('p_pvp').value)||0,c=parseFloat(document.getElementById('p_cos').value)||0;document.getElementById('p_mar').value=mg(p,c);}
+
+var _PROV_PREFIX={'Casa Viva':'CV','Kave Home':'KH','Bizzotto':'BIZ','Tamdis':'TAM','Distrigal':'DIS','Otro':'OTR'};
+
+async function autoGenRef(){
+  var prov=document.getElementById('p_prov').value;
+  var refInput=document.getElementById('p_ref');
+  if(!prov||refInput.value)return; // Don't overwrite existing ref
+  var pfx=_PROV_PREFIX[prov];
+  if(!pfx)return;
+  // Count existing products from this proveedor to get next number
+  try{
+    var existing=await GET('/productos?select=ref_propia&proveedor=eq.'+encodeURIComponent(prov)+'&ref_propia=not.is.null&order=ref_propia.desc&limit=1');
+    var lastNum=0;
+    if(existing&&existing.length&&existing[0].ref_propia){
+      var m=existing[0].ref_propia.match(/(\d+)$/);
+      if(m)lastNum=parseInt(m[1])||0;
+    }
+    refInput.value=pfx+'-'+String(lastNum+1).padStart(3,'0');
+  }catch(e){
+    // Fallback: use timestamp
+    refInput.value=pfx+'-'+String(Date.now()).slice(-4);
+  }
+}
 async function saveP(){
   var nombre=document.getElementById('p_nom').value.trim(),cat=document.getElementById('p_cat').value,pvp=parseFloat(document.getElementById('p_pvp').value)||0;
   if(!nombre||!pvp){toast('Nombre y PVP requeridos');return;}
-  var payload={nombre:nombre,categoria:cat,descripcion:document.getElementById('p_des').value,pvp:pvp,coste:parseFloat(document.getElementById('p_cos').value)||0,stock:parseInt(document.getElementById('p_sto').value)||0};
+  var payload={nombre:nombre,categoria:cat,descripcion:document.getElementById('p_des').value,pvp:pvp,coste:parseFloat(document.getElementById('p_cos').value)||0,stock:parseInt(document.getElementById('p_sto').value)||0,ref_propia:document.getElementById('p_ref').value.trim(),proveedor:document.getElementById('p_prov').value,ref_proveedor:document.getElementById('p_ref_prov').value.trim()};
   var btn=document.getElementById('btnSP');btn.disabled=true;btn.textContent='Guardando...';
   try{
     if(peditId){await PATCH('/productos?id=eq.'+peditId,payload);toast('Producto actualizado ✓');invalidarCacheProductos();}
