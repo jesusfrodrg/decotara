@@ -1504,20 +1504,20 @@ function generarCajaPDF(){
     +'</div>'
   +'</div>';
 
+  // Detalle ventas
+  html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
+  html+='<table><thead><tr><th>Nº</th><th>Cliente</th><th>Producto</th><th>Vendedor</th><th>Pago</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody>'
+    +'<tfoot><tr class="tfoot-row"><td colspan="5">TOTAL</td><td class="right">'+fe(total)+'</td></tr></tfoot>'
+  +'</table>';
+
   // Formas de pago
-  html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Desglose por Forma de Pago</div>';
+  html+='<div class="info-title" style="margin-bottom:10px;margin-top:18px"><div class="info-title-bar"></div>Desglose por Forma de Pago</div>';
   html+='<table><thead><tr><th>Forma de Pago</th><th class="center">Ventas</th><th class="right">Importe</th></tr></thead><tbody>'+pagoRows+'</tbody></table>';
 
   // Total
   html+='<div class="totals-wrap"><table class="totals-table">'
     +'<tr><td>TOTAL DEL DÍA</td><td>'+fe(total)+'</td></tr>'
   +'</table></div>';
-
-  // Detalle ventas
-  html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
-  html+='<table><thead><tr><th>Nº</th><th>Cliente</th><th>Producto</th><th>Vendedor</th><th>Pago</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody>'
-    +'<tfoot><tr class="tfoot-row"><td colspan="5">TOTAL</td><td class="right">'+fe(total)+'</td></tr></tfoot>'
-  +'</table>';
 
   // Firma
   html+='<div class="sig-wrap"><div class="sig-box"><div class="sig-line">Responsable de caja</div></div></div>';
