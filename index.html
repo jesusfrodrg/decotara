@@ -1793,13 +1793,23 @@ async function confirmarRectificativa(){
   if(!checks.length){toast('Selecciona al menos un artículo');return;}
   var ventas=window._rectVentas;
   var ventaId=window._rectVentaId;
-  var seleccionadas=Array.from(checks).map(function(c){var ri=parseInt(c.dataset.ri);var x=Object.assign({},ventas[ri]);x._ri=ri;return x;});
+  // Leer valores del DOM ANTES de cerrar el modal
+  var seleccionadas=Array.from(checks).map(function(c){
+    var ri=parseInt(c.dataset.ri);
+    var x=Object.assign({},ventas[ri]);
+    x._ri=ri;
+    var descEl=document.querySelector('[data-desc="'+ri+'"]');
+    var pvpEl=document.querySelector('[data-pvp="'+ri+'"]');
+    x._nomEdit=descEl?descEl.value:((x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo');
+    x._pvpEdit=pvpEl?Math.max(0,parseFloat(pvpEl.value)||0):Number(x.pvp||0);
+    x._totEdit=x._pvpEdit*Number(x.cantidad||1);
+    return x;
+  });
   document.getElementById('rectM').style.display='none';
 
   var cfg=getCfg();
   var v=ventas[0];
   var cli=v.clientes||{};
-  // Número rectificativa
   var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
   var allNums=Object.values(facturas).filter(function(n){return /^RECT-/.test(n);});
   var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace('RECT-',''))||0;return num>max?num:max;},0);
@@ -1809,17 +1819,11 @@ async function confirmarRectificativa(){
 
   var factOrig=facturas[v.albaran_num||v.id]||'—';
   var fechaStr=fD(v.fecha);
+  var totalRect=seleccionadas.reduce(function(s,x){return s+x._totEdit;},0);
 
   var filas=seleccionadas.map(function(x){
     var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'—';
-    var descEl=document.querySelector('[data-desc="'+x._ri+'"]');
-    var pvpEl=document.querySelector('[data-pvp="'+x._ri+'"]');
-    var nom=descEl?descEl.value:((x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo');
-    var pvp=pvpEl?Math.max(0,parseFloat(pvpEl.value)||0):Number(x.pvp||0);
-    var qty=Number(x.cantidad||1);
-    var tot=pvp*qty;
-    x._nomEdit=nom; x._pvpEdit=pvp; x._totEdit=tot;
-    return '<tr>'      +'<td style="color:#b45309;font-weight:700;font-size:11px">'+escHtml(ref)+'</td>'      +'<td>'+escHtml(nom)+'</td>'      +'<td class="center">'+qty+'</td>'      +'<td class="right">'+fe(pvp)+'</td>'      +'<td class="right" style="color:#b45309;font-weight:700">'+fe(-tot)+'</td>'      +'</tr>';
+    return '<tr>'+'<td style="color:#b45309;font-weight:700;font-size:11px">'+escHtml(ref)+'</td>'+'<td>'+escHtml(x._nomEdit)+'</td>'+'<td class="center">'+Number(x.cantidad||1)+'</td>'+'<td class="right">'+fe(x._pvpEdit)+'</td>'+'<td class="right" style="color:#b45309;font-weight:700">'+fe(-x._totEdit)+'</td>'+'</tr>';
   }).join('');
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura Rectificativa '+numRect+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
@@ -1828,7 +1832,6 @@ async function confirmarRectificativa(){
   html+='<hr class="divider">';
   html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente</div>'      +'<div class="info-line"><b>Nombre:</b> '+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</div>'      +(cli.dni?'<div class="info-line"><b>DNI/NIF:</b> '+cli.dni+'</div>':'')      +(cli.telefono?'<div class="info-line"><b>Teléfono:</b> '+cli.telefono+'</div>':'')      +(cli.email?'<div class="info-line"><b>Email:</b> '+cli.email+'</div>':'')      +((cli.direccion||cli.ciudad)?'<div class="info-line"><b>Dirección:</b> '+(cli.direccion||'')+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#b45309"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'      +'<div class="info-line"><b>Motivo:</b> '+escHtml(motivo)+'</div>'    +'</div>'  +'</div>';
   html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
-  var totalRect=seleccionadas.reduce(function(s,x){return s+(x._totEdit!==undefined?x._totEdit:Number(x.total||0));},0);
   html+='<div class="totals-wrap"><table class="totals-table">'    +'<tr class="tot-sub"><td>Subtotal</td><td>'+fe(-totalRect)+'</td></tr>'    +'<tr><td>TOTAL RECTIFICADO</td><td style="color:#b45309">'+fe(-totalRect)+'</td></tr>'  +'</table></div>';
   html+='<div style="margin-top:18px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px">'    +'Esta factura rectificativa anula los importes indicados de la factura <b>'+factOrig+'</b> de fecha <b>'+fechaStr+'</b>.'  +'</div>';
   html+='<div class="footer">'+cfg.empresa_nombre+(cfg.empresa_dir?' &nbsp;·&nbsp; '+cfg.empresa_dir:'')+' &nbsp;·&nbsp; '+cfg.empresa_email+'</div>';
