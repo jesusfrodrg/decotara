@@ -1478,12 +1478,16 @@ function generarCajaPDF(){
   +'</div>';
   html+='<hr class="divider">';
 
-  // Dirección empresa
-  html+='<div style="font-size:11px;color:#888;margin-bottom:18px">'
-    +cfg_.empresa_nombre+' &nbsp;·&nbsp; CIF: B21652037'
-    +(cfg_.empresa_dir?' &nbsp;·&nbsp; '+cfg_.empresa_dir:'')
-    +(cfg_.empresa_tel?' &nbsp;·&nbsp; '+cfg_.empresa_tel:'')
-    +' &nbsp;·&nbsp; '+cfg_.empresa_email
+  // Dirección empresa estilo albarán
+  html+='<div class="info-grid" style="margin-bottom:18px">'
+    +'<div class="info-box">'
+      +'<div class="info-title"><div class="info-title-bar"></div>Datos de la Empresa</div>'
+      +'<div class="info-line"><b>Nombre:</b> '+cfg_.empresa_nombre+'</div>'
+      +'<div class="info-line"><b>CIF:</b> '+(cfg_.empresa_cif||'B21652037')+'</div>'
+      +(cfg_.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg_.empresa_dir+'</div>':'')
+      +(cfg_.empresa_tel?'<div class="info-line"><b>Teléfono:</b> '+cfg_.empresa_tel+'</div>':'')
+      +'<div class="info-line"><b>Mail:</b> '+cfg_.empresa_email+'</div>'
+    +'</div>'
   +'</div>';
 
   // Dos columnas
