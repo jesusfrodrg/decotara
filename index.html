@@ -1478,8 +1478,8 @@ function generarCajaPDF(){
   +'</div>';
   html+='<hr class="divider">';
 
-  // Dirección empresa estilo albarán
-  html+='<div class="info-grid" style="margin-bottom:18px">'
+  // Info grid: empresa | resumen | vendedor (3 columnas)
+  html+='<div class="info-grid">'
     +'<div class="info-box">'
       +'<div class="info-title"><div class="info-title-bar"></div>Datos de la Empresa</div>'
       +'<div class="info-line"><b>Nombre:</b> '+cfg_.empresa_nombre+'</div>'
@@ -1488,10 +1488,6 @@ function generarCajaPDF(){
       +(cfg_.empresa_tel?'<div class="info-line"><b>Teléfono:</b> '+cfg_.empresa_tel+'</div>':'')
       +'<div class="info-line"><b>Mail:</b> '+cfg_.empresa_email+'</div>'
     +'</div>'
-  +'</div>';
-
-  // Dos columnas
-  html+='<div class="info-grid">'
     +'<div class="info-box">'
       +'<div class="info-title"><div class="info-title-bar"></div>Resumen del Día</div>'
       +'<div class="info-line"><b>Fecha:</b> '+fD(fecha)+'</div>'
@@ -1505,22 +1501,6 @@ function generarCajaPDF(){
       }).join('')
     +'</div>'
   +'</div>';
-
-  // Resumen por artículo
-  var artMapC={};
-  rows.forEach(function(v){
-    var key=v.producto_id||('_'+getProdNombre(v));
-    var nombre=v.prod_nombre||getProdNombre(v,'—');
-    if(!artMapC[key]){artMapC[key]={nombre:nombre,ventas:0,uds:0,total:0};}
-    artMapC[key].ventas++;
-    artMapC[key].uds+=Number(v.cantidad||1);
-    artMapC[key].total+=Number(v.total||0);
-  });
-  var artRowsC=Object.values(artMapC).sort(function(a,b){return b.total-a.total;}).map(function(a){
-    return '<tr><td><b>'+a.nombre+'</b></td><td class="center">'+a.ventas+'</td><td class="center">'+a.uds+'</td><td class="right"><b>'+fe(a.total)+'</b></td></tr>';
-  }).join('');
-  html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Ventas por Artículo</div>';
-  html+='<table><thead><tr><th>Artículo</th><th class="center">Nº Ventas</th><th class="center">Uds.</th><th class="right">Total</th></tr></thead><tbody>'+artRowsC+'</tbody></table>';
 
   // Formas de pago
   html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Desglose por Forma de Pago</div>';
