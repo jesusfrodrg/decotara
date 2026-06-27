@@ -1665,13 +1665,13 @@ async function nextVentaId(){
 async function generarFacturaLegal(ventaId){
   toast('Cargando factura...');
   try{
-    var rows=await GET('/ventas?select=*,clientes(*),productos(nombre,categoria)&id=eq.'+ventaId);
+    var rows=await GET('/ventas?select=*,clientes(*),productos(nombre,categoria,ref_propia)&id=eq.'+ventaId);
     if(!rows||!rows.length){toast('Venta no encontrada');return;}
     var v=rows[0];
     var cfg=getCfg();
     var ventas=[v];
     if(v.albaran_num){
-      var grupo=await GET('/ventas?select=*,productos(nombre,categoria)&albaran_num=eq.'+v.albaran_num+'&order=id.asc');
+      var grupo=await GET('/ventas?select=*,productos(nombre,categoria,ref_propia)&albaran_num=eq.'+v.albaran_num+'&order=id.asc');
       if(grupo&&grupo.length>1)ventas=grupo;
     }
     var cli=v.clientes||{};
@@ -1704,7 +1704,7 @@ async function generarFacturaLegal(ventaId){
     var fecha=fD(v.fecha);
     var filas=ventas.map(function(x){
       var nom=x.prod_nombre||getProdNombre(x,'—');
-      var refVal=x.ref_propia||(x.productos&&x.productos.ref_propia?x.productos.ref_propia:'—');
+      var refVal=x.ref_propia||(x.productos&&x.productos.ref_propia?x.productos.ref_propia:'')||'—';
       return '<tr><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;color:#7c3aed;font-weight:700;font-size:11px">'+refVal+'</td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">'+nom+(x.notas?'<div style="font-size:11px;color:#888;margin-top:2px">'+x.notas+'</div>':'')+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:center">'+x.cantidad+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right">'+fe(x.pvp)+'</td>'
@@ -3708,7 +3708,7 @@ async function saveV(){
       var l=vmLineas[0];
       var total=+(l.pvp*l.qty*(1-dto/100)).toFixed(2);
       var notasFin=l.esOtro?(l.nombre+(notas?'\n'+notas:'')):notas;
-      await PATCH('/ventas?id=eq.'+veditId,{cliente_id:cId,fecha:fecha,producto_id:l.esOtro?null:l.id,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null});
+      await PATCH('/ventas?id=eq.'+veditId,{cliente_id:cId,fecha:fecha,producto_id:l.esOtro?null:l.id,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null});
       toast('Venta actualizada ✓');
     } else {
       // Nueva venta: crear una entrada por línea con el mismo albaran_num
@@ -3728,7 +3728,7 @@ async function saveV(){
         var pId=l.esOtro?null:l.id;
         var nid=await nextVentaId();
         if(li===0)primeraId=nid;
-        await POST('/ventas',{id:nid,cliente_id:cId,fecha:fecha,producto_id:pId,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:numAlbaran});
+        await POST('/ventas',{id:nid,cliente_id:cId,fecha:fecha,producto_id:pId,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:numAlbaran,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null});
         await descontarStock(pId,l.qty);
         if(pId)stockCache[pId]=Math.max(0,(stockCache[pId]||0)-l.qty);
         // Alertas stock
