@@ -4007,7 +4007,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('rptDescargar').addEventListener('click',descargarCSV);
   document.getElementById('rptPDF').addEventListener('click',descargarReportePDF);
   // legacy v_prod listener removed
-  ['v_cant','v_pvp','v_dto'].forEach(function(id){document.getElementById(id).addEventListener('input',calcT);});
+  ['v_cant','v_pvp'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('input',calcT);});
   ['p_pvp','p_cos'].forEach(function(id){document.getElementById(id).addEventListener('input',calcM);});
   document.getElementById('vsearch').addEventListener('input',renderVentas);
   document.getElementById('vfest').addEventListener('change',renderVentas);
