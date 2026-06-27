@@ -1827,9 +1827,15 @@ function renderVMLineas(){
       +'<div style="display:flex;gap:6px;margin-top:4px;align-items:center">'
       +'<select data-li="'+i+'" class="vm-prov-sel" style="font-size:11px;padding:3px 6px;border:1.5px solid var(--lgray);border-radius:6px;max-width:130px">'+provOpts+'</select>'
       +'</div></div>'
-      +'<input type="number" min="1" value="'+l.qty+'" style="width:52px" data-qi="'+i+'" class="vm-qty-inp">'
-      +'<div class="vl-pvp">'+fe(l.pvp)+'</div>'
-      +'<div class="vl-sub">'+fe(l.pvp*l.qty)+'</div>'
+      +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
+      +'<label style="font-size:9px;color:var(--gray);text-transform:uppercase;font-weight:700">Uds.</label>'
+      +'<input type="number" min="1" value="'+l.qty+'" style="width:48px;text-align:center" data-qi="'+i+'" class="vm-qty-inp">'
+      +'</div>'
+      +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
+      +'<label style="font-size:9px;color:var(--gray);text-transform:uppercase;font-weight:700">Precio €</label>'
+      +'<input type="number" min="0" step="0.01" value="'+l.pvp+'" style="width:72px;text-align:right;color:var(--red);font-weight:700" data-pi="'+i+'" class="vm-pvp-inp">'
+      +'</div>'
+      +'<div class="vl-sub" style="min-width:70px;text-align:right">'+fe(l.pvp*l.qty)+'</div>'
       +'<button class="vl-del" data-di="'+i+'">✕</button>'
       +'</div>';
   }).join('');
@@ -1850,6 +1856,8 @@ function renderVMLineas(){
   cont.oninput=function(e){
     var qty=e.target.closest('.vm-qty-inp');
     if(qty){vmQtyChange(parseInt(qty.dataset.qi),qty.value);return;}
+    var pvp=e.target.closest('.vm-pvp-inp');
+    if(pvp){vmPvpChange(parseInt(pvp.dataset.pi),pvp.value);return;}
   };
   cont.onchange=function(e){
     var sel=e.target.closest('.vm-prov-sel');
@@ -1865,15 +1873,22 @@ function vmQtyChange(i,val){
 
 function vmSetProveedor(i, prov){
   vmLineas[i].proveedor=prov;
-  // Auto-generate ref
+  if(!prov){vmLineas[i].ref_propia='';renderVMLineas();return;}
   var pfx={'Casa Viva':'DCV','Kave Home':'DKH','Bizzotto':'DBIZ','Tamdis':'DTAM','Distrigal':'DDIS','Otro':'DOTR'}[prov]||'';
-  if(pfx && !vmLineas[i].ref_propia){
-    // Count existing refs with this prefix in current order
-    var count=vmLineas.filter(function(l){return l.proveedor===prov;}).length;
-    vmLineas[i].ref_propia=pfx+'-'+String(count).padStart(3,'0');
-  } else if(!prov){
-    vmLineas[i].ref_propia='';
-  }
+  if(!pfx){renderVMLineas();return;}
+  // Global counter per proveedor prefix stored in localStorage
+  var KEY='decotara_ref_counter';
+  var counters={};
+  try{counters=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
+  counters[pfx]=(counters[pfx]||0)+1;
+  localStorage.setItem(KEY,JSON.stringify(counters));
+  vmLineas[i].ref_propia=pfx+'-'+String(counters[pfx]).padStart(4,'0');
+  renderVMLineas();
+}
+
+function vmPvpChange(i,val){
+  var pvp=Math.max(0,parseFloat(val)||0);
+  vmLineas[i].pvp=pvp;
   renderVMLineas();
 }
 
@@ -1884,9 +1899,7 @@ function vmRemoveLine(i){
 }
 
 function calcVMTotal(){
-  var dto=parseFloat(document.getElementById('v_dto').value)||0;
-  var sub=vmLineas.reduce(function(s,l){return s+l.pvp*l.qty;},0);
-  var tot=+(sub*(1-dto/100)).toFixed(2);
+  var tot=vmLineas.reduce(function(s,l){return s+(+(l.pvp*l.qty).toFixed(2));},0);
   document.getElementById('v_tot').value=tot?fe(tot):'';
 }
 
@@ -2476,6 +2489,29 @@ function cfgEmpresaStr(){
   return c.empresa_nombre+' · '+c.empresa_dir+(c.empresa_tel?' · '+c.empresa_tel:'')+' · '+c.empresa_email;
 }
 
+function renderRefCounters(){
+  var el=document.getElementById('cfg_ref_counters');
+  if(!el)return;
+  try{
+    var counters=JSON.parse(localStorage.getItem('decotara_ref_counter')||'{}');
+    var keys=Object.keys(counters);
+    if(!keys.length){el.textContent='No hay referencias generadas aún';return;}
+    el.innerHTML=keys.map(function(k){
+      return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--xlgray);border-radius:6px;padding:4px 10px;margin:3px;font-weight:700">'
+        +'<span style="color:#7c3aed">'+k+'</span>'
+        +'<span style="color:var(--gray)">→ último: '+String(counters[k]).padStart(4,'0')+'</span>'
+      +'</span>';
+    }).join('');
+  }catch(e){el.textContent='Error leyendo contadores';}
+}
+
+function resetRefCounters(){
+  if(!confirm('¿Reiniciar contadores de referencia? Empezarán desde 0001.'))return;
+  localStorage.removeItem('decotara_ref_counter');
+  renderRefCounters();
+  toast('✅ Contadores reiniciados');
+}
+
 function verFacturasEmitidas(){
   var list=document.getElementById('cfg_facturas_list');
   if(!list)return;
@@ -2506,6 +2542,7 @@ function eliminarNumFactura(key){
 function renderConfig(){
   var cfg=getCfg();
 
+  renderRefCounters();
   // Factura count
   var facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');
   var facCount=Object.keys(facturas).length;
