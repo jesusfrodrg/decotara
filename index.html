@@ -593,7 +593,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <div class="conn"><span class="cdot" id="cdot"></span><span id="ctxt">Conectando</span></div>
     <div class="topbar-actions">
       <button class="bell-btn" id="bellBtn" title="Alertas de stock">🔔<span class="bell-badge" id="bellBadge">0</span></button>
-      <button class="cart-btn" id="cartBtn">🛒<span class="cart-count" id="cartCount">0</span></button>
+
 
     </div>
   </div>
@@ -795,7 +795,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 </div>
 
 <!-- MODAL CARRITO -->
-<div class="mo" id="cartM"><div class="modal" style="max-height:92vh;display:flex;flex-direction:column">
+<div class="mo" id="cartM" style="display:none!important"><div class="modal" style="max-height:92vh;display:flex;flex-direction:column">
   <div class="drag-handle"></div>
   <div class="modal-header"><div class="modal-stripe"></div><div class="mt">Carrito de compra</div></div>
   <!-- PANEL BÚSQUEDA DE PRODUCTOS -->
@@ -2720,7 +2720,7 @@ async function renderCatalogo(){
       var disponible=(stockCache[p.id]||0)-inCart;
       var btnHtml=disponible<=0
         ?'<button class="add-to-cart" disabled data-prod-id="'+p.id+'">Sin stock</button>'
-        :'<button class="add-to-cart" data-prod-id="'+p.id+'" data-prod-nom="'+p.nombre+'" data-prod-cat="'+p.categoria+'" data-prod-pvp="'+p.pvp+'">+ Carrito ('+disponible+')</button>';
+        :'';
       return '<tr><td><b style="color:var(--blue)">'+p.id+'</b></td><td>'+p.nombre+'</td><td>'+cb(p.categoria)+'</td><td class="price">'+fe(p.pvp)+'</td><td data-stock-id="'+p.id+'" class="'+sc(disponible)+'">'+disponible+'</td><td><div style="display:flex;gap:3px">'+btnHtml+'<button class="btn btn-sm bs2 bic" data-action="ep" data-id="'+p.id+'">✏️</button><button class="btn btn-sm bd bic" data-action="dp" data-id="'+p.id+'">🗑</button></div></td></tr>';
     }).join(''):EM(6,'📦','Sin productos');
   }catch(e){toast('Error: '+e.message);}
