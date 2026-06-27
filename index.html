@@ -1809,7 +1809,9 @@ async function renderRectificativas(){
     var html='<table><thead><tr>'+
       '<th>Número</th><th>Fecha</th><th>Cliente</th><th>Rectifica</th><th>Motivo</th><th class="right">Importe</th><th></th>'+
       '</tr></thead><tbody>';
+    window._rectData={};
     rows.forEach(function(r){
+      window._rectData[r.id]=r;
       var arts=r.articulos||[];
       html+='<tr>'+
         '<td><b style="color:#b45309">'+escHtml(r.numero||'')+'</b></td>'+
@@ -1818,7 +1820,7 @@ async function renderRectificativas(){
         '<td><span style="color:var(--blue);font-size:11px">'+escHtml(r.factura_origen||'—')+'</span></td>'+
         '<td style="font-size:12px">'+escHtml(r.motivo||'')+'</td>'+
         '<td class="right" style="color:#b45309;font-weight:700">'+fe(-Math.abs(Number(r.importe||0)))+'</td>'+
-        '<td><button class="btn btn-sm" style="background:#b45309;color:#fff;font-size:11px" onclick="regenerarRectificativa('+JSON.stringify(r)+')">📄 PDF</button></td>'+
+        '<td><button class="btn btn-sm" style="background:#b45309;color:#fff;font-size:11px" data-rectid="'+r.id+'" onclick="var rd=window._rectData&&window._rectData[this.dataset.rectid];if(rd)regenerarRectificativa(rd)">📄 PDF</button></td>'+
         '</tr>';
       if(arts.length){
         html+='<tr><td colspan="7" style="padding:0 12px 10px;background:#fffbf7"><div style="font-size:11px;color:#666;display:flex;gap:8px;flex-wrap:wrap">';
