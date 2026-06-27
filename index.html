@@ -658,6 +658,20 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   </div>
 
   <!-- PRODUCTOS -->
+  <div class="page" id="page-rectificativas">
+    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">Facturas Rectificativas</div></div>
+    <div class="panel" style="padding:14px 16px">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <input type="text" id="rect_buscar" placeholder="🔍 Buscar por cliente, número..." style="flex:1;min-width:160px">
+        <select id="rect_mes" style="padding:8px 10px;border:1.5px solid var(--lgray);border-radius:8px;font-size:13px">
+          <option value="">Todos los meses</option>
+        </select>
+      </div>
+      <div id="rect_resumen" style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap"></div>
+      <div id="rect_tabla" style="overflow-x:auto"></div>
+    </div>
+  </div>
+
   <div class="page" id="page-productos">
     <div class="panel">
       <div class="ph"><span class="pt">📦 Productos</span><button class="btn bp" id="btnNP">+ Añadir</button></div>
@@ -776,6 +790,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <button class="bn" data-page="reportes" style="min-height:60px;background:var(--white)"><span class="bi">📈</span>Reportes</button>
     <button class="bn" data-page="productos" style="min-height:60px;background:var(--white)"><span class="bi">📦</span>Productos</button>
     <button class="bn" data-page="vendedores" style="min-height:60px;background:var(--white)"><span class="bi">👤</span>Vendedores</button>
+    <button class="bn" data-page="rectificativas" style="min-height:60px;background:var(--white)"><span class="bi">↩️</span>Rectificativas</button>
     <button class="bn" data-page="config" style="min-height:60px;background:var(--white)"><span class="bi">⚙️</span>Configuración</button>
   </div>
 </div>
@@ -1376,6 +1391,7 @@ function navTo(page){
   else if(page==='agenda')renderAgenda();
   else if(page==='vendedores')renderVendedores();
   else if(page==='config')renderConfig();
+  else if(page==='rectificativas')renderRectificativas();
 }
 
 // ══════ CAJA DIARIA ══════
@@ -1759,6 +1775,89 @@ async function confirmarCambioArticulo(){
   },800);
 }
 
+
+// ══════ RECTIFICATIVAS ══════
+async function renderRectificativas(){
+  var buscar=(document.getElementById('rect_buscar')?document.getElementById('rect_buscar').value||'':'').toLowerCase();
+  var mesVal=document.getElementById('rect_mes')?document.getElementById('rect_mes').value:'';
+  var tabla=document.getElementById('rect_tabla');
+  if(!tabla)return;
+  tabla.innerHTML='<div class="ldr"><span class="spin"></span></div>';
+  try{
+    var url='/rectificativas?select=*&order=created_at.desc&limit=200';
+    var rows=await GET(url);
+    // Llenar selector de meses
+    var sel=document.getElementById('rect_mes');
+    if(sel&&sel.options.length<=1){
+      var meses={};
+      rows.forEach(function(r){var m=r.fecha?r.fecha.slice(0,7):'';if(m)meses[m]=true;});
+      Object.keys(meses).sort().reverse().forEach(function(m){
+        var d=new Date(m+'-01T12:00');
+        var label=d.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+        sel.innerHTML+='<option value="'+m+'">'+label.charAt(0).toUpperCase()+label.slice(1)+'</option>';
+      });
+    }
+    // Filtrar
+    if(buscar)rows=rows.filter(function(r){return (r.cliente_nombre||'').toLowerCase().includes(buscar)||(r.numero||'').toLowerCase().includes(buscar)||(r.motivo||'').toLowerCase().includes(buscar);});
+    if(mesVal)rows=rows.filter(function(r){return r.fecha&&r.fecha.startsWith(mesVal);});
+    // Resumen
+    var totalImporte=rows.reduce(function(s,r){return s+Math.abs(Number(r.importe||0));},0);
+    document.getElementById('rect_resumen').innerHTML=
+      '<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:8px;padding:10px 14px;font-size:13px"><b style="color:#b45309">'+rows.length+'</b> rectificativas</div>'+
+      '<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:8px;padding:10px 14px;font-size:13px">Total rectificado: <b style="color:#b45309">'+fe(totalImporte)+'</b></div>';
+    if(!rows.length){tabla.innerHTML='<div style="text-align:center;color:var(--gray);padding:32px;font-size:14px">No hay facturas rectificativas</div>';return;}
+    var html='<table><thead><tr>'+
+      '<th>Número</th><th>Fecha</th><th>Cliente</th><th>Rectifica</th><th>Motivo</th><th class="right">Importe</th><th></th>'+
+      '</tr></thead><tbody>';
+    rows.forEach(function(r){
+      var arts=r.articulos||[];
+      html+='<tr>'+
+        '<td><b style="color:#b45309">'+escHtml(r.numero||'')+'</b></td>'+
+        '<td>'+fD(r.fecha)+'</td>'+
+        '<td>'+escHtml(r.cliente_nombre||'—')+'</td>'+
+        '<td><span style="color:var(--blue);font-size:11px">'+escHtml(r.factura_origen||'—')+'</span></td>'+
+        '<td style="font-size:12px">'+escHtml(r.motivo||'')+'</td>'+
+        '<td class="right" style="color:#b45309;font-weight:700">'+fe(-Math.abs(Number(r.importe||0)))+'</td>'+
+        '<td><button class="btn btn-sm" style="background:#b45309;color:#fff;font-size:11px" onclick="regenerarRectificativa('+JSON.stringify(r)+')">📄 PDF</button></td>'+
+        '</tr>';
+      if(arts.length){
+        html+='<tr><td colspan="7" style="padding:0 12px 10px;background:#fffbf7"><div style="font-size:11px;color:#666;display:flex;gap:8px;flex-wrap:wrap">';
+        arts.forEach(function(a){html+='<span style="background:#fff7ed;border:1px solid #fed7aa;border-radius:4px;padding:2px 8px">'+escHtml(a.nombre||'')+(a.cantidad>1?' x'+a.cantidad:'')+' — '+fe(-Math.abs(Number(a.total||0)))+'</span>';});
+        html+='</div></td></tr>';
+      }
+    });
+    html+='</tbody></table>';
+    tabla.innerHTML=html;
+  }catch(e){tabla.innerHTML='<div style="color:var(--red);padding:16px">Error: '+e.message+'</div>';}
+}
+
+function regenerarRectificativa(r){
+  var cfg=getCfg();
+  var arts=r.articulos||[];
+  var totalRect=Math.abs(Number(r.importe||0));
+  var filas=arts.map(function(a){
+    return '<tr>'+
+      '<td style="color:#b45309;font-weight:700;font-size:11px">'+escHtml(a.ref||'—')+'</td>'+
+      '<td>'+escHtml(a.nombre||'')+'</td>'+
+      '<td class="center">'+Number(a.cantidad||1)+'</td>'+
+      '<td class="right">'+fe(Number(a.pvp||0))+'</td>'+
+      '<td class="right" style="color:#b45309;font-weight:700">'+fe(-Math.abs(Number(a.total||0)))+'</td>'+
+    '</tr>';
+  }).join('');
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rectificativa '+r.numero+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
+  html+='<div class="doc-date">Fecha: '+fD(r.fecha)+'</div>';
+  html+='<div class="hdr"><div class="hdr-left"><div class="doc-type" style="color:#b45309">RECTIFICATIVA</div><div class="doc-badge" style="background:#b45309">'+escHtml(r.numero)+'</div></div><div class="hdr-right"><img class="logo-circle" src="'+window._LOGO_B64+'"><div class="brand-name">'+cfg.empresa_nombre+'</div><div class="brand-sub">'+cfg.empresa_email+'</div></div></div>';
+  html+='<hr class="divider">';
+  html+='<div class="info-grid"><div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente</div><div class="info-line"><b>Nombre:</b> '+escHtml(r.cliente_nombre||'—')+'</div>'+(r.cliente_dni?'<div class="info-line"><b>DNI/NIF:</b> '+escHtml(r.cliente_dni)+'</div>':'')+'</div><div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#b45309"></div>Datos de la Empresa</div><div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div><div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'+(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')+'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div><div class="info-line"><b>Rectifica a:</b> '+escHtml(r.factura_origen||'—')+'</div><div class="info-line"><b>Motivo:</b> '+escHtml(r.motivo||'')+'</div></div></div>';
+  html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
+  html+='<div class="totals-wrap"><table class="totals-table"><tr class="tot-sub"><td>Subtotal</td><td>'+fe(-totalRect)+'</td></tr><tr><td>TOTAL RECTIFICADO</td><td style="color:#b45309">'+fe(-totalRect)+'</td></tr></table></div>';
+  html+='<div style="margin-top:18px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px">Esta factura rectificativa anula los importes indicados de la factura <b>'+escHtml(r.factura_origen||'—')+'</b> de fecha <b>'+fD(r.fecha)+'</b>.</div>';
+  html+='<div class="footer">'+cfg.empresa_nombre+(cfg.empresa_dir?' &nbsp;·&nbsp; '+cfg.empresa_dir:'')+' &nbsp;·&nbsp; '+cfg.empresa_email+'</div>';
+  html+='<br><center class="no-print"><button onclick="window.print()" style="background:#b45309;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
+  html+='</body></html>';
+  var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
+}
+
 async function generarFacturaRectificativa(ventaId){
   toast('Cargando artículos...');
   try{
@@ -1820,6 +1919,13 @@ async function confirmarRectificativa(){
   var factOrig=facturas[v.albaran_num||v.id]||'—';
   var fechaStr=fD(v.fecha);
   var totalRect=seleccionadas.reduce(function(s,x){return s+x._totEdit;},0);
+
+  // Guardar en Supabase
+  try{
+    var rectId='RECT-'+Date.now();
+    var artsSave=seleccionadas.map(function(x){return {ref:x.ref_propia||(x.productos&&x.productos.ref_propia)||'',nombre:x._nomEdit,cantidad:Number(x.cantidad||1),pvp:x._pvpEdit,total:x._totEdit};});
+    await POST('/rectificativas',{id:rectId,numero:numRect,fecha:new Date().toISOString().slice(0,10),factura_origen:factOrig,venta_id:ventaId,cliente_nombre:(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:''),cliente_dni:cli.dni||null,motivo:motivo,articulos:artsSave,importe:totalRect,vendedor:v.vendedor||null});
+  }catch(e){console.warn('No se pudo guardar rectificativa en BD:',e.message);}
 
   var filas=seleccionadas.map(function(x){
     var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'—';
@@ -4202,6 +4308,8 @@ document.addEventListener('DOMContentLoaded',function(){
   ['v_cant','v_pvp'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('input',calcT);});
   ['p_pvp','p_cos'].forEach(function(id){document.getElementById(id).addEventListener('input',calcM);});
   document.getElementById('vsearch').addEventListener('input',renderVentas);
+  document.addEventListener('input',function(e){if(e.target.id==='rect_buscar')renderRectificativas();});
+  document.addEventListener('change',function(e){if(e.target.id==='rect_mes')renderRectificativas();});
   document.getElementById('vfest').addEventListener('change',renderVentas);
   document.getElementById('catsearch').addEventListener('input',renderCatalogo);
   document.getElementById('catfilt').addEventListener('change',renderCatalogo);
