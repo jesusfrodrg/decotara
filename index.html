@@ -1649,6 +1649,65 @@ async function nextVentaId(){
 
 // ══════ MODAL VENTA - NUEVO SELECTOR CATÁLOGO ══════
 // ══════ FACTURA LEGAL ══════
+
+async function generarFacturaRectificativa(ventaId){
+  var motivo=prompt('Motivo de la rectificativa:\n(ej: Devolución, Error de precio, Anulación)','Devolución del cliente');
+  if(!motivo)return;
+  toast('Generando rectificativa...');
+  try{
+    var rows=await GET('/ventas?select=*,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,telefono,email,dni),productos(nombre,categoria,ref_propia)&id=eq.'+ventaId);
+    if(!rows||!rows.length){toast('Venta no encontrada');return;}
+    var v=rows[0];
+    var cfg=getCfg();
+    var ventas=[v];
+    if(v.albaran_num){
+      var grupo=await GET('/ventas?select=*,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,telefono,email,dni),productos(nombre,categoria,ref_propia)&albaran_num=eq.'+encodeURIComponent(v.albaran_num));
+      if(grupo.length>1)ventas=grupo;
+    }
+    // Número rectificativa
+    var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
+    var allNums=Object.values(facturas).filter(function(n){return /^RECT-/.test(n);});
+    var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace('RECT-',''))||0;return num>max?num:max;},0);
+    var numRect='RECT-'+String(lastNum+1).padStart(4,'0');
+    // Guardar en localStorage ligado a la venta
+    var rectKey='rect_'+ventaId;
+    facturas[rectKey]=numRect;
+    localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
+
+    var cli=v.clientes||{};
+    var factOrig=facturas[v.albaran_num||v.id]||'—';
+    var totalRect=ventas.reduce(function(s,x){return s+Number(x.total||0);},0);
+    var dto=v.descuento||0;
+    var fechaStr=fD(v.fecha);
+    var pagoIconos={'Efectivo':'💵','Tarjeta':'💳','Transferencia':'🏦'};
+
+    var CSS_RECT=CSS_ALBARAN;
+    var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura Rectificativa '+numRect+'</title><style>'+CSS_RECT+'</style></head><body>';
+    html+='<div class="doc-date">Fecha: '+fD(new Date().toISOString().slice(0,10))+'</div>';
+    html+='<div class="hdr">'      +'<div class="hdr-left">'        +'<div class="doc-type" style="color:#b45309">RECTIFICATIVA</div>'        +'<div class="doc-badge" style="background:#b45309">'+numRect+'</div>'      +'</div>'      +'<div class="hdr-right">'        +'<img class="logo-circle" src="'+window._LOGO_B64+'">'        +'<div class="brand-name">'+cfg.empresa_nombre+'</div>'        +'<div class="brand-sub">'+cfg.empresa_email+'</div>'      +'</div>'    +'</div>';
+    html+='<hr class="divider">';
+    html+='<div class="info-grid">'      +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente</div>'        +'<div class="info-line"><b>Nombre:</b> '+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</div>'        +(cli.dni?'<div class="info-line"><b>DNI/NIF:</b> '+cli.dni+'</div>':'')        +(cli.telefono?'<div class="info-line"><b>Teléfono:</b> '+cli.telefono+'</div>':'')        +(cli.email?'<div class="info-line"><b>Email:</b> '+cli.email+'</div>':'')        +((cli.direccion||cli.ciudad)?'<div class="info-line"><b>Dirección:</b> '+(cli.direccion||'')+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'</div>':'')      +'</div>'      +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#b45309"></div>Datos de la Empresa</div>'        +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'        +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'        +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')        +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'        +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'        +'<div class="info-line"><b>Motivo:</b> '+escHtml(motivo)+'</div>'      +'</div>'    +'</div>';
+
+    // Tabla artículos en negativo
+    var filas=ventas.map(function(x){
+      var nom=(x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo';
+      var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'—';
+      var pvp=Number(x.pvp||0);
+      var qty=Number(x.cantidad||1);
+      var tot=-Number(x.total||0);
+      return '<tr>'        +'<td style="color:#b45309;font-weight:700;font-size:11px">'+escHtml(ref)+'</td>'        +'<td>'+escHtml(nom)+'</td>'        +'<td class="center">'+qty+'</td>'        +'<td class="right">'+fe(pvp)+'</td>'        +'<td class="right" style="color:#b45309;font-weight:700">'+fe(tot)+'</td>'        +'</tr>';
+    }).join('');
+
+    html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
+    html+='<div class="totals-wrap"><table class="totals-table">'      +'<tr class="tot-sub"><td>Subtotal</td><td>'+fe(-totalRect)+'</td></tr>'      +'<tr><td>TOTAL RECTIFICADO</td><td style="color:#b45309">'+fe(-totalRect)+'</td></tr>'    +'</table></div>';
+    html+='<div class="info-footer" style="margin-top:18px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px">'      +'Esta factura rectificativa anula los importes indicados de la factura <b>'+factOrig+'</b> de fecha <b>'+fechaStr+'</b>.'    +'</div>';
+    html+='<div class="footer">'+cfg.empresa_nombre+(cfg.empresa_dir?' &nbsp;·&nbsp; '+cfg.empresa_dir:'')+' &nbsp;·&nbsp; '+cfg.empresa_email+'</div>';
+    html+='<br><center class="no-print"><button onclick="window.print()" style="background:#b45309;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
+    html+='</body></html>';
+    var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
+  }catch(e){toast('Error: '+e.message);}
+}
+
 async function generarFacturaLegal(ventaId){
   toast('Cargando factura...');
   try{
@@ -2296,8 +2355,8 @@ async function renderVentas(){
         '<td><div style="display:flex;gap:3px">'+
           '<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff;width:30px;height:30px;padding:0" title="Ver artículos de la compra" data-action="vergrupo" data-expand="'+expandId+'">👁</button>'+
           (grupo.length>1
-            ?'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdfgrupo" data-key="'+key+'">📄</button>'+'<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff" title="Factura Legal" data-action="factura-legal" data-id="'+v0.id+'">🧾</button>'
-            :'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdf" data-id="'+v0.id+'">📄</button>'+'<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff" title="Factura Legal" data-action="factura-legal" data-id="'+v0.id+'">🧾</button>')+
+            ?'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdfgrupo" data-key="'+key+'">📄</button>'+'<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff" title="Factura Legal" data-action="factura-legal" data-id="'+v0.id+'">🧾</button>'+'<button class="btn btn-sm bic" style="background:#b45309;color:#fff" title="Factura Rectificativa" data-action="factura-rect" data-id="'+v0.id+'">↩️</button>'
+            :'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdf" data-id="'+v0.id+'">📄</button>'+'<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff" title="Factura Legal" data-action="factura-legal" data-id="'+v0.id+'">🧾</button>'+'<button class="btn btn-sm bic" style="background:#b45309;color:#fff" title="Factura Rectificativa" data-action="factura-rect" data-id="'+v0.id+'">↩️</button>')+
           '<button class="btn btn-sm bs2 bic" data-action="ev" data-id="'+v0.id+'">✏️</button>'+
           '<button class="btn btn-sm bd bic" data-action="dv" data-id="'+v0.id+'">🗑</button>'+
         '</div></td>'+
@@ -4135,6 +4194,7 @@ document.addEventListener('DOMContentLoaded',function(){
     }
     else if(a==='ev')openVM(id);
     else if(a==='factura-legal')generarFacturaLegal(id);
+    else if(a==='factura-rect')generarFacturaRectificativa(id);
     else if(a==='ec')openCM(id);
     else if(a==='ep')openPM(id);
     else if(a==='dv'){
