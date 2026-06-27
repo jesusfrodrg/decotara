@@ -1532,8 +1532,7 @@ function generarCajaPDF(){
     html+='<div style="text-align:center;font-size:11px;color:#aaa;margin-top:6px">'+cfg_.pie_factura+'</div>';
   }
   html+='<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
-  html+='
-</body></html>';
+  html+='</body></html>';
 
   var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
 }
