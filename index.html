@@ -3589,8 +3589,6 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
     +'</div>'
   +'</div>';
 
-  if(notas){html+='<div class="desc-box">'+notas+'</div>';}
-
   html+='<table><thead><tr><th style="width:14%">Referencia</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th>'+(dto>0?'<th class="right">Dto.</th>':'')+'<th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody>'
     +'<tfoot><tr class="tfoot-row"><td colspan="'+(dto>0?5:4)+'">Total</td><td class="right">'+fe(total)+'</td></tr></tfoot>'
   +'</table>';
@@ -3606,6 +3604,12 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
     +(entrega?'<div class="pay-line"><b>Entrega:</b> '+entrega+(fechaEntrega?' — '+fD(fechaEntrega):'')+'</div>':'')
   +'</div>';
 
+  if(notas){
+    html+='<div style="margin-top:18px">'
+      +'<div class="info-title" style="margin-bottom:8px"><div class="info-title-bar"></div>Observaciones</div>'
+      +'<div style="font-size:12px;color:#444;padding:10px 14px;border:1px solid #e0e0e0;border-radius:6px;line-height:1.7">'+notas+'</div>'
+    +'</div>';
+  }
   html+='<div class="sig-wrap"><div class="sig-box"><div class="sig-line">Firma del cliente</div></div></div>';
 
   html+='<div class="footer">DECOTARA OUTLET · Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza · DECOTARAOUTLET@gmail.com</div>';
