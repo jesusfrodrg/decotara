@@ -1532,6 +1532,7 @@ function cartAddItem(prod){
 
 var curPage='dashboard',veditId=null,ceditId=null,peditId=null,agFiltro='proximas';
 try{var _initCfg=JSON.parse(localStorage.getItem('decotara_config')||'{}');if(_initCfg.app_nombre)document.title=_initCfg.app_nombre;}catch(e){}
+localStorage.removeItem('decotara_ref_counter'); // Siempre usar Supabase como fuente de verdad
 var rptData=[];var rptTitleStr='';
 
 function fe(v){return Number(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR';}
@@ -2594,15 +2595,24 @@ function vmQtyChange(i,val){
 function vmSetProveedor(i, prov){
   vmLineas[i].proveedor=prov;
   if(!prov){vmLineas[i].ref_propia='';renderVMLineas();return;}
-  var pfx=(_PROV_PREFIX&&_PROV_PREFIX[prov])||{'Casa Viva':'DCV','Kave Home':'DKH','Bizzotto':'DBIZ','Tamdis':'DTAM','Distrigal':'DDIS','Otro':'DOTR'}[prov]||'';
+  var pfx=(_PROV_PREFIX&&_PROV_PREFIX[prov])||'';
   if(!pfx){renderVMLineas();return;}
-  var KEY='decotara_ref_counter';
-  var counters={};
-  try{counters=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
-  counters[pfx]=(counters[pfx]||0)+1;
-  localStorage.setItem(KEY,JSON.stringify(counters));
-  vmLineas[i].ref_propia=pfx+'-'+String(counters[pfx]).padStart(4,'0');
-  renderVMLineas();
+  // Buscar máximo real en Supabase (almacén + tienda + ventas)
+  Promise.all([
+    GET('/productos?select=ref_propia&proveedor=eq.'+encodeURIComponent(prov)+'&ref_propia=not.is.null&order=ref_propia.desc&limit=1').catch(function(){return [];}),
+    GET('/stock_tienda?select=ref_propia&ref_propia=like.'+encodeURIComponent(pfx)+'*&order=ref_propia.desc&limit=1').catch(function(){return [];}),
+    GET('/ventas?select=ref_propia&ref_propia=like.'+encodeURIComponent(pfx)+'*&order=ref_propia.desc&limit=1').catch(function(){return [];})
+  ]).then(function(results){
+    var lastNum=0;
+    results.forEach(function(rows){
+      if(rows.length&&rows[0].ref_propia){
+        var m=rows[0].ref_propia.match(/(\d+)$/);
+        if(m)lastNum=Math.max(lastNum,parseInt(m[1])||0);
+      }
+    });
+    vmLineas[i].ref_propia=pfx+'-'+String(lastNum+1).padStart(3,'0');
+    renderVMLineas();
+  });
 }
 
 function vmPvpChange(i,val){
