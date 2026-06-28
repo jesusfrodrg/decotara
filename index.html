@@ -1985,6 +1985,7 @@ async function autoRellenarDesdeProd(prodId){
 }
 
 async function abrirFormTienda(){try{
+    fillProvSelects();
   _tiendaEditId=null;
   document.getElementById('tienda_form_title').textContent='Nuevo producto tienda';
   document.getElementById('tf_nombre').value='';
@@ -2004,6 +2005,7 @@ async function abrirFormTienda(){try{
 }
 
 async function editarProductoTienda(id){
+  fillProvSelects();
   var rows=await GET('/stock_tienda?select=*&id=eq.'+id);
   if(!rows.length)return;
   var r=rows[0];
