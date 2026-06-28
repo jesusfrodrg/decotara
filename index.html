@@ -690,7 +690,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
         </div>
         <div class="fi"><label>Stock expuesto</label><input type="number" id="tf_stock" min="0" value="1"></div>
         <div class="fi"><label>PVP €</label><input type="number" id="tf_pvp" step="0.01" min="0"></div>
-        <div class="fi"><label>Proveedor</label><select id="tf_prov" onchange="autoGenRefTienda()"><option value="">Sin proveedor</option><option value="Casa Viva">Casa Viva</option><option value="Kave Home">Kave Home</option><option value="Bizzotto">Bizzotto</option><option value="Tamdis">Tamdis</option><option value="Distrigal">Distrigal</option><option value="Otro">Otro</option></select></div>
+        <div class="fi"><label>Proveedor</label><select id="tf_prov" onchange="autoGenRefTienda()"><option value="">Sin proveedor</option></select></div>
         <div class="fi"><label>Ref. propia</label><input type="text" id="tf_ref" placeholder="Se genera sola al elegir proveedor"></div>
         <div class="fi full"><label>Vincular con almacén (opcional)</label>
           <select id="tf_prod_id" onchange="autoRellenarDesdeProd(this.value)"><option value="">— Sin vincular —</option></select>
@@ -1100,6 +1100,14 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <button class="btn bp" onclick="cfgAddPago()" style="white-space:nowrap">+ Añadir</button>
     </div>
 
+    <!-- PROVEEDORES -->
+    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🏭 Proveedores</div></div>
+    <div style="margin-bottom:10px" id="cfg_provs_list"></div>
+    <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:20px;align-items:end">
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#666">Nombre</label><input type="text" id="cfg_prov_new" placeholder="ej: Merkamueble" style="margin-top:4px"></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#666">Prefijo ref.</label><input type="text" id="cfg_prov_prefix" placeholder="ej: DMK" maxlength="6" style="margin-top:4px;width:80px"></div>
+      <button class="btn bp" onclick="cfgAddProv()" style="white-space:nowrap;height:38px">+ Añadir</button>
+    </div>
     <!-- CATEGORÍAS -->
     <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🏷️ Categorías de Productos</div></div>
     <div style="margin-bottom:10px" id="cfg_cats_list"></div>
@@ -3013,7 +3021,8 @@ var _CFG_DEFAULTS = {
     {label:'Transferencia', icon:'🏦'},
     {label:'Financiación', icon:'📋'}
   ],
-  categorias: ['Sofa','Canape','Colchon','Sillon','Comedor','Dormitorio','Auxiliar','Otros']
+  categorias: ['Sofa','Canape','Colchon','Sillon','Comedor','Dormitorio','Auxiliar','Otros'],
+  proveedores: [{label:'Casa Viva',prefix:'DCV'},{label:'Kave Home',prefix:'DKH'},{label:'Bizzotto',prefix:'DBIZ'},{label:'Tamdis',prefix:'DTAM'},{label:'Distrigal',prefix:'DDIS'},{label:'Otro',prefix:'DOTR'}]
 };
 
 function getCfg(){
@@ -3159,6 +3168,7 @@ function renderConfig(){
   renderCfgPagos(cfg.pagos);
 
   // Render categorías
+  renderCfgProvs(cfg.proveedores||[]);
   renderCfgCats(cfg.categorias);
 }
 
@@ -3172,6 +3182,59 @@ function renderCfgPagos(pagos){
       +(pagos.length>1?'<button onclick="cfgDelPago('+i+')" style="background:#fee2e2;color:#c8372d;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Eliminar</button>':'')
     +'</div>';
   }).join('');
+}
+
+
+function renderCfgProvs(provs){
+  var el=document.getElementById('cfg_provs_list');
+  if(!el)return;
+  el.innerHTML=provs.map(function(p,i){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--xlgray)">'      +'<span style="flex:1;font-weight:700">'+escHtml(p.label)+'</span>'      +'<span style="background:#f3f4f6;border-radius:4px;padding:2px 8px;font-size:11px;color:#666;font-weight:700">'+escHtml(p.prefix)+'</span>'      +'<button onclick="cfgDelProv('+i+')" style="background:#fee2e2;color:#c8372d;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Eliminar</button>'    +'</div>';
+  }).join('')||'<div style="color:var(--gray);font-size:13px;padding:8px 0">No hay proveedores</div>';
+}
+
+function cfgAddProv(){
+  var label=document.getElementById('cfg_prov_new').value.trim();
+  var prefix=document.getElementById('cfg_prov_prefix').value.trim().toUpperCase();
+  if(!label||!prefix){toast('Escribe nombre y prefijo');return;}
+  var cfg=getCfg();
+  if(!cfg.proveedores)cfg.proveedores=[];
+  if(cfg.proveedores.find(function(p){return p.label.toLowerCase()===label.toLowerCase();})){toast('Ya existe');return;}
+  cfg.proveedores.push({label:label,prefix:prefix});
+  saveCfg(cfg);
+  document.getElementById('cfg_prov_new').value='';
+  document.getElementById('cfg_prov_prefix').value='';
+  renderCfgProvs(cfg.proveedores);
+  fillProvSelects();
+  toast('Proveedor añadido ✓');
+}
+
+function cfgDelProv(i){
+  var cfg=getCfg();
+  if(!cfg.proveedores)return;
+  if(!confirm('¿Eliminar proveedor "'+cfg.proveedores[i].label+'"?'))return;
+  cfg.proveedores.splice(i,1);
+  saveCfg(cfg);
+  renderCfgProvs(cfg.proveedores);
+  fillProvSelects();
+  toast('Eliminado');
+}
+
+function fillProvSelects(){
+  var cfg=getCfg();
+  var provs=cfg.proveedores||[];
+  var ids=['tf_prov','p_prov'];
+  ids.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var cur=el.value;
+    el.innerHTML='<option value="">Sin proveedor</option>'+provs.map(function(p){
+      return '<option value="'+escHtml(p.label)+'"'+(p.label===cur?' selected':'')+'>'+escHtml(p.label)+'</option>';
+    }).join('');
+  });
+  // Actualizar _PROV_PREFIX con los proveedores actuales
+  window._PROV_PREFIX={};
+  provs.forEach(function(p){window._PROV_PREFIX[p.label]=p.prefix;});
 }
 
 function renderCfgCats(cats){
@@ -3221,6 +3284,7 @@ function cfgAddCat(){
   document.getElementById('cfg_cat_new').value='';
   renderCfgCats(cfg.categorias);
   fillCatSelects();
+  fillProvSelects();
   toast('Categoría añadida ✓');
 }
 
