@@ -690,7 +690,8 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
         </div>
         <div class="fi"><label>Stock expuesto</label><input type="number" id="tf_stock" min="0" value="1"></div>
         <div class="fi"><label>PVP €</label><input type="number" id="tf_pvp" step="0.01" min="0"></div>
-        <div class="fi"><label>Ref. propia</label><input type="text" id="tf_ref"></div>
+        <div class="fi"><label>Proveedor</label><select id="tf_prov" onchange="autoGenRefTienda()"><option value="">Sin proveedor</option><option value="Casa Viva">Casa Viva</option><option value="Kave Home">Kave Home</option><option value="Bizzotto">Bizzotto</option><option value="Tamdis">Tamdis</option><option value="Distrigal">Distrigal</option><option value="Otro">Otro</option></select></div>
+        <div class="fi"><label>Ref. propia</label><input type="text" id="tf_ref" placeholder="Se genera sola al elegir proveedor"></div>
         <div class="fi full"><label>Vincular con almacén (opcional)</label>
           <select id="tf_prod_id" onchange="autoRellenarDesdeProd(this.value)"><option value="">— Sin vincular —</option></select>
         </div>
@@ -1841,6 +1842,32 @@ async function renderStockTienda(){
 }
 
 
+
+async function autoGenRefTienda(){
+  var prov=document.getElementById('tf_prov').value;
+  var refInput=document.getElementById('tf_ref');
+  if(!prov||refInput.value)return;
+  var pfx=_PROV_PREFIX[prov];
+  if(!pfx)return;
+  try{
+    var existing=await GET('/productos?select=ref_propia&proveedor=eq.'+encodeURIComponent(prov)+'&ref_propia=not.is.null&order=ref_propia.desc&limit=1');
+    var lastNum=0;
+    if(existing&&existing.length&&existing[0].ref_propia){
+      var m=existing[0].ref_propia.match(/(\d+)$/);
+      if(m)lastNum=parseInt(m[1])||0;
+    }
+    // También contar los de tienda para no repetir
+    var existingT=await GET('/stock_tienda?select=ref_propia&ref_propia=like.'+encodeURIComponent(pfx)+'*&order=ref_propia.desc&limit=1');
+    if(existingT&&existingT.length&&existingT[0].ref_propia){
+      var m2=existingT[0].ref_propia.match(/(\d+)$/);
+      if(m2)lastNum=Math.max(lastNum,parseInt(m2[1])||0);
+    }
+    refInput.value=pfx+'-'+String(lastNum+1).padStart(3,'0');
+  }catch(e){
+    refInput.value=pfx+'-'+String(Date.now()).slice(-4);
+  }
+}
+
 async function autoRellenarDesdeProd(prodId){
   if(!prodId)return;
   try{
@@ -1866,6 +1893,7 @@ async function abrirFormTienda(){try{
   document.getElementById('tf_stock').value=1;
   document.getElementById('tf_pvp').value='';
   document.getElementById('tf_ref').value='';
+    document.getElementById('tf_prov').value='';
   // Llenar categorías
   var cats=getCfg().categorias||[];
   document.getElementById('tf_cat').innerHTML='<option value="">Sin categoría</option>'+cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
@@ -1904,7 +1932,8 @@ async function guardarProductoTienda(){
     stock:parseInt(document.getElementById('tf_stock').value)||0,
     pvp:parseFloat(document.getElementById('tf_pvp').value)||null,
     ref_propia:document.getElementById('tf_ref').value.trim()||null,
-    producto_id:document.getElementById('tf_prod_id').value||null
+    producto_id:document.getElementById('tf_prod_id').value||null,
+    proveedor:document.getElementById('tf_prov').value||null
   };
   try{
     if(_tiendaEditId){
