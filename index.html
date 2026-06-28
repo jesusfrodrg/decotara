@@ -4689,29 +4689,9 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
 
 function calcT(){var q=parseFloat(document.getElementById('v_cant').value)||0,p=parseFloat(document.getElementById('v_pvp').value)||0,d=parseFloat(document.getElementById('v_dto').value)||0,t=q*p*(1-d/100);document.getElementById('v_tot').value=t>0?fe(t):'';}
 async function descontarStock(prodId,cantidad,forzarOrigen){
+  // Esta función siempre descuenta del almacén directamente
+  // La elección almacén/tienda se hace ANTES de llamar esta función
   try{
-    // Comprobar si hay stock en tienda vinculado a este producto
-    if(!forzarOrigen){
-      var tienda=await GET('/stock_tienda?select=id,nombre,stock&producto_id=eq.'+prodId);
-      var tiendaConStock=tienda.filter(function(t){return t.stock>0;});
-      if(tiendaConStock.length>0){
-        // Hay stock en tienda - preguntar de dónde descontar
-        var stockAlmacen=(stockCache[prodId]!==undefined)?stockCache[prodId]:null;
-        if(stockAlmacen===null){var ra=await GET('/productos?select=stock&id=eq.'+prodId);stockAlmacen=ra.length?(ra[0].stock||0):0;}
-        var origen=await preguntarOrigenStock(prodId,cantidad,stockAlmacen,tiendaConStock[0]);
-        if(origen==='tienda'){
-          var ns=Math.max(0,tiendaConStock[0].stock-cantidad);
-          await PATCH('/stock_tienda?id=eq.'+tiendaConStock[0].id,{stock:ns});
-          toast('Stock descontado de tienda',1500);
-          return;
-        } else if(origen==='almacen'){
-          // continúa abajo
-        } else {
-          return; // cancelado
-        }
-      }
-    }
-    // Descontar de almacén
     var stockActual=(stockCache[prodId]!==undefined)?stockCache[prodId]:null;
     if(stockActual===null){var rows=await GET('/productos?select=id,stock&id=eq.'+prodId);stockActual=rows.length?(rows[0].stock||0):0;}
     var ns=Math.max(0,stockActual-cantidad);
