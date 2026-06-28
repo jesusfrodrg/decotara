@@ -2520,23 +2520,24 @@ function getProdCat(v){
   return '';
 }
 
-function toggleVMProduct(id,nom,cat,pvp){
+async function toggleVMProduct(id,nom,cat,pvp){
   var existing=vmLineas.findIndex(function(l){return l.id===id;});
   if(existing>=0){
     vmLineas.splice(existing,1);
+    renderVMLineas();
+    renderVMCatalog();
   } else {
     var stk=stockCache[id]!==undefined?stockCache[id]:99;
     if(stk<=0){toast('Sin stock disponible');return;}
     var _vmprod=vmProductos.find(function(x){return x.id===id;})||{};
     vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:_vmprod.proveedor||''});
-  // Generar referencia del contador para esta venta
-  if(_vmprod.proveedor){
-    await vmSetProveedor(vmLineas.length-1,_vmprod.proveedor);
-    return;
+    if(_vmprod.proveedor){
+      await vmSetProveedor(vmLineas.length-1,_vmprod.proveedor);
+    } else {
+      renderVMLineas();
+      renderVMCatalog();
+    }
   }
-  }
-  renderVMLineas();
-  renderVMCatalog();
 }
 
 function renderVMLineas(){
