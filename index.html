@@ -1513,10 +1513,9 @@ function navTo(page){
   else if(page==='productos')renderProductos();
   else if(page==='caja')renderCaja();
   else if(page==='agenda')renderAgenda();
-  else if(page==='config')renderConfig();
   else if(page==='rectificativas')renderRectificativas();
   else if(page==='stock-tienda')renderStockTienda();
-  else if(page==='config'){if(!checkCfgPass())return;renderConfig();}
+  else if(page==='config'){if(!checkCfgPass()){document.getElementById('page-config').classList.remove('active');var prev=document.querySelector('.bn.active');if(prev)prev.classList.remove('active');document.querySelector('.bn[data-page="dashboard"]').classList.add('active');document.getElementById('page-dashboard').classList.add('active');curPage='dashboard';return;}renderConfig();}
 }
 
 // ══════ CAJA DIARIA ══════
