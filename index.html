@@ -4167,6 +4167,7 @@ async function anadirAStockTienda(prodId){
       await PATCH('/productos?id=eq.'+prodId,{stock:nsAlm});
       stockCache[prodId]=nsAlm;invalidarCacheProductos();
       toast('✅ Tienda: '+(existe[0].stock+nuevo)+' ud. | Almacén: '+nsAlm+' ud.');
+      await loadStockCache();
       renderProductos();
       return;
     }
@@ -4189,6 +4190,7 @@ async function anadirAStockTienda(prodId){
     await PATCH('/productos?id=eq.'+prodId,{stock:nsAlm2});
     stockCache[prodId]=nsAlm2;invalidarCacheProductos();
     toast('✅ Añadido a tienda: '+p.nombre+' | Almacén: '+nsAlm2+' ud.');
+    await loadStockCache();
     renderProductos();
   }catch(e){toast('Error: '+e.message);}
 }
