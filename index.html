@@ -1364,7 +1364,7 @@ async function getCachedClientes(force){
 }
 async function getCachedProductos(force){
   if(!force&&_prodCache&&(Date.now()-_prodCacheTs)<CACHE_TTL)return _prodCache;
-  _prodCache=await GET('/productos?select=id,nombre,categoria,pvp,stock&order=nombre.asc');
+  _prodCache=await GET('/productos?select=id,nombre,categoria,pvp,stock,proveedor,ref_propia&order=nombre.asc');
   _prodCacheTs=Date.now();return _prodCache;
 }
 function invalidarCacheProductos(){_prodCache=null;_prodCacheTs=0;}
