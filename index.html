@@ -4720,6 +4720,7 @@ async function devolverStock(prodId,cantidad){
 async function openVM(id){
   veditId=id||null;
   vmLineas=[];
+  window._vmTiendaMap={};
   document.getElementById('vm-t').textContent=id?'Editar venta':'Nueva venta';
   var [cl,pr,tienda]=await Promise.all([getCachedClientes(true),getCachedProductos(),GET('/stock_tienda?select=*&order=nombre.asc').catch(function(){return [];})]);
   // Populate cliente selector
@@ -5256,21 +5257,8 @@ document.addEventListener('DOMContentLoaded',function(){
             if(vDel&&vDel.producto_id&&vDel.cantidad){
               var restablecer=confirm('¿Desea restablecer el stock de este artículo?');
               if(restablecer){
-                // Ver si hay stock en tienda vinculado
-                var tiendaRows=await GET('/stock_tienda?select=id,stock,nombre&producto_id=eq.'+vDel.producto_id);
-                if(tiendaRows.length>0){
-                  var origenRest=await preguntarOrigenStock(vDel.producto_id,vDel.cantidad,
-                    (stockCache[vDel.producto_id]||0),tiendaRows[0]);
-                  if(origenRest==='tienda'){
-                    var nsT=tiendaRows[0].stock+Number(vDel.cantidad||1);
-                    await PATCH('/stock_tienda?id=eq.'+tiendaRows[0].id,{stock:nsT});
-                    toast('Stock tienda restablecido: '+nsT+' ud.');
-                  } else if(origenRest==='almacen'){
-                    await devolverStock(vDel.producto_id,vDel.cantidad);
-                  }
-                } else {
-                  await devolverStock(vDel.producto_id,vDel.cantidad);
-                }
+                // Devolver stock al almacén directamente
+                await devolverStock(vDel.producto_id,vDel.cantidad);
               }
             }
             await DEL('/ventas?id=eq.'+id);
