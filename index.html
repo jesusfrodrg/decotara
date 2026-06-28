@@ -819,7 +819,6 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <button class="bn" data-page="catalogo" style="min-height:60px;background:var(--white)"><span class="bi">📦</span>Stock Almacén</button>
     <button class="bn" data-page="clientes" style="min-height:60px;background:var(--white)"><span class="bi">👥</span>Clientes</button>
     <button class="bn" data-page="reportes" style="min-height:60px;background:var(--white)"><span class="bi">📈</span>Reportes</button>
-    <button class="bn" data-page="vendedores" style="min-height:60px;background:var(--white)"><span class="bi">👤</span>Vendedores</button>
     <button class="bn" data-page="stock-tienda" style="min-height:60px;background:var(--white)"><span class="bi">🏪</span>Stock Tienda</button>
     <button class="bn" data-page="rectificativas" style="min-height:60px;background:var(--white)"><span class="bi">↩️</span>Rectificativas</button>
     <button class="bn" data-page="config" style="min-height:60px;background:var(--white)"><span class="bi">⚙️</span>Configuración</button>
@@ -1100,6 +1099,14 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <button class="btn bp" onclick="cfgAddPago()" style="white-space:nowrap">+ Añadir</button>
     </div>
 
+    <!-- VENDEDORES -->
+    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">👤 Vendedores</div></div>
+    <div style="margin-bottom:10px" id="cfg_vends_list"></div>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <input type="text" id="cfg_vend_new" placeholder="Nombre del vendedor..." style="flex:1">
+      <button class="btn bp" onclick="cfgAddVend()" style="white-space:nowrap">+ Añadir</button>
+    </div>
+
     <!-- PROVEEDORES -->
     <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🏭 Proveedores</div></div>
     <div style="margin-bottom:10px" id="cfg_provs_list"></div>
@@ -1108,6 +1115,22 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#666">Prefijo ref.</label><input type="text" id="cfg_prov_prefix" placeholder="ej: DMK" maxlength="6" style="margin-top:4px;width:80px"></div>
       <button class="btn bp" onclick="cfgAddProv()" style="white-space:nowrap;height:38px">+ Añadir</button>
     </div>
+    <!-- TIPOS ENTREGA -->
+    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🚚 Tipos de Entrega</div></div>
+    <div style="margin-bottom:10px" id="cfg_entregas_list"></div>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <input type="text" id="cfg_entrega_new" placeholder="ej: Entrega a domicilio..." style="flex:1">
+      <button class="btn bp" onclick="cfgAddEntrega()" style="white-space:nowrap">+ Añadir</button>
+    </div>
+
+    <!-- AJUSTES FACTURACIÓN -->
+    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🧾 Facturación</div></div>
+    <div class="fg" style="margin-bottom:20px">
+      <div class="fi"><label>IVA %</label><input type="number" id="cfg_iva" min="0" max="100" step="0.1" placeholder="21"></div>
+      <div class="fi"><label>Nº factura inicial</label><input type="number" id="cfg_fact_inicio" min="1" placeholder="1"></div>
+      <div class="fi"><label>Stock mínimo alerta</label><input type="number" id="cfg_stock_min" min="0" placeholder="3"></div>
+    </div>
+
     <!-- CATEGORÍAS -->
     <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🏷️ Categorías de Productos</div></div>
     <div style="margin-bottom:10px" id="cfg_cats_list"></div>
@@ -1428,7 +1451,6 @@ function navTo(page){
   else if(page==='productos')renderProductos();
   else if(page==='caja')renderCaja();
   else if(page==='agenda')renderAgenda();
-  else if(page==='vendedores')renderVendedores();
   else if(page==='config')renderConfig();
   else if(page==='rectificativas')renderRectificativas();
   else if(page==='stock-tienda')renderStockTienda();
@@ -3022,7 +3044,11 @@ var _CFG_DEFAULTS = {
     {label:'Financiación', icon:'📋'}
   ],
   categorias: ['Sofa','Canape','Colchon','Sillon','Comedor','Dormitorio','Auxiliar','Otros'],
-  proveedores: [{label:'Casa Viva',prefix:'DCV'},{label:'Kave Home',prefix:'DKH'},{label:'Bizzotto',prefix:'DBIZ'},{label:'Tamdis',prefix:'DTAM'},{label:'Distrigal',prefix:'DDIS'},{label:'Otro',prefix:'DOTR'}]
+  proveedores: [{label:'Casa Viva',prefix:'DCV'},{label:'Kave Home',prefix:'DKH'},{label:'Bizzotto',prefix:'DBIZ'},{label:'Tamdis',prefix:'DTAM'},{label:'Distrigal',prefix:'DDIS'},{label:'Otro',prefix:'DOTR'}],
+  entregas: ['Recogida por el Cliente','Transporte y Montaje'],
+  iva: 21,
+  fact_inicio: 1,
+  stock_min: 3
 };
 
 function getCfg(){
@@ -3168,7 +3194,12 @@ function renderConfig(){
   renderCfgPagos(cfg.pagos);
 
   // Render categorías
+  renderCfgVends();
   renderCfgProvs(cfg.proveedores||[]);
+  renderCfgEntregas(cfg.entregas||[]);
+  document.getElementById('cfg_iva').value=cfg.iva||21;
+  document.getElementById('cfg_fact_inicio').value=cfg.fact_inicio||1;
+  document.getElementById('cfg_stock_min').value=cfg.stock_min||3;
   renderCfgCats(cfg.categorias);
 }
 
@@ -3184,6 +3215,79 @@ function renderCfgPagos(pagos){
   }).join('');
 }
 
+
+
+function renderCfgVends(){
+  var el=document.getElementById('cfg_vends_list');
+  if(!el)return;
+  loadVendedores();
+  el.innerHTML=_vendedores.map(function(v,i){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--xlgray)">'      +'<div style="width:32px;height:32px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800">'+v.charAt(0).toUpperCase()+'</div>'      +'<span style="flex:1;font-weight:700">'+escHtml(v)+'</span>'      +'<button onclick="cfgDelVend('+i+')" style="background:#fee2e2;color:#c8372d;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Eliminar</button>'    +'</div>';
+  }).join('')||'<div style="color:var(--gray);font-size:13px;padding:8px 0">No hay vendedores</div>';
+}
+function cfgAddVend(){
+  var nombre=document.getElementById('cfg_vend_new').value.trim();
+  if(!nombre){toast('Escribe el nombre');return;}
+  if(_vendedores.map(function(v){return v.toLowerCase();}).indexOf(nombre.toLowerCase())>=0){toast('Ya existe');return;}
+  _vendedores.push(nombre);
+  saveVendedores();
+  document.getElementById('cfg_vend_new').value='';
+  renderCfgVends();
+  fillVendSelects();
+  toast('Vendedor añadido ✓');
+}
+function cfgDelVend(i){
+  if(!confirm('¿Eliminar vendedor "'+_vendedores[i]+'"?'))return;
+  _vendedores.splice(i,1);
+  saveVendedores();
+  renderCfgVends();
+  fillVendSelects();
+  toast('Eliminado');
+}
+
+function renderCfgEntregas(entregas){
+  var el=document.getElementById('cfg_entregas_list');
+  if(!el)return;
+  el.innerHTML=entregas.map(function(e,i){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--xlgray)">'      +'<span style="flex:1;font-weight:700">'+escHtml(e)+'</span>'      +(entregas.length>1?'<button onclick="cfgDelEntrega('+i+')" style="background:#fee2e2;color:#c8372d;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Eliminar</button>':'')    +'</div>';
+  }).join('')||'<div style="color:var(--gray);font-size:13px;padding:8px 0">No hay tipos de entrega</div>';
+}
+function cfgAddEntrega(){
+  var label=document.getElementById('cfg_entrega_new').value.trim();
+  if(!label){toast('Escribe el tipo de entrega');return;}
+  var cfg=getCfg();
+  if(!cfg.entregas)cfg.entregas=[];
+  if(cfg.entregas.indexOf(label)>=0){toast('Ya existe');return;}
+  cfg.entregas.push(label);
+  saveCfg(cfg);
+  document.getElementById('cfg_entrega_new').value='';
+  renderCfgEntregas(cfg.entregas);
+  fillEntregaSelects();
+  toast('Tipo de entrega añadido ✓');
+}
+function cfgDelEntrega(i){
+  var cfg=getCfg();
+  if(!cfg.entregas||cfg.entregas.length<=1){toast('Debe haber al menos uno');return;}
+  if(!confirm('¿Eliminar "'+cfg.entregas[i]+'"?'))return;
+  cfg.entregas.splice(i,1);
+  saveCfg(cfg);
+  renderCfgEntregas(cfg.entregas);
+  fillEntregaSelects();
+  toast('Eliminado');
+}
+function fillEntregaSelects(){
+  var cfg=getCfg();
+  var entregas=cfg.entregas||['Recogida por el Cliente','Transporte y Montaje'];
+  ['v_entrega','cart_entrega'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var cur=el.value;
+    el.innerHTML=entregas.map(function(e){
+      var ico=e.toLowerCase().includes('recog')?'🚶':e.toLowerCase().includes('transp')?'🚚':'📦';
+      return '<option value="'+escHtml(e)+'"'+(e===cur?' selected':'')+'>'+ico+' '+escHtml(e)+'</option>';
+    }).join('');
+  });
+}
 
 function renderCfgProvs(provs){
   var el=document.getElementById('cfg_provs_list');
@@ -3285,6 +3389,7 @@ function cfgAddCat(){
   renderCfgCats(cfg.categorias);
   fillCatSelects();
   fillProvSelects();
+  fillEntregaSelects();
   toast('Categoría añadida ✓');
 }
 
@@ -3306,6 +3411,9 @@ function saveConfig(){
   cfg.empresa_email=document.getElementById('cfg_empresa_email').value.trim()||cfg.empresa_email;
   cfg.empresa_tel=document.getElementById('cfg_empresa_tel').value.trim();
   cfg.pie_factura=document.getElementById('cfg_pie_factura').value.trim();
+  cfg.iva=parseFloat(document.getElementById('cfg_iva').value)||21;
+  cfg.fact_inicio=parseInt(document.getElementById('cfg_fact_inicio').value)||1;
+  cfg.stock_min=parseInt(document.getElementById('cfg_stock_min').value)||3;
   cfg.color=document.getElementById('cfg_color').value;
   if(window._cfgLogoTemp){
     cfg.logo=window._cfgLogoTemp;
