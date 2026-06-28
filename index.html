@@ -4829,7 +4829,7 @@ async function saveV(){
         var pId=l.esOtro?null:(_esTienda?l._productoId:l.id);
         var nid=await nextVentaId();
         if(li===0)primeraId=nid;
-        await POST('/ventas',{id:nid,cliente_id:cId,fecha:fecha,producto_id:pId,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:numAlbaran,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null,stock_origen:_esTienda?'tienda':'almacen',tienda_id:_tiendaId||null});
+        await POST('/ventas',{id:nid,cliente_id:cId,fecha:fecha,producto_id:pId,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:numAlbaran,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null,stock_origen:_esTienda?'tienda':'almacen',tienda_id:l._tiendaId||null});
         if(_esTienda){
           // Descontar de stock tienda
           var tiendaRows=await GET('/stock_tienda?select=id,stock&id=eq.'+l._tiendaId);
