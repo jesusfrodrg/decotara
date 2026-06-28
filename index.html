@@ -4937,7 +4937,7 @@ async function saveCart(){
     // Descontar stock de todos los productos en paralelo
     await Promise.all(cart.filter(function(item){return !item._esOtro&&item.id;}).map(function(item){
       stockCache[item.id]=Math.max(0,(stockCache[item.id]||0)-item.qty);
-      return descontarStock(item.id,item.qty);
+      return descontarStock(item.id,item.qty,true);
     }));
     var ventasGuardadas=ventasPayload.map(function(v,i){return Object.assign({},v,{prod_nombre:cart[i].nombre,prod_cat:cart[i].categoria,ref_propia:cart[i].ref_propia||'',proveedor:cart[i].proveedor||''});});
     // Recargar alertas y cliente en paralelo
