@@ -4716,12 +4716,16 @@ async function openVM(id){
   veditId=id||null;
   vmLineas=[];
   document.getElementById('vm-t').textContent=id?'Editar venta':'Nueva venta';
-  var [cl,pr]=await Promise.all([getCachedClientes(true),getCachedProductos()]);
+  var [cl,pr,tienda]=await Promise.all([getCachedClientes(true),getCachedProductos(),GET('/stock_tienda?select=*&order=nombre.asc').catch(function(){return [];})]);
   // Populate cliente selector
   document.getElementById('v_cli').innerHTML='<option value="">Seleccionar...</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.nombre+' '+c.apellidos+'</option>';}).join('');
-  // Load products into catalog
-  vmProductos=pr;
+  // Combinar almacén + tienda en vmProductos
+  var tiendaProds=tienda.filter(function(t){return t.stock>0;}).map(function(t){
+    return {id:'TI_'+t.id,nombre:t.nombre,categoria:t.categoria||'',pvp:t.pvp||0,stock:t.stock,proveedor:t.proveedor||'',ref_propia:t.ref_propia||'',_esTienda:true,_tiendaId:t.id,_productoId:t.producto_id};
+  });
+  vmProductos=pr.concat(tiendaProds);
   pr.forEach(function(p){if(stockCache[p.id]===undefined)stockCache[p.id]=p.stock||0;});
+  tiendaProds.forEach(function(p){if(stockCache[p.id]===undefined)stockCache[p.id]=p.stock||0;});
   document.getElementById('vm_prod_search').value='';
   document.getElementById('vm_prod_cat').value='';
   renderVMCatalog();
@@ -4809,12 +4813,19 @@ async function saveV(){
         var l=vmLineas[li];
         var total=+(l.pvp*l.qty*(1-dto/100)).toFixed(2);
         var notasFin=l.esOtro?(l.nombre+(notas?'\n'+notas:'')):notas;
-        var pId=l.esOtro?null:l.id;
+        var _esTienda=l._esTienda||false;
+        var pId=l.esOtro?null:(_esTienda?l._productoId:l.id);
         var nid=await nextVentaId();
         if(li===0)primeraId=nid;
         await POST('/ventas',{id:nid,cliente_id:cId,fecha:fecha,producto_id:pId,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:numAlbaran,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null});
-        await descontarStock(pId,l.qty);
-        if(pId)stockCache[pId]=Math.max(0,(stockCache[pId]||0)-l.qty);
+        if(_esTienda){
+          // Descontar de stock tienda
+          var tiendaRows=await GET('/stock_tienda?select=id,stock&id=eq.'+l._tiendaId);
+          if(tiendaRows.length){var ns=Math.max(0,tiendaRows[0].stock-l.qty);await PATCH('/stock_tienda?id=eq.'+l._tiendaId,{stock:ns});stockCache[l.id]=ns;}
+        } else {
+          await descontarStock(pId,l.qty);
+          if(pId)stockCache[pId]=Math.max(0,(stockCache[pId]||0)-l.qty);
+        }
         // Alertas stock
         stockAlerts=stockAlerts.filter(function(a){return a.id!==pId;});
         if(pId&&stockCache[pId]<=3){var pRows=await GET('/productos?select=id,nombre,categoria,stock&id=eq.'+pId);if(pRows.length)stockAlerts.push(pRows[0]);}
