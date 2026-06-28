@@ -1121,8 +1121,17 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
         <div class="cfg-sec-body" id="cfg-facturacion" style="display:none">
           <div class="fg" style="padding:14px 0 4px">
             <div class="fi"><label>IVA %</label><input type="number" id="cfg_iva" min="0" max="100" step="0.1" placeholder="21"></div>
+            <div class="fi"><label>Mostrar IVA en docs</label>
+              <select id="cfg_mostrar_iva">
+                <option value="si">Sí — con desglose</option>
+                <option value="no">No — precio final</option>
+              </select>
+            </div>
             <div class="fi"><label>Nº factura inicial</label><input type="number" id="cfg_fact_inicio" min="1" placeholder="1"></div>
             <div class="fi"><label>Stock mínimo alerta</label><input type="number" id="cfg_stock_min" min="0" placeholder="3"></div>
+            <div class="fi"><label>Prefijo factura</label><input type="text" id="cfg_prefix_fac" placeholder="FAC" maxlength="6"></div>
+            <div class="fi"><label>Prefijo albarán</label><input type="text" id="cfg_prefix_alb" placeholder="ALB" maxlength="6"></div>
+            <div class="fi"><label>Prefijo rectificativa</label><input type="text" id="cfg_prefix_rect" placeholder="RECT" maxlength="6"></div>
           </div>
         </div>
       </div>
@@ -1195,6 +1204,43 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
           <div style="display:flex;gap:8px">
             <input type="text" id="cfg_cat_new" placeholder="Nueva categoría..." style="flex:1">
             <button class="btn bp" onclick="cfgAddCat()" style="white-space:nowrap">+ Añadir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VENTAS POR DEFECTO -->
+      <div class="cfg-section">
+        <div class="cfg-sec-hdr" onclick="toggleCfgSec('cfg-ventas-def')">
+          <span>🛒 Valores por Defecto en Ventas</span><span class="cfg-arrow">›</span>
+        </div>
+        <div class="cfg-sec-body" id="cfg-ventas-def" style="display:none">
+          <div class="fg" style="padding:14px 0 4px">
+            <div class="fi"><label>Estado por defecto</label>
+              <select id="cfg_def_estado">
+                <option value="Completada">Completada</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Entregada">Entregada</option>
+              </select>
+            </div>
+            <div class="fi"><label>Forma de pago por defecto</label>
+              <select id="cfg_def_pago"></select>
+            </div>
+            <div class="fi"><label>Entrega por defecto</label>
+              <select id="cfg_def_entrega"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SISTEMA -->
+      <div class="cfg-section">
+        <div class="cfg-sec-hdr" onclick="toggleCfgSec('cfg-sistema')">
+          <span>⚙️ Sistema</span><span class="cfg-arrow">›</span>
+        </div>
+        <div class="cfg-sec-body" id="cfg-sistema" style="display:none">
+          <div class="fg" style="padding:14px 0 4px">
+            <div class="fi full"><label>Nombre de la app</label><input type="text" id="cfg_app_nombre" placeholder="DECOTARA OUTLET"></div>
+            <div class="fi full"><label>Mensaje bienvenida dashboard</label><input type="text" id="cfg_bienvenida" placeholder="Bienvenido al sistema de gestión"></div>
           </div>
         </div>
       </div>
@@ -1485,6 +1531,7 @@ function cartAddItem(prod){
 }
 
 var curPage='dashboard',veditId=null,ceditId=null,peditId=null,agFiltro='proximas';
+try{var _initCfg=JSON.parse(localStorage.getItem('decotara_config')||'{}');if(_initCfg.app_nombre)document.title=_initCfg.app_nombre;}catch(e){}
 var rptData=[];var rptTitleStr='';
 
 function fe(v){return Number(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR';}
@@ -3122,7 +3169,16 @@ var _CFG_DEFAULTS = {
   entregas: ['Recogida por el Cliente','Transporte y Montaje'],
   iva: 21,
   fact_inicio: 1,
-  stock_min: 3
+  stock_min: 3,
+  mostrar_iva: 'no',
+  prefix_fac: 'FAC',
+  prefix_alb: 'ALB',
+  prefix_rect: 'RECT',
+  def_estado: 'Completada',
+  def_pago: '',
+  def_entrega: '',
+  app_nombre: 'DECOTARA OUTLET',
+  bienvenida: 'Bienvenido al sistema de gestión'
 };
 
 function getCfg(){
@@ -3274,6 +3330,18 @@ function renderConfig(){
   document.getElementById('cfg_iva').value=cfg.iva||21;
   document.getElementById('cfg_fact_inicio').value=cfg.fact_inicio||1;
   document.getElementById('cfg_stock_min').value=cfg.stock_min||3;
+  document.getElementById('cfg_mostrar_iva').value=cfg.mostrar_iva||'no';
+  document.getElementById('cfg_prefix_fac').value=cfg.prefix_fac||'FAC';
+  document.getElementById('cfg_prefix_alb').value=cfg.prefix_alb||'ALB';
+  document.getElementById('cfg_prefix_rect').value=cfg.prefix_rect||'RECT';
+  document.getElementById('cfg_def_estado').value=cfg.def_estado||'Completada';
+  document.getElementById('cfg_app_nombre').value=cfg.app_nombre||'DECOTARA OUTLET';
+  document.getElementById('cfg_bienvenida').value=cfg.bienvenida||'';
+  // Rellenar selects de pago y entrega defaults
+  var _cfgPagos=cfg.formas_pago||[];
+  document.getElementById('cfg_def_pago').innerHTML='<option value="">Sin preferencia</option>'+_cfgPagos.map(function(p){return '<option value="'+escHtml(p.label)+'"'+(p.label===cfg.def_pago?' selected':'')+'>'+escHtml(p.icon+' '+p.label)+'</option>';}).join('');
+  var _cfgEntregas=cfg.entregas||[];
+  document.getElementById('cfg_def_entrega').innerHTML='<option value="">Sin preferencia</option>'+_cfgEntregas.map(function(e){return '<option value="'+escHtml(e)+'"'+(e===cfg.def_entrega?' selected':'')+'>'+escHtml(e)+'</option>';}).join('');
   renderCfgCats(cfg.categorias);
 }
 
@@ -3518,6 +3586,16 @@ function saveConfig(){
   var newPwd=document.getElementById('cfg_password').value.trim();
   if(newPwd){cfg.cfg_password=newPwd;localStorage.setItem('decotara_cfg_auth','OK_'+newPwd);}
   cfg.iva=parseFloat(document.getElementById('cfg_iva').value)||21;
+  cfg.mostrar_iva=document.getElementById('cfg_mostrar_iva').value||'no';
+  cfg.prefix_fac=document.getElementById('cfg_prefix_fac').value.trim().toUpperCase()||'FAC';
+  cfg.prefix_alb=document.getElementById('cfg_prefix_alb').value.trim().toUpperCase()||'ALB';
+  cfg.prefix_rect=document.getElementById('cfg_prefix_rect').value.trim().toUpperCase()||'RECT';
+  cfg.def_estado=document.getElementById('cfg_def_estado').value||'Completada';
+  cfg.def_pago=document.getElementById('cfg_def_pago').value||'';
+  cfg.def_entrega=document.getElementById('cfg_def_entrega').value||'';
+  cfg.app_nombre=document.getElementById('cfg_app_nombre').value.trim()||'DECOTARA OUTLET';
+  cfg.bienvenida=document.getElementById('cfg_bienvenida').value.trim()||'';
+  document.title=cfg.app_nombre;
   cfg.fact_inicio=parseInt(document.getElementById('cfg_fact_inicio').value)||1;
   cfg.stock_min=parseInt(document.getElementById('cfg_stock_min').value)||3;
   cfg.color=document.getElementById('cfg_color').value;
@@ -4644,11 +4722,14 @@ async function openVM(id){
     // New venta defaults
     document.getElementById('v_fecha').value=new Date().toISOString().split('T')[0];
     document.getElementById('v_dto').value=0;
-    document.getElementById('v_est').value='Completada';
+    var _dcfg=getCfg();
+    document.getElementById('v_est').value=_dcfg.def_estado||'Completada';
     document.getElementById('v_not').value='';
-    document.getElementById('v_entrega').value='Recogida por el Cliente';
+    document.getElementById('v_entrega').value=_dcfg.def_entrega||'Recogida por el Cliente';
     document.getElementById('v_fecha_entrega').value='';
     fillVendSelects();
+    fillEntregaSelects();
+    if(_dcfg.def_pago){var vp=document.getElementById('v_pago');if(vp)vp.value=_dcfg.def_pago;}
   }
   openM('vm');
 }
