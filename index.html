@@ -2526,9 +2526,11 @@ function getProdCat(v){
 async function toggleVMProduct(id,nom,cat,pvp){
   var existing=vmLineas.findIndex(function(l){return l.id===id;});
   if(existing>=0){
-    vmLineas.splice(existing,1);
+    // Si ya está en el pedido, incrementar cantidad en vez de eliminar
+    vmLineas[existing].qty+=1;
     renderVMLineas();
     renderVMCatalog();
+    return;
   } else {
     var stk=stockCache[id]!==undefined?stockCache[id]:99;
     if(stk<=0){toast('Sin stock disponible');return;}
