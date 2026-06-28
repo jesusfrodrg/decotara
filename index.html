@@ -1830,8 +1830,8 @@ async function renderStockTienda(){
         '<td class="right">'+fe(Number(r.pvp||0))+'</td>'+
         '<td class="center" style="'+stockColor+'">'+r.stock+'</td>'+
         '<td style="display:flex;gap:4px">'+
-          '<button class="btn btn-sm" style="background:#f3f4f6;color:#333" onclick="editarProductoTienda(''+r.id+'')">✏️</button>'+
-          '<button class="btn btn-sm" style="background:#fee2e2;color:#ef4444" onclick="eliminarProductoTienda(''+r.id+'')">🗑</button>'+
+          '<button class="btn btn-sm" style="background:#f3f4f6;color:#333" onclick="editarProductoTienda(\"'+r.id+'\")">✏️</button>'+
+          '<button class="btn btn-sm" style="background:#fee2e2;color:#ef4444" onclick="eliminarProductoTienda(\"'+r.id+'\")">🗑</button>'+
         '</td>'+
       '</tr>';
     });
