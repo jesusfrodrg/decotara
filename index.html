@@ -4279,18 +4279,21 @@ async function anadirAStockTienda(prodId){
     var stock=parseInt(prompt('¿Cuántas unidades pones en exposición? (se descontarán del almacén)','1'));
     if(!stock||stock<=0)return;
     if(stock>(p.stock||0)){toast('No hay suficiente stock en almacén ('+p.stock+' ud.)');return;}
-    // Generar referencia nueva para tienda basada en el proveedor
+    // Generar referencia nueva para tienda buscando el máximo en AMBAS tablas
     var refTienda=null;
     if(p.proveedor){
       var provs=getCfg().proveedores||[];
       var provObj=provs.find(function(pv){return pv.label===p.proveedor;});
       var pfxT=provObj?provObj.prefix:null;
       if(pfxT){
-        var KEY='decotara_ref_counter';
-        var counters={};try{counters=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
-        counters[pfxT]=(counters[pfxT]||0)+1;
-        localStorage.setItem(KEY,JSON.stringify(counters));
-        refTienda=pfxT+'-'+String(counters[pfxT]).padStart(4,'0');
+        try{
+          var lastNumT=0;
+          var rAlm=await GET('/productos?select=ref_propia&proveedor=eq.'+encodeURIComponent(p.proveedor)+'&ref_propia=not.is.null&order=ref_propia.desc&limit=1');
+          if(rAlm.length&&rAlm[0].ref_propia){var mA=rAlm[0].ref_propia.match(/(\d+)$/);if(mA)lastNumT=parseInt(mA[1])||0;}
+          var rTie=await GET('/stock_tienda?select=ref_propia&ref_propia=like.'+encodeURIComponent(pfxT)+'*&order=ref_propia.desc&limit=1');
+          if(rTie.length&&rTie[0].ref_propia){var mT=rTie[0].ref_propia.match(/(\d+)$/);if(mT)lastNumT=Math.max(lastNumT,parseInt(mT[1])||0);}
+          refTienda=pfxT+'-'+String(lastNumT+1).padStart(3,'0');
+        }catch(e){refTienda=pfxT+'-'+String(Date.now()).slice(-4);}
       }
     }
     var payload={
