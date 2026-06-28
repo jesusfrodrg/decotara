@@ -2527,8 +2527,9 @@ function toggleVMProduct(id,nom,cat,pvp){
     var stk=stockCache[id]!==undefined?stockCache[id]:99;
     if(stk<=0){toast('Sin stock disponible');return;}
     var _vmprod=vmProductos.find(function(x){return x.id===id;})||{};
-    var _refOrig=_vmprod.ref_propia||'';
-  vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:_refOrig,proveedor:_vmprod.proveedor||'',_ref_original:_refOrig});
+    vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:_vmprod.proveedor||''});
+  // Generar referencia del contador para esta venta
+  if(_vmprod.proveedor)vmSetProveedor(vmLineas.length-1,_vmprod.proveedor);
   }
   renderVMLineas();
   renderVMCatalog();
@@ -2592,18 +2593,15 @@ function vmQtyChange(i,val){
 
 function vmSetProveedor(i, prov){
   vmLineas[i].proveedor=prov;
-  // Si el artículo ya tiene referencia propia del almacén, no la sobreescribimos
-  if(!vmLineas[i]._ref_original){
-    if(!prov){vmLineas[i].ref_propia='';renderVMLineas();return;}
-    var pfx=(_PROV_PREFIX&&_PROV_PREFIX[prov])||{'Casa Viva':'DCV','Kave Home':'DKH','Bizzotto':'DBIZ','Tamdis':'DTAM','Distrigal':'DDIS','Otro':'DOTR'}[prov]||'';
-    if(!pfx){renderVMLineas();return;}
-    var KEY='decotara_ref_counter';
-    var counters={};
-    try{counters=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
-    counters[pfx]=(counters[pfx]||0)+1;
-    localStorage.setItem(KEY,JSON.stringify(counters));
-    vmLineas[i].ref_propia=pfx+'-'+String(counters[pfx]).padStart(4,'0');
-  }
+  if(!prov){vmLineas[i].ref_propia='';renderVMLineas();return;}
+  var pfx=(_PROV_PREFIX&&_PROV_PREFIX[prov])||{'Casa Viva':'DCV','Kave Home':'DKH','Bizzotto':'DBIZ','Tamdis':'DTAM','Distrigal':'DDIS','Otro':'DOTR'}[prov]||'';
+  if(!pfx){renderVMLineas();return;}
+  var KEY='decotara_ref_counter';
+  var counters={};
+  try{counters=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
+  counters[pfx]=(counters[pfx]||0)+1;
+  localStorage.setItem(KEY,JSON.stringify(counters));
+  vmLineas[i].ref_propia=pfx+'-'+String(counters[pfx]).padStart(4,'0');
   renderVMLineas();
 }
 
