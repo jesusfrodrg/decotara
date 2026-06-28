@@ -4166,9 +4166,9 @@ async function anadirAStockTienda(prodId){
       var nsAlm=Math.max(0,(p.stock||0)-nuevo);
       await PATCH('/productos?id=eq.'+prodId,{stock:nsAlm});
       stockCache[prodId]=nsAlm;invalidarCacheProductos();
+      _productosCache=null;_productosCacheTs=0;
       toast('✅ Tienda: '+(existe[0].stock+nuevo)+' ud. | Almacén: '+nsAlm+' ud.');
-      await loadStockCache();
-      renderProductos();
+      await renderProductos();
       return;
     }
     var stock=parseInt(prompt('¿Cuántas unidades pones en exposición? (se descontarán del almacén)','1'));
@@ -4189,9 +4189,9 @@ async function anadirAStockTienda(prodId){
     var nsAlm2=Math.max(0,(p.stock||0)-stock);
     await PATCH('/productos?id=eq.'+prodId,{stock:nsAlm2});
     stockCache[prodId]=nsAlm2;invalidarCacheProductos();
+    _productosCache=null;_productosCacheTs=0;
     toast('✅ Añadido a tienda: '+p.nombre+' | Almacén: '+nsAlm2+' ud.');
-    await loadStockCache();
-    renderProductos();
+    await renderProductos();
   }catch(e){toast('Error: '+e.message);}
 }
 
