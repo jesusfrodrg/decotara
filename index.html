@@ -692,7 +692,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
         <div class="fi"><label>PVP €</label><input type="number" id="tf_pvp" step="0.01" min="0"></div>
         <div class="fi"><label>Ref. propia</label><input type="text" id="tf_ref"></div>
         <div class="fi full"><label>Vincular con almacén (opcional)</label>
-          <select id="tf_prod_id"><option value="">— Sin vincular —</option></select>
+          <select id="tf_prod_id" onchange="autoRellenarDesdeProd(this.value)"><option value="">— Sin vincular —</option></select>
         </div>
       </div>
       <div class="mf" style="margin-top:12px">
@@ -1838,6 +1838,25 @@ async function renderStockTienda(){
     html+='</tbody></table>';
     tabla.innerHTML=html;
   }catch(e){tabla.innerHTML='<div style="color:var(--red);padding:16px">Error: '+e.message+'</div>';}
+}
+
+
+async function autoRellenarDesdeProd(prodId){
+  if(!prodId)return;
+  try{
+    var rows=await GET('/productos?select=nombre,pvp,ref_propia,categoria&id=eq.'+prodId);
+    if(!rows.length)return;
+    var p=rows[0];
+    if(p.nombre)document.getElementById('tf_nombre').value=p.nombre;
+    if(p.pvp)document.getElementById('tf_pvp').value=p.pvp;
+    if(p.ref_propia)document.getElementById('tf_ref').value=p.ref_propia;
+    if(p.categoria){
+      var sel=document.getElementById('tf_cat');
+      for(var i=0;i<sel.options.length;i++){
+        if(sel.options[i].value===p.categoria){sel.selectedIndex=i;break;}
+      }
+    }
+  }catch(e){console.warn('Error autorellenar:',e);}
 }
 
 async function abrirFormTienda(){try{
