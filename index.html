@@ -4953,7 +4953,14 @@ async function openPM(id){
 }
 function calcM(){var p=parseFloat(document.getElementById('p_pvp').value)||0,c=parseFloat(document.getElementById('p_cos').value)||0;document.getElementById('p_mar').value=mg(p,c);}
 
-var _PROV_PREFIX={'Casa Viva':'DCV','Kave Home':'DKH','Bizzotto':'DBIZ','Tamdis':'DTAM','Distrigal':'DDIS','Otro':'DOTR'};
+var _PROV_PREFIX={};
+(function(){
+  try{
+    var cfg=JSON.parse(localStorage.getItem('decotara_config')||'{}');
+    var provs=cfg.proveedores||[{label:'Casa Viva',prefix:'DCV'},{label:'Kave Home',prefix:'DKH'},{label:'Bizzotto',prefix:'DBIZ'},{label:'Tamdis',prefix:'DTAM'},{label:'Distrigal',prefix:'DDIS'},{label:'Otro',prefix:'DOTR'}];
+    provs.forEach(function(p){_PROV_PREFIX[p.label]=p.prefix;});
+  }catch(e){}
+})();
 
 async function autoGenRef(){
   var prov=document.getElementById('p_prov').value;
