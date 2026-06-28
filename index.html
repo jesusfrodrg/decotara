@@ -1900,6 +1900,7 @@ async function confirmarCambioArticulo(){
   facturas['rect_'+ventaId+'_'+Date.now()]=numRect;
   localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
   var factOrig=facturas[v.albaran_num||v.id]||'—';
+  if(factOrig==='—'&&v.albaran_num)factOrig=v.albaran_num;
   var fechaStr=fD(v.fecha);
 
   var filas=seleccionadas.map(function(x){
@@ -2291,6 +2292,8 @@ async function confirmarSubsanacion(){
   facturas['rect_'+ventaId+'_'+Date.now()]=numRect;
   localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
   var factOrig=facturas[v.albaran_num||v.id]||'—';
+  // Si no está en localStorage, usar el albaran_num directamente como referencia
+  if(factOrig==='—'&&v.albaran_num)factOrig=v.albaran_num;
 
   // Artículos de la venta original (sin cambio de importe)
   var totalVenta=ventas.reduce(function(s,x){return s+Number(x.total||0);},0);
@@ -2354,7 +2357,15 @@ async function confirmarRectificativa(){
   facturas['rect_'+ventaId+'_'+Date.now()]=numRect;
   localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
 
-  var factOrig=facturas[v.albaran_num||v.id]||'—';
+  var factOrig=facturas[v.albaran_num||v.id]||(v.albaran_num?'ALB-'+v.albaran_num:null)||'—';
+  // Intentar obtener número de factura real
+  try{
+    var factRows=await GET('/ventas?select=albaran_num&id=eq.'+(v.albaran_num||v.id));
+    if(factRows.length&&factRows[0].albaran_num){
+      var fk=facturas[factRows[0].albaran_num];
+      if(fk)factOrig=fk;
+    }
+  }catch(e){}
   var fechaStr=fD(v.fecha);
   var totalRect=seleccionadas.reduce(function(s,x){return s+x._totEdit;},0);
 
