@@ -2479,7 +2479,8 @@ function renderVMLineas(){
   wrap.style.display='';
   cont.innerHTML=vmLineas.map(function(l,i){
     var refBadge=l.ref_propia?'<span style="background:#ede9fe;color:#5b21b6;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">'+escHtml(l.ref_propia)+'</span>':'';
-    var provOpts='<option value="">Proveedor...</option><option value="Casa Viva">Casa Viva</option><option value="Kave Home">Kave Home</option><option value="Bizzotto">Bizzotto</option><option value="Tamdis">Tamdis</option><option value="Distrigal">Distrigal</option><option value="Otro">Otro</option>';
+    var _provs=(getCfg().proveedores||[]);
+    var provOpts='<option value="">Proveedor...</option>'+_provs.map(function(p){return '<option value="'+escHtml(p.label)+'"'+(p.label===l.proveedor?' selected':'')+'>'+escHtml(p.label)+'</option>';}).join('');
     return '<div class="vm-linea" style="flex-wrap:wrap;gap:4px">'
       +'<div style="flex:1;min-width:0"><div class="vl-nom">'+escHtml(l.nombre)+refBadge+'</div>'
       +'<div style="display:flex;gap:6px;margin-top:4px;align-items:center">'
@@ -2497,11 +2498,7 @@ function renderVMLineas(){
       +'<button class="vl-del" data-di="'+i+'">✕</button>'
       +'</div>';
   }).join('');
-  // Set proveedor selects to current values
-  cont.querySelectorAll('.vm-prov-sel').forEach(function(sel){
-    var li=parseInt(sel.dataset.li);
-    if(vmLineas[li]&&vmLineas[li].proveedor) sel.value=vmLineas[li].proveedor;
-  });
+
   var sub=vmLineas.reduce(function(s,l){return s+l.pvp*l.qty;},0);
   if(totRow){totRow.style.display='flex';}
   if(subLbl){subLbl.textContent=fe(sub);}
