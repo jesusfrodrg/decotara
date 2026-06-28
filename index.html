@@ -672,6 +672,36 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     </div>
   </div>
 
+  <div class="page" id="page-stock-tienda">
+    <div class="ph"><span class="pt">🏪 Stock Tienda</span><button class="btn bp" id="btnNPtienda">+ Añadir</button></div>
+    <div class="panel" style="padding:14px 16px">
+      <input type="text" id="tienda_buscar" placeholder="🔍 Buscar producto..." style="width:100%;margin-bottom:12px">
+      <div id="tienda_tabla" style="overflow-x:auto"></div>
+    </div>
+    <!-- Formulario nuevo producto tienda -->
+    <div class="panel" id="tienda_form_panel" style="display:none;padding:16px;margin-top:8px">
+      <div class="ph" style="margin-bottom:12px"><span class="pt" style="font-size:14px" id="tienda_form_title">Nuevo producto tienda</span></div>
+      <div class="fg">
+        <div class="fi full"><label>Nombre</label><input type="text" id="tf_nombre" placeholder="Nombre del artículo"></div>
+        <div class="fi"><label>Categoría</label>
+          <select id="tf_cat">
+            <option value="">Sin categoría</option>
+          </select>
+        </div>
+        <div class="fi"><label>Stock expuesto</label><input type="number" id="tf_stock" min="0" value="1"></div>
+        <div class="fi"><label>PVP €</label><input type="number" id="tf_pvp" step="0.01" min="0"></div>
+        <div class="fi"><label>Ref. propia</label><input type="text" id="tf_ref"></div>
+        <div class="fi full"><label>Vincular con almacén (opcional)</label>
+          <select id="tf_prod_id"><option value="">— Sin vincular —</option></select>
+        </div>
+      </div>
+      <div class="mf" style="margin-top:12px">
+        <button class="btn bs2" onclick="document.getElementById('tienda_form_panel').style.display='none'">Cancelar</button>
+        <button class="btn bp" onclick="guardarProductoTienda()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="page" id="page-productos">
     <div class="panel">
       <div class="ph"><span class="pt">📦 Productos</span><button class="btn bp" id="btnNP">+ Añadir</button></div>
@@ -789,6 +819,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <button class="bn" data-page="clientes" style="min-height:60px;background:var(--white)"><span class="bi">👥</span>Clientes</button>
     <button class="bn" data-page="reportes" style="min-height:60px;background:var(--white)"><span class="bi">📈</span>Reportes</button>
     <button class="bn" data-page="vendedores" style="min-height:60px;background:var(--white)"><span class="bi">👤</span>Vendedores</button>
+    <button class="bn" data-page="stock-tienda" style="min-height:60px;background:var(--white)"><span class="bi">🏪</span>Stock Tienda</button>
     <button class="bn" data-page="rectificativas" style="min-height:60px;background:var(--white)"><span class="bi">↩️</span>Rectificativas</button>
     <button class="bn" data-page="config" style="min-height:60px;background:var(--white)"><span class="bi">⚙️</span>Configuración</button>
   </div>
@@ -1391,6 +1422,7 @@ function navTo(page){
   else if(page==='vendedores')renderVendedores();
   else if(page==='config')renderConfig();
   else if(page==='rectificativas')renderRectificativas();
+  else if(page==='stock-tienda')renderStockTienda();
 }
 
 // ══════ CAJA DIARIA ══════
@@ -1774,6 +1806,108 @@ async function confirmarCambioArticulo(){
   },800);
 }
 
+
+
+// ══════ STOCK TIENDA ══════
+var _tiendaEditId=null;
+
+async function renderStockTienda(){
+  var buscar=(document.getElementById('tienda_buscar')?document.getElementById('tienda_buscar').value||'':'').toLowerCase();
+  var tabla=document.getElementById('tienda_tabla');
+  if(!tabla)return;
+  tabla.innerHTML='<div class="ldr"><span class="spin"></span></div>';
+  try{
+    var rows=await GET('/stock_tienda?select=*&order=nombre.asc');
+    if(buscar)rows=rows.filter(function(r){return (r.nombre||'').toLowerCase().includes(buscar)||(r.ref_propia||'').toLowerCase().includes(buscar);});
+    if(!rows.length){tabla.innerHTML='<div style="text-align:center;color:var(--gray);padding:32px;font-size:14px">No hay productos en tienda</div>';return;}
+    var html='<table><thead><tr><th>Ref.</th><th>Nombre</th><th>Cat.</th><th class="right">PVP</th><th class="center">Stock</th><th></th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      var stockColor=r.stock<=0?'color:#ef4444;font-weight:700':r.stock<=2?'color:#f59e0b;font-weight:700':'color:#22c55e;font-weight:700';
+      html+='<tr>'+
+        '<td style="font-size:11px;color:var(--red);font-weight:700">'+(r.ref_propia||'—')+'</td>'+
+        '<td><b>'+escHtml(r.nombre||'')+'</b>'+(r.producto_id?'<br><span style="font-size:10px;color:#888">🔗 Vinculado almacén</span>':'')+'</td>'+
+        '<td><span style="background:#f3f4f6;border-radius:4px;padding:2px 6px;font-size:11px">'+(r.categoria||'—')+'</span></td>'+
+        '<td class="right">'+fe(Number(r.pvp||0))+'</td>'+
+        '<td class="center" style="'+stockColor+'">'+r.stock+'</td>'+
+        '<td style="display:flex;gap:4px">'+
+          '<button class="btn btn-sm" style="background:#f3f4f6;color:#333" onclick="editarProductoTienda(''+r.id+'')">✏️</button>'+
+          '<button class="btn btn-sm" style="background:#fee2e2;color:#ef4444" onclick="eliminarProductoTienda(''+r.id+'')">🗑</button>'+
+        '</td>'+
+      '</tr>';
+    });
+    html+='</tbody></table>';
+    tabla.innerHTML=html;
+  }catch(e){tabla.innerHTML='<div style="color:var(--red);padding:16px">Error: '+e.message+'</div>';}
+}
+
+async function abrirFormTienda(){
+  _tiendaEditId=null;
+  document.getElementById('tienda_form_title').textContent='Nuevo producto tienda';
+  document.getElementById('tf_nombre').value='';
+  document.getElementById('tf_stock').value=1;
+  document.getElementById('tf_pvp').value='';
+  document.getElementById('tf_ref').value='';
+  // Llenar categorías
+  var cats=getCategorias();
+  document.getElementById('tf_cat').innerHTML='<option value="">Sin categoría</option>'+cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
+  // Llenar productos almacén para vincular
+  var prods=await GET('/stock?select=id,nombre,ref_propia&order=nombre.asc');
+  document.getElementById('tf_prod_id').innerHTML='<option value="">— Sin vincular —</option>'+prods.map(function(p){return '<option value="'+p.id+'">'+escHtml(p.nombre)+(p.ref_propia?' ('+p.ref_propia+')':'')+'</option>';}).join('');
+  document.getElementById('tienda_form_panel').style.display='block';
+  document.getElementById('tienda_form_panel').scrollIntoView({behavior:'smooth'});
+}
+
+async function editarProductoTienda(id){
+  var rows=await GET('/stock_tienda?select=*&id=eq.'+id);
+  if(!rows.length)return;
+  var r=rows[0];
+  _tiendaEditId=id;
+  document.getElementById('tienda_form_title').textContent='Editar producto tienda';
+  document.getElementById('tf_nombre').value=r.nombre||'';
+  document.getElementById('tf_stock').value=r.stock||0;
+  document.getElementById('tf_pvp').value=r.pvp||'';
+  document.getElementById('tf_ref').value=r.ref_propia||'';
+  var cats=getCategorias();
+  document.getElementById('tf_cat').innerHTML='<option value="">Sin categoría</option>'+cats.map(function(c){return '<option value="'+c+'"'+(c===r.categoria?' selected':'')+'>'+c+'</option>';}).join('');
+  var prods=await GET('/stock?select=id,nombre,ref_propia&order=nombre.asc');
+  document.getElementById('tf_prod_id').innerHTML='<option value="">— Sin vincular —</option>'+prods.map(function(p){return '<option value="'+p.id+'"'+(p.id===r.producto_id?' selected':'')+'>'+escHtml(p.nombre)+(p.ref_propia?' ('+p.ref_propia+')':'')+'</option>';}).join('');
+  document.getElementById('tienda_form_panel').style.display='block';
+  document.getElementById('tienda_form_panel').scrollIntoView({behavior:'smooth'});
+}
+
+async function guardarProductoTienda(){
+  var nombre=document.getElementById('tf_nombre').value.trim();
+  if(!nombre){toast('Escribe el nombre');return;}
+  var payload={
+    nombre:nombre,
+    categoria:document.getElementById('tf_cat').value||null,
+    stock:parseInt(document.getElementById('tf_stock').value)||0,
+    pvp:parseFloat(document.getElementById('tf_pvp').value)||null,
+    ref_propia:document.getElementById('tf_ref').value.trim()||null,
+    producto_id:document.getElementById('tf_prod_id').value||null
+  };
+  try{
+    if(_tiendaEditId){
+      await PATCH('/stock_tienda?id=eq.'+_tiendaEditId,payload);
+      toast('Producto actualizado');
+    } else {
+      payload.id='TI-'+Date.now();
+      await POST('/stock_tienda',payload);
+      toast('Producto añadido');
+    }
+    document.getElementById('tienda_form_panel').style.display='none';
+    renderStockTienda();
+  }catch(e){toast('Error: '+e.message);}
+}
+
+async function eliminarProductoTienda(id){
+  if(!confirm('¿Eliminar este producto de tienda?'))return;
+  try{
+    await DEL('/stock_tienda?id=eq.'+id);
+    toast('Eliminado');
+    renderStockTienda();
+  }catch(e){toast('Error: '+e.message);}
+}
 
 // ══════ RECTIFICATIVAS ══════
 async function renderRectificativas(){
@@ -4042,9 +4176,30 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
 }
 
 function calcT(){var q=parseFloat(document.getElementById('v_cant').value)||0,p=parseFloat(document.getElementById('v_pvp').value)||0,d=parseFloat(document.getElementById('v_dto').value)||0,t=q*p*(1-d/100);document.getElementById('v_tot').value=t>0?fe(t):'';}
-async function descontarStock(prodId,cantidad){
+async function descontarStock(prodId,cantidad,forzarOrigen){
   try{
-    // Usar cache local si está disponible para evitar GET
+    // Comprobar si hay stock en tienda vinculado a este producto
+    if(!forzarOrigen){
+      var tienda=await GET('/stock_tienda?select=id,nombre,stock&producto_id=eq.'+prodId);
+      var tiendaConStock=tienda.filter(function(t){return t.stock>0;});
+      if(tiendaConStock.length>0){
+        // Hay stock en tienda - preguntar de dónde descontar
+        var stockAlmacen=(stockCache[prodId]!==undefined)?stockCache[prodId]:null;
+        if(stockAlmacen===null){var ra=await GET('/productos?select=stock&id=eq.'+prodId);stockAlmacen=ra.length?(ra[0].stock||0):0;}
+        var origen=await preguntarOrigenStock(prodId,cantidad,stockAlmacen,tiendaConStock[0]);
+        if(origen==='tienda'){
+          var ns=Math.max(0,tiendaConStock[0].stock-cantidad);
+          await PATCH('/stock_tienda?id=eq.'+tiendaConStock[0].id,{stock:ns});
+          toast('Stock descontado de tienda',1500);
+          return;
+        } else if(origen==='almacen'){
+          // continúa abajo
+        } else {
+          return; // cancelado
+        }
+      }
+    }
+    // Descontar de almacén
     var stockActual=(stockCache[prodId]!==undefined)?stockCache[prodId]:null;
     if(stockActual===null){var rows=await GET('/productos?select=id,stock&id=eq.'+prodId);stockActual=rows.length?(rows[0].stock||0):0;}
     var ns=Math.max(0,stockActual-cantidad);
@@ -4052,6 +4207,18 @@ async function descontarStock(prodId,cantidad){
     stockCache[prodId]=ns;
     invalidarCacheProductos();
   }catch(e){console.warn('Error stock:',e.message);}
+}
+
+function preguntarOrigenStock(prodId,cantidad,stockAlmacen,tiendaItem){
+  return new Promise(function(resolve){
+    var mo=document.createElement('div');
+    mo.style.cssText='position:fixed;inset:0;background:rgba(17,19,24,.55);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px';
+    mo.innerHTML='<div style="background:#fff;border-radius:16px;padding:24px;max-width:340px;width:100%">'      +'<div style="font-weight:800;font-size:16px;margin-bottom:6px">¿De dónde descontar?</div>'      +'<div style="font-size:13px;color:#666;margin-bottom:18px">Este artículo tiene stock en almacén y en tienda.</div>'      +'<div style="display:flex;flex-direction:column;gap:10px">'        +'<button id="oAlmacen" style="background:#f3f4f6;border:2px solid #e5e7eb;border-radius:10px;padding:12px;text-align:left;cursor:pointer;font-size:13px">'          +'<div style="font-weight:700">📦 Almacén</div>'          +'<div style="color:#666;font-size:12px">Stock disponible: '+stockAlmacen+'</div>'        +'</button>'        +'<button id="oTienda" style="background:#f3f4f6;border:2px solid #e5e7eb;border-radius:10px;padding:12px;text-align:left;cursor:pointer;font-size:13px">'          +'<div style="font-weight:700">🏪 Tienda</div>'          +'<div style="color:#666;font-size:12px">Stock expuesto: '+tiendaItem.stock+' · '+escHtml(tiendaItem.nombre)+'</div>'        +'</button>'        +'<button id="oCancelar" style="background:transparent;border:none;color:#999;padding:8px;cursor:pointer;font-size:13px">Cancelar</button>'      +'</div>'    +'</div>';
+    document.body.appendChild(mo);
+    mo.querySelector('#oAlmacen').onclick=function(){document.body.removeChild(mo);resolve('almacen');};
+    mo.querySelector('#oTienda').onclick=function(){document.body.removeChild(mo);resolve('tienda');};
+    mo.querySelector('#oCancelar').onclick=function(){document.body.removeChild(mo);resolve('cancelar');};
+  });
 }
 
 async function devolverStock(prodId,cantidad){
@@ -4418,7 +4585,8 @@ document.addEventListener('DOMContentLoaded',function(){
   ['v_cant','v_pvp'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('input',calcT);});
   ['p_pvp','p_cos'].forEach(function(id){document.getElementById(id).addEventListener('input',calcM);});
   document.getElementById('vsearch').addEventListener('input',renderVentas);
-  document.addEventListener('input',function(e){if(e.target.id==='rect_buscar')renderRectificativas();});
+  document.addEventListener('input',function(e){if(e.target.id==='rect_buscar')renderRectificativas();if(e.target.id==='tienda_buscar')renderStockTienda();});
+  document.getElementById('btnNPtienda')&&document.getElementById('btnNPtienda').addEventListener('click',abrirFormTienda);
   document.addEventListener('change',function(e){if(e.target.id==='rect_mes')renderRectificativas();});
   document.getElementById('vfest').addEventListener('change',renderVentas);
   document.getElementById('catsearch').addEventListener('input',renderCatalogo);
