@@ -4586,7 +4586,7 @@ document.addEventListener('DOMContentLoaded',function(){
   ['p_pvp','p_cos'].forEach(function(id){document.getElementById(id).addEventListener('input',calcM);});
   document.getElementById('vsearch').addEventListener('input',renderVentas);
   document.addEventListener('input',function(e){if(e.target.id==='rect_buscar')renderRectificativas();if(e.target.id==='tienda_buscar')renderStockTienda();});
-  document.getElementById('btnNPtienda')&&document.getElementById('btnNPtienda').addEventListener('click',abrirFormTienda);
+  document.addEventListener('click',function(e){if(e.target.id==='btnNPtienda')abrirFormTienda();});
   document.addEventListener('change',function(e){if(e.target.id==='rect_mes')renderRectificativas();});
   document.getElementById('vfest').addEventListener('change',renderVentas);
   document.getElementById('catsearch').addEventListener('input',renderCatalogo);
