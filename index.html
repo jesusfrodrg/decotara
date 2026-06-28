@@ -4160,12 +4160,19 @@ async function anadirAStockTienda(prodId){
     if(existe.length){
       var nuevo=parseInt(prompt('Ya existe en tienda con '+existe[0].stock+' ud. ¿Cuántas añadir más?','1'));
       if(!nuevo||nuevo<=0)return;
+      if(nuevo>(p.stock||0)){toast('No hay suficiente stock en almacén ('+p.stock+' ud.)');return;}
       await PATCH('/stock_tienda?id=eq.'+existe[0].id,{stock:existe[0].stock+nuevo});
-      toast('Stock tienda actualizado: '+(existe[0].stock+nuevo)+' ud.');
+      // Descontar del almacén
+      var nsAlm=Math.max(0,(p.stock||0)-nuevo);
+      await PATCH('/productos?id=eq.'+prodId,{stock:nsAlm});
+      stockCache[prodId]=nsAlm;invalidarCacheProductos();
+      toast('✅ Tienda: '+(existe[0].stock+nuevo)+' ud. | Almacén: '+nsAlm+' ud.');
+      renderProductos();
       return;
     }
-    var stock=parseInt(prompt('¿Cuántas unidades pones en exposición?','1'));
+    var stock=parseInt(prompt('¿Cuántas unidades pones en exposición? (se descontarán del almacén)','1'));
     if(!stock||stock<=0)return;
+    if(stock>(p.stock||0)){toast('No hay suficiente stock en almacén ('+p.stock+' ud.)');return;}
     var payload={
       id:'TI-'+Date.now(),
       nombre:p.nombre,
@@ -4177,7 +4184,12 @@ async function anadirAStockTienda(prodId){
       proveedor:p.proveedor||null
     };
     await POST('/stock_tienda',payload);
-    toast('✅ Añadido a Stock Tienda: '+p.nombre);
+    // Descontar del almacén
+    var nsAlm2=Math.max(0,(p.stock||0)-stock);
+    await PATCH('/productos?id=eq.'+prodId,{stock:nsAlm2});
+    stockCache[prodId]=nsAlm2;invalidarCacheProductos();
+    toast('✅ Añadido a tienda: '+p.nombre+' | Almacén: '+nsAlm2+' ud.');
+    renderProductos();
   }catch(e){toast('Error: '+e.message);}
 }
 
