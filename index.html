@@ -5241,17 +5241,36 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(a==='ec')openCM(id);
     else if(a==='ep')openPM(id);
     else if(a==='dv'){
-      if(confirm('¿Eliminar esta venta? Se devolverá el stock del producto.')){
+      if(confirm('¿Eliminar esta venta?')){
         (async function(){
           try{
+            // Obtener datos de la venta
             var vRows=window._ventasCache||[];
             var vDel=vRows.find(function(x){return x.id===id;});
+            if(!vDel||(vDel&&!vDel.producto_id)){
+              var vv=await GET('/ventas?select=producto_id,cantidad,proveedor&id=eq.'+id);
+              if(vv.length)vDel=vv[0];
+            }
+            // Preguntar si quiere restablecer stock
             if(vDel&&vDel.producto_id&&vDel.cantidad){
-              await devolverStock(vDel.producto_id,vDel.cantidad);
-            } else {
-              // Fetch from DB if not in cache
-              var vv=await GET('/ventas?select=producto_id,cantidad&id=eq.'+id);
-              if(vv.length)await devolverStock(vv[0].producto_id,vv[0].cantidad);
+              var restablecer=confirm('¿Desea restablecer el stock de este artículo?');
+              if(restablecer){
+                // Ver si hay stock en tienda vinculado
+                var tiendaRows=await GET('/stock_tienda?select=id,stock,nombre&producto_id=eq.'+vDel.producto_id);
+                if(tiendaRows.length>0){
+                  var origenRest=await preguntarOrigenStock(vDel.producto_id,vDel.cantidad,
+                    (stockCache[vDel.producto_id]||0),tiendaRows[0]);
+                  if(origenRest==='tienda'){
+                    var nsT=tiendaRows[0].stock+Number(vDel.cantidad||1);
+                    await PATCH('/stock_tienda?id=eq.'+tiendaRows[0].id,{stock:nsT});
+                    toast('Stock tienda restablecido: '+nsT+' ud.');
+                  } else if(origenRest==='almacen'){
+                    await devolverStock(vDel.producto_id,vDel.cantidad);
+                  }
+                } else {
+                  await devolverStock(vDel.producto_id,vDel.cantidad);
+                }
+              }
             }
             await DEL('/ventas?id=eq.'+id);
             await loadStockCache();
