@@ -4838,7 +4838,7 @@ async function saveV(){
           var tiendaRows=await GET('/stock_tienda?select=id,stock&id=eq.'+l._tiendaId);
           if(tiendaRows.length){var ns=Math.max(0,tiendaRows[0].stock-l.qty);await PATCH('/stock_tienda?id=eq.'+l._tiendaId,{stock:ns});stockCache[l.id]=ns;}
         } else {
-          await descontarStock(pId,l.qty);
+          await descontarStock(pId,l.qty,true); // forzarOrigen=true, ya se eligió al añadir
           if(pId)stockCache[pId]=Math.max(0,(stockCache[pId]||0)-l.qty);
         }
         // Alertas stock
