@@ -2015,6 +2015,7 @@ async function editarProductoTienda(id){
   document.getElementById('tf_stock').value=r.stock||0;
   document.getElementById('tf_pvp').value=r.pvp||'';
   document.getElementById('tf_ref').value=r.ref_propia||'';
+  document.getElementById('tf_prov').value=r.proveedor||'';
   var cats=getCfg().categorias||[];
   document.getElementById('tf_cat').innerHTML='<option value="">Sin categoría</option>'+cats.map(function(c){return '<option value="'+c+'"'+(c===r.categoria?' selected':'')+'>'+c+'</option>';}).join('');
   var prods=await GET('/productos?select=id,nombre,ref_propia&order=nombre.asc');
