@@ -1064,7 +1064,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 
 <div class="page" id="page-config">
   <div class="panel">
-    <div class="ph"><span class="pt">⚙️ Configuración</span><button class="btn bp" id="btnSaveConfig">💾 Guardar todo</button></div>
+    <div class="ph"><span class="pt">⚙️ Configuración</span><div style="display:flex;gap:8px"><button class="btn bs2" onclick="cerrarSesionConfig()" style="font-size:12px">🔒 Cerrar</button><button class="btn bp" id="btnSaveConfig">💾 Guardar todo</button></div></div>
 
     <!-- ACORDEÓN -->
     <div id="cfg-accordion" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
@@ -1082,6 +1082,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
             <div class="fi"><label>Email</label><input type="email" id="cfg_empresa_email" placeholder="email@empresa.com"></div>
             <div class="fi"><label>Teléfono</label><input type="text" id="cfg_empresa_tel" placeholder="+34 000 000 000"></div>
             <div class="fi full"><label>Texto pie de factura</label><input type="text" id="cfg_pie_factura" placeholder="Gracias por su compra..."></div>
+            <div class="fi"><label>Contraseña admin</label><input type="password" id="cfg_password" placeholder="Nueva contraseña..."></div>
           </div>
         </div>
       </div>
@@ -1515,6 +1516,7 @@ function navTo(page){
   else if(page==='config')renderConfig();
   else if(page==='rectificativas')renderRectificativas();
   else if(page==='stock-tienda')renderStockTienda();
+  else if(page==='config'){if(!checkCfgPass())return;renderConfig();}
 }
 
 // ══════ CAJA DIARIA ══════
@@ -3291,6 +3293,27 @@ function renderCfgPagos(pagos){
 
 
 
+
+function checkCfgPass(){
+  var saved=localStorage.getItem('decotara_cfg_auth');
+  if(saved===btoa('Decotara2026'))return true;
+  var pwd=prompt('🔒 Introduce la contraseña de administrador:');
+  if(!pwd)return false;
+  var cfgPwd=getCfg().cfg_password||'Decotara2026';
+  if(pwd===cfgPwd){
+    localStorage.setItem('decotara_cfg_auth',btoa(cfgPwd));
+    return true;
+  }
+  toast('❌ Contraseña incorrecta');
+  return false;
+}
+
+function cerrarSesionConfig(){
+  localStorage.removeItem('decotara_cfg_auth');
+  toast('Sesión cerrada');
+  showPage('dashboard');
+}
+
 function toggleCfgSec(id){
   var body=document.getElementById(id);
   var hdr=body.previousElementSibling;
@@ -3493,6 +3516,8 @@ function saveConfig(){
   cfg.empresa_email=document.getElementById('cfg_empresa_email').value.trim()||cfg.empresa_email;
   cfg.empresa_tel=document.getElementById('cfg_empresa_tel').value.trim();
   cfg.pie_factura=document.getElementById('cfg_pie_factura').value.trim();
+  var newPwd=document.getElementById('cfg_password').value.trim();
+  if(newPwd){cfg.cfg_password=newPwd;localStorage.setItem('decotara_cfg_auth',btoa(newPwd));}
   cfg.iva=parseFloat(document.getElementById('cfg_iva').value)||21;
   cfg.fact_inicio=parseInt(document.getElementById('cfg_fact_inicio').value)||1;
   cfg.stock_min=parseInt(document.getElementById('cfg_stock_min').value)||3;
