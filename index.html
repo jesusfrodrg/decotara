@@ -4281,13 +4281,27 @@ async function anadirAStockTienda(prodId){
     var stock=parseInt(prompt('¿Cuántas unidades pones en exposición? (se descontarán del almacén)','1'));
     if(!stock||stock<=0)return;
     if(stock>(p.stock||0)){toast('No hay suficiente stock en almacén ('+p.stock+' ud.)');return;}
+    // Generar referencia nueva para tienda basada en el proveedor
+    var refTienda=null;
+    if(p.proveedor){
+      var provs=getCfg().proveedores||[];
+      var provObj=provs.find(function(pv){return pv.label===p.proveedor;});
+      var pfxT=provObj?provObj.prefix:null;
+      if(pfxT){
+        var KEY='decotara_ref_counter';
+        var counters={};try{counters=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
+        counters[pfxT]=(counters[pfxT]||0)+1;
+        localStorage.setItem(KEY,JSON.stringify(counters));
+        refTienda=pfxT+'-'+String(counters[pfxT]).padStart(4,'0');
+      }
+    }
     var payload={
       id:'TI-'+Date.now(),
       nombre:p.nombre,
       categoria:p.categoria||null,
       pvp:p.pvp||null,
       stock:stock,
-      ref_propia:p.ref_propia||null,
+      ref_propia:refTienda||null,
       producto_id:prodId,
       proveedor:p.proveedor||null
     };
