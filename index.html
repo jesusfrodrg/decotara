@@ -3350,7 +3350,7 @@ function fillEntregaSelects(){
     if(!el)return;
     var cur=el.value;
     el.innerHTML=entregas.map(function(e){
-      var ico=e.toLowerCase().includes('recog')?'🚶':e.toLowerCase().includes('transp')?'🚚':'📦';
+      var eLow=e.toLowerCase();var ico=eLow.indexOf('recog')>=0?'🚶':eLow.indexOf('transp')>=0?'🚚':'📦';
       return '<option value="'+escHtml(e)+'"'+(e===cur?' selected':'')+'>'+ico+' '+escHtml(e)+'</option>';
     }).join('');
   });
