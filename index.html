@@ -2492,11 +2492,14 @@ async function renderVMCatalog(){
   }).join('');
 }
 
+var _vmBusy=false;
 function _vmCatalogClick(e){
+  if(_vmBusy)return;
   var card=e.target.closest('.vmc-clickable');
   if(!card)return;
   var d=card.dataset;
-  toggleVMProduct(d.pid,d.pnom,d.pcat,+d.ppvp);
+  _vmBusy=true;
+  toggleVMProduct(d.pid,d.pnom,d.pcat,+d.ppvp).finally(function(){_vmBusy=false;});
 }
 
 function escHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
