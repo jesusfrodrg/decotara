@@ -2015,7 +2015,12 @@ async function editarProductoTienda(id){
   document.getElementById('tf_stock').value=r.stock||0;
   document.getElementById('tf_pvp').value=r.pvp||'';
   document.getElementById('tf_ref').value=r.ref_propia||'';
-  document.getElementById('tf_prov').value=r.proveedor||'';
+  // Si no tiene proveedor propio, intentar leerlo del almacén vinculado
+  var provVal=r.proveedor||'';
+  if(!provVal&&r.producto_id){
+    try{var pa=await GET('/productos?select=proveedor&id=eq.'+r.producto_id);if(pa.length)provVal=pa[0].proveedor||'';}catch(e){}
+  }
+  document.getElementById('tf_prov').value=provVal;
   var cats=getCfg().categorias||[];
   document.getElementById('tf_cat').innerHTML='<option value="">Sin categoría</option>'+cats.map(function(c){return '<option value="'+c+'"'+(c===r.categoria?' selected':'')+'>'+c+'</option>';}).join('');
   var prods=await GET('/productos?select=id,nombre,ref_propia&order=nombre.asc');
