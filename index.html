@@ -2530,7 +2530,10 @@ function toggleVMProduct(id,nom,cat,pvp){
     var _vmprod=vmProductos.find(function(x){return x.id===id;})||{};
     vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:_vmprod.proveedor||''});
   // Generar referencia del contador para esta venta
-  if(_vmprod.proveedor)vmSetProveedor(vmLineas.length-1,_vmprod.proveedor);
+  if(_vmprod.proveedor){
+    await vmSetProveedor(vmLineas.length-1,_vmprod.proveedor);
+    return;
+  }
   }
   renderVMLineas();
   renderVMCatalog();
@@ -2592,17 +2595,17 @@ function vmQtyChange(i,val){
   renderVMLineas();
 }
 
-function vmSetProveedor(i, prov){
+async function vmSetProveedor(i, prov){
   vmLineas[i].proveedor=prov;
   if(!prov){vmLineas[i].ref_propia='';renderVMLineas();return;}
   var pfx=(_PROV_PREFIX&&_PROV_PREFIX[prov])||'';
   if(!pfx){renderVMLineas();return;}
-  // Buscar máximo real en Supabase (almacén + tienda + ventas)
-  Promise.all([
-    GET('/productos?select=ref_propia&proveedor=eq.'+encodeURIComponent(prov)+'&ref_propia=not.is.null&order=ref_propia.desc&limit=1').catch(function(){return [];}),
-    GET('/stock_tienda?select=ref_propia&ref_propia=like.'+encodeURIComponent(pfx)+'*&order=ref_propia.desc&limit=1').catch(function(){return [];}),
-    GET('/ventas?select=ref_propia&ref_propia=like.'+encodeURIComponent(pfx)+'*&order=ref_propia.desc&limit=1').catch(function(){return [];})
-  ]).then(function(results){
+  try{
+    var results=await Promise.all([
+      GET('/productos?select=ref_propia&proveedor=eq.'+encodeURIComponent(prov)+'&ref_propia=not.is.null&order=ref_propia.desc&limit=1').catch(function(){return [];}),
+      GET('/stock_tienda?select=ref_propia&ref_propia=like.'+encodeURIComponent(pfx)+'*&order=ref_propia.desc&limit=1').catch(function(){return [];}),
+      GET('/ventas?select=ref_propia&ref_propia=like.'+encodeURIComponent(pfx)+'*&order=ref_propia.desc&limit=1').catch(function(){return [];})
+    ]);
     var lastNum=0;
     results.forEach(function(rows){
       if(rows.length&&rows[0].ref_propia){
@@ -2611,8 +2614,8 @@ function vmSetProveedor(i, prov){
       }
     });
     vmLineas[i].ref_propia=pfx+'-'+String(lastNum+1).padStart(3,'0');
-    renderVMLineas();
-  });
+  }catch(e){console.warn('Error generando ref:',e);}
+  renderVMLineas();
 }
 
 function vmPvpChange(i,val){
