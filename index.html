@@ -1846,7 +1846,7 @@ async function renderStockTienda(){
 async function autoGenRefTienda(){
   var prov=document.getElementById('tf_prov').value;
   var refInput=document.getElementById('tf_ref');
-  if(!prov||refInput.value)return;
+  if(!prov){refInput.value='';return;}
   var pfx=_PROV_PREFIX[prov];
   if(!pfx)return;
   try{
