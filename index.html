@@ -1851,7 +1851,7 @@ async function abrirFormTienda(){try{
   var cats=getCfg().categorias||[];
   document.getElementById('tf_cat').innerHTML='<option value="">Sin categoría</option>'+cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
   // Llenar productos almacén para vincular
-  var prods=await GET('/stock?select=id,nombre,ref_propia&order=nombre.asc');
+  var prods=await GET('/productos?select=id,nombre,ref_propia&order=nombre.asc');
   document.getElementById('tf_prod_id').innerHTML='<option value="">— Sin vincular —</option>'+prods.map(function(p){return '<option value="'+p.id+'">'+escHtml(p.nombre)+(p.ref_propia?' ('+p.ref_propia+')':'')+'</option>';}).join('');
   document.getElementById('tienda_form_panel').style.display='block';
   document.getElementById('tienda_form_panel').scrollIntoView({behavior:'smooth'});
@@ -1870,7 +1870,7 @@ async function editarProductoTienda(id){
   document.getElementById('tf_ref').value=r.ref_propia||'';
   var cats=getCfg().categorias||[];
   document.getElementById('tf_cat').innerHTML='<option value="">Sin categoría</option>'+cats.map(function(c){return '<option value="'+c+'"'+(c===r.categoria?' selected':'')+'>'+c+'</option>';}).join('');
-  var prods=await GET('/stock?select=id,nombre,ref_propia&order=nombre.asc');
+  var prods=await GET('/productos?select=id,nombre,ref_propia&order=nombre.asc');
   document.getElementById('tf_prod_id').innerHTML='<option value="">— Sin vincular —</option>'+prods.map(function(p){return '<option value="'+p.id+'"'+(p.id===r.producto_id?' selected':'')+'>'+escHtml(p.nombre)+(p.ref_propia?' ('+p.ref_propia+')':'')+'</option>';}).join('');
   document.getElementById('tienda_form_panel').style.display='block';
   document.getElementById('tienda_form_panel').scrollIntoView({behavior:'smooth'});
