@@ -161,6 +161,12 @@ textarea{resize:vertical;min-height:55px}
 input[readonly]{background:var(--xlgray);color:var(--gray)}
 
 /* MODALS */
+.cfg-section{border:1.5px solid var(--xlgray);border-radius:12px;overflow:hidden}
+.cfg-sec-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;font-weight:700;font-size:14px;background:var(--white);transition:background .15s}
+.cfg-sec-hdr:active{background:var(--xlgray)}
+.cfg-sec-body{padding:0 16px;border-top:1px solid var(--xlgray)}
+.cfg-arrow{font-size:18px;color:var(--gray);transition:transform .2s;display:inline-block}
+.cfg-sec-hdr.open .cfg-arrow{transform:rotate(90deg)}
 .mo{display:none;position:fixed;inset:0;background:rgba(17,19,24,.55);z-index:200;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px);padding-bottom:env(safe-area-inset-bottom)}
 .mo.open{display:flex}
 .modal{background:var(--white);border-radius:20px 20px 0 0;padding:8px 16px 24px;width:100%;max-width:700px;max-height:93dvh;overflow-y:auto;animation:mUp .22s cubic-bezier(.32,.72,0,1)}
@@ -1060,85 +1066,140 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   <div class="panel">
     <div class="ph"><span class="pt">⚙️ Configuración</span><button class="btn bp" id="btnSaveConfig">💾 Guardar todo</button></div>
 
-    <!-- EMPRESA -->
-    <div class="sec-hd" style="margin-top:4px"><div class="sec-hd-line"></div><div class="sec-hd-title">🏢 Datos de la Empresa</div></div>
-    <div class="fg">
-      <div class="fi full"><label>Nombre de la empresa</label><input type="text" id="cfg_empresa_nombre" placeholder="DECOTARA OUTLET"></div>
-      <div class="fi full"><label>Dirección</label><input type="text" id="cfg_empresa_dir" placeholder="Polígono Río Huerva..."></div>
-      <div class="fi"><label>Email</label><input type="email" id="cfg_empresa_email" placeholder="email@empresa.com"></div>
-      <div class="fi"><label>Teléfono</label><input type="text" id="cfg_empresa_tel" placeholder="+34 000 000 000"></div>
-      <div class="fi full"><label>Texto pie de factura</label><input type="text" id="cfg_pie_factura" placeholder="Gracias por su compra..."></div>
-    </div>
+    <!-- ACORDEÓN -->
+    <div id="cfg-accordion" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
 
-    <!-- APARIENCIA -->
-    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🎨 Apariencia</div></div>
-    <div class="fg">
-      <div class="fi"><label>Color principal</label>
-        <div style="display:flex;align-items:center;gap:10px">
-          <input type="color" id="cfg_color" value="#C8372D" style="width:50px;height:40px;border:none;border-radius:8px;cursor:pointer;padding:2px">
-          <span id="cfg_color_val" style="font-size:13px;font-weight:700;color:var(--gray)">#C8372D</span>
+      <!-- EMPRESA -->
+      <div class="cfg-section">
+        <div class="cfg-sec-hdr" onclick="toggleCfgSec('cfg-empresa')">
+          <span>🏢 Datos de la Empresa</span><span class="cfg-arrow">›</span>
+        </div>
+        <div class="cfg-sec-body" id="cfg-empresa" style="display:none">
+          <div class="fg" style="padding:14px 0 4px">
+            <div class="fi full"><label>Nombre de la empresa</label><input type="text" id="cfg_empresa_nombre" placeholder="DECOTARA OUTLET"></div>
+            <div class="fi full"><label>Dirección</label><input type="text" id="cfg_empresa_dir" placeholder="Polígono Río Huerva..."></div>
+            <div class="fi"><label>CIF</label><input type="text" id="cfg_empresa_cif" placeholder="B00000000"></div>
+            <div class="fi"><label>Email</label><input type="email" id="cfg_empresa_email" placeholder="email@empresa.com"></div>
+            <div class="fi"><label>Teléfono</label><input type="text" id="cfg_empresa_tel" placeholder="+34 000 000 000"></div>
+            <div class="fi full"><label>Texto pie de factura</label><input type="text" id="cfg_pie_factura" placeholder="Gracias por su compra..."></div>
+          </div>
         </div>
       </div>
-      <div class="fi"><label>Logo de la empresa</label>
-        <div style="display:flex;align-items:center;gap:12px">
-          <img id="cfg_logo_preview" src="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--red);display:none">
-          <label style="background:var(--xlgray);border:1.5px dashed var(--lgray);border-radius:8px;padding:10px 16px;cursor:pointer;font-size:13px;color:var(--gray);font-weight:600">
-            📁 Cambiar logo
-            <input type="file" id="cfg_logo_file" accept="image/*" style="display:none">
-          </label>
+
+      <!-- APARIENCIA -->
+      <div class="cfg-section">
+        <div class="cfg-sec-hdr" onclick="toggleCfgSec('cfg-apariencia')">
+          <span>🎨 Apariencia</span><span class="cfg-arrow">›</span>
+        </div>
+        <div class="cfg-sec-body" id="cfg-apariencia" style="display:none">
+          <div class="fg" style="padding:14px 0 4px">
+            <div class="fi"><label>Color principal</label>
+              <div style="display:flex;align-items:center;gap:10px">
+                <input type="color" id="cfg_color" value="#C8372D" style="width:50px;height:40px;border:none;border-radius:8px;cursor:pointer;padding:2px">
+                <span id="cfg_color_val" style="font-size:13px;font-weight:700;color:var(--gray)">#C8372D</span>
+              </div>
+            </div>
+            <div class="fi"><label>Logo de la empresa</label>
+              <div style="display:flex;align-items:center;gap:12px">
+                <img id="cfg_logo_preview" src="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--red);display:none">
+                <label style="background:var(--xlgray);border:1.5px dashed var(--lgray);border-radius:8px;padding:10px 16px;cursor:pointer;font-size:13px;color:var(--gray);font-weight:600">
+                  📁 Cambiar logo
+                  <input type="file" id="cfg_logo_file" accept="image/*" style="display:none">
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- FORMAS DE PAGO -->
-    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">💳 Formas de Pago</div></div>
-    <div style="margin-bottom:10px" id="cfg_pagos_list"></div>
-    <div style="display:flex;gap:8px;margin-bottom:20px">
-      <input type="text" id="cfg_pago_new" placeholder="Nueva forma de pago..." style="flex:1">
-      <input type="text" id="cfg_pago_icon" placeholder="Icono (ej: 💰)" style="width:80px">
-      <button class="btn bp" onclick="cfgAddPago()" style="white-space:nowrap">+ Añadir</button>
-    </div>
+      <!-- FACTURACIÓN -->
+      <div class="cfg-section">
+        <div class="cfg-sec-hdr" onclick="toggleCfgSec('cfg-facturacion')">
+          <span>🧾 Facturación</span><span class="cfg-arrow">›</span>
+        </div>
+        <div class="cfg-sec-body" id="cfg-facturacion" style="display:none">
+          <div class="fg" style="padding:14px 0 4px">
+            <div class="fi"><label>IVA %</label><input type="number" id="cfg_iva" min="0" max="100" step="0.1" placeholder="21"></div>
+            <div class="fi"><label>Nº factura inicial</label><input type="number" id="cfg_fact_inicio" min="1" placeholder="1"></div>
+            <div class="fi"><label>Stock mínimo alerta</label><input type="number" id="cfg_stock_min" min="0" placeholder="3"></div>
+          </div>
+        </div>
+      </div>
 
-    <!-- VENDEDORES -->
-    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">👤 Vendedores</div></div>
-    <div style="margin-bottom:10px" id="cfg_vends_list"></div>
-    <div style="display:flex;gap:8px;margin-bottom:20px">
-      <input type="text" id="cfg_vend_new" placeholder="Nombre del vendedor..." style="flex:1">
-      <button class="btn bp" onclick="cfgAddVend()" style="white-space:nowrap">+ Añadir</button>
-    </div>
+      <!-- VENDEDORES -->
+      <div class="cfg-section">
+        <div class="cfg-sec-hdr" onclick="toggleCfgSec('cfg-vendedores')">
+          <span>👤 Vendedores</span><span class="cfg-arrow">›</span>
+        </div>
+        <div class="cfg-sec-body" id="cfg-vendedores" style="display:none;padding:14px 0 4px">
+          <div style="margin-bottom:10px" id="cfg_vends_list"></div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="cfg_vend_new" placeholder="Nombre del vendedor..." style="flex:1">
+            <button class="btn bp" onclick="cfgAddVend()" style="white-space:nowrap">+ Añadir</button>
+          </div>
+        </div>
+      </div>
 
-    <!-- PROVEEDORES -->
-    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🏭 Proveedores</div></div>
-    <div style="margin-bottom:10px" id="cfg_provs_list"></div>
-    <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:20px;align-items:end">
-      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#666">Nombre</label><input type="text" id="cfg_prov_new" placeholder="ej: Merkamueble" style="margin-top:4px"></div>
-      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#666">Prefijo ref.</label><input type="text" id="cfg_prov_prefix" placeholder="ej: DMK" maxlength="6" style="margin-top:4px;width:80px"></div>
-      <button class="btn bp" onclick="cfgAddProv()" style="white-space:nowrap;height:38px">+ Añadir</button>
-    </div>
-    <!-- TIPOS ENTREGA -->
-    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🚚 Tipos de Entrega</div></div>
-    <div style="margin-bottom:10px" id="cfg_entregas_list"></div>
-    <div style="display:flex;gap:8px;margin-bottom:20px">
-      <input type="text" id="cfg_entrega_new" placeholder="ej: Entrega a domicilio..." style="flex:1">
-      <button class="btn bp" onclick="cfgAddEntrega()" style="white-space:nowrap">+ Añadir</button>
-    </div>
+      <!-- PROVEEDORES -->
+      <div class="cfg-section">
+        <div class="cfg-sec-hdr" onclick="toggleCfgSec('cfg-proveedores')">
+          <span>🏭 Proveedores</span><span class="cfg-arrow">›</span>
+        </div>
+        <div class="cfg-sec-body" id="cfg-proveedores" style="display:none;padding:14px 0 4px">
+          <div style="margin-bottom:10px" id="cfg_provs_list"></div>
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end">
+            <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#666">Nombre</label><input type="text" id="cfg_prov_new" placeholder="ej: Merkamueble" style="margin-top:4px"></div>
+            <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#666">Prefijo</label><input type="text" id="cfg_prov_prefix" placeholder="DMK" maxlength="6" style="margin-top:4px;width:70px"></div>
+            <button class="btn bp" onclick="cfgAddProv()" style="white-space:nowrap;height:38px">+ Añadir</button>
+          </div>
+        </div>
+      </div>
 
-    <!-- AJUSTES FACTURACIÓN -->
-    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🧾 Facturación</div></div>
-    <div class="fg" style="margin-bottom:20px">
-      <div class="fi"><label>IVA %</label><input type="number" id="cfg_iva" min="0" max="100" step="0.1" placeholder="21"></div>
-      <div class="fi"><label>Nº factura inicial</label><input type="number" id="cfg_fact_inicio" min="1" placeholder="1"></div>
-      <div class="fi"><label>Stock mínimo alerta</label><input type="number" id="cfg_stock_min" min="0" placeholder="3"></div>
-    </div>
+      <!-- FORMAS DE PAGO -->
+      <div class="cfg-section">
+        <div class="cfg-sec-hdr" onclick="toggleCfgSec('cfg-pagos')">
+          <span>💳 Formas de Pago</span><span class="cfg-arrow">›</span>
+        </div>
+        <div class="cfg-sec-body" id="cfg-pagos" style="display:none;padding:14px 0 4px">
+          <div style="margin-bottom:10px" id="cfg_pagos_list"></div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="cfg_pago_new" placeholder="Nueva forma de pago..." style="flex:1">
+            <input type="text" id="cfg_pago_icon" placeholder="💰" style="width:60px">
+            <button class="btn bp" onclick="cfgAddPago()" style="white-space:nowrap">+ Añadir</button>
+          </div>
+        </div>
+      </div>
 
-    <!-- CATEGORÍAS -->
-    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">🏷️ Categorías de Productos</div></div>
-    <div style="margin-bottom:10px" id="cfg_cats_list"></div>
-    <div style="display:flex;gap:8px;margin-bottom:20px">
-      <input type="text" id="cfg_cat_new" placeholder="Nueva categoría..." style="flex:1">
-      <button class="btn bp" onclick="cfgAddCat()" style="white-space:nowrap">+ Añadir</button>
-    </div>
+      <!-- TIPOS ENTREGA -->
+      <div class="cfg-section">
+        <div class="cfg-sec-hdr" onclick="toggleCfgSec('cfg-entregas')">
+          <span>🚚 Tipos de Entrega</span><span class="cfg-arrow">›</span>
+        </div>
+        <div class="cfg-sec-body" id="cfg-entregas" style="display:none;padding:14px 0 4px">
+          <div style="margin-bottom:10px" id="cfg_entregas_list"></div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="cfg_entrega_new" placeholder="ej: Entrega a domicilio..." style="flex:1">
+            <button class="btn bp" onclick="cfgAddEntrega()" style="white-space:nowrap">+ Añadir</button>
+          </div>
+        </div>
+      </div>
 
+      <!-- CATEGORÍAS -->
+      <div class="cfg-section">
+        <div class="cfg-sec-hdr" onclick="toggleCfgSec('cfg-categorias')">
+          <span>🏷️ Categorías de Productos</span><span class="cfg-arrow">›</span>
+        </div>
+        <div class="cfg-sec-body" id="cfg-categorias" style="display:none;padding:14px 0 4px">
+          <div style="margin-bottom:10px" id="cfg_cats_list"></div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="cfg_cat_new" placeholder="Nueva categoría..." style="flex:1">
+            <button class="btn bp" onclick="cfgAddCat()" style="white-space:nowrap">+ Añadir</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- fin acordeón -->
+    <div style="height:20px"></div>
   </div>
 </div>
 
@@ -3216,6 +3277,15 @@ function renderCfgPagos(pagos){
 }
 
 
+
+
+function toggleCfgSec(id){
+  var body=document.getElementById(id);
+  var hdr=body.previousElementSibling;
+  var isOpen=body.style.display!=='none';
+  body.style.display=isOpen?'none':'block';
+  hdr.classList.toggle('open',!isOpen);
+}
 
 function renderCfgVends(){
   var el=document.getElementById('cfg_vends_list');
