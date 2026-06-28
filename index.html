@@ -4829,7 +4829,7 @@ async function saveV(){
         var pId=l.esOtro?null:(_esTienda?l._productoId:l.id);
         var nid=await nextVentaId();
         if(li===0)primeraId=nid;
-        await POST('/ventas',{id:nid,cliente_id:cId,fecha:fecha,producto_id:pId,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:numAlbaran,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null});
+        await POST('/ventas',{id:nid,cliente_id:cId,fecha:fecha,producto_id:pId,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:numAlbaran,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null,stock_origen:_esTienda?'tienda':'almacen',tienda_id:_tiendaId||null});
         if(_esTienda){
           // Descontar de stock tienda
           var tiendaRows=await GET('/stock_tienda?select=id,stock&id=eq.'+l._tiendaId);
@@ -5250,15 +5250,28 @@ document.addEventListener('DOMContentLoaded',function(){
             var vRows=window._ventasCache||[];
             var vDel=vRows.find(function(x){return x.id===id;});
             if(!vDel||(vDel&&!vDel.producto_id)){
-              var vv=await GET('/ventas?select=producto_id,cantidad,proveedor&id=eq.'+id);
+              var vv=await GET('/ventas?select=producto_id,cantidad,proveedor,stock_origen,tienda_id&id=eq.'+id);
               if(vv.length)vDel=vv[0];
             }
             // Preguntar si quiere restablecer stock
             if(vDel&&vDel.producto_id&&vDel.cantidad){
               var restablecer=confirm('¿Desea restablecer el stock de este artículo?');
               if(restablecer){
-                // Devolver stock al almacén directamente
-                await devolverStock(vDel.producto_id,vDel.cantidad);
+                var origen=vDel.stock_origen||'almacen';
+                if(origen==='tienda'&&vDel.tienda_id){
+                  // Devolver a tienda
+                  var tRows=await GET('/stock_tienda?select=id,stock&id=eq.'+vDel.tienda_id);
+                  if(tRows.length){
+                    var nsT=tRows[0].stock+Number(vDel.cantidad||1);
+                    await PATCH('/stock_tienda?id=eq.'+vDel.tienda_id,{stock:nsT});
+                    toast('✅ Stock devuelto a tienda: '+nsT+' ud.');
+                  } else {
+                    await devolverStock(vDel.producto_id,vDel.cantidad);
+                  }
+                } else {
+                  // Devolver a almacén
+                  await devolverStock(vDel.producto_id,vDel.cantidad);
+                }
               }
             }
             await DEL('/ventas?id=eq.'+id);
