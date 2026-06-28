@@ -3295,13 +3295,13 @@ function renderCfgPagos(pagos){
 
 
 function checkCfgPass(){
-  var saved=localStorage.getItem('decotara_cfg_auth');
-  if(saved===btoa('Decotara2026'))return true;
-  var pwd=prompt('🔒 Introduce la contraseña de administrador:');
-  if(!pwd)return false;
   var cfgPwd=getCfg().cfg_password||'Decotara2026';
+  var saved=localStorage.getItem('decotara_cfg_auth');
+  if(saved==='OK_'+cfgPwd)return true;
+  var pwd=prompt('🔒 Contraseña de administrador:');
+  if(!pwd)return false;
   if(pwd===cfgPwd){
-    localStorage.setItem('decotara_cfg_auth',btoa(cfgPwd));
+    localStorage.setItem('decotara_cfg_auth','OK_'+cfgPwd);
     return true;
   }
   toast('❌ Contraseña incorrecta');
@@ -3310,7 +3310,7 @@ function checkCfgPass(){
 
 function cerrarSesionConfig(){
   localStorage.removeItem('decotara_cfg_auth');
-  toast('Sesión cerrada');
+  toast('Sesión de administrador cerrada');
   navTo('dashboard');
 }
 
@@ -3517,7 +3517,7 @@ function saveConfig(){
   cfg.empresa_tel=document.getElementById('cfg_empresa_tel').value.trim();
   cfg.pie_factura=document.getElementById('cfg_pie_factura').value.trim();
   var newPwd=document.getElementById('cfg_password').value.trim();
-  if(newPwd){cfg.cfg_password=newPwd;localStorage.setItem('decotara_cfg_auth',btoa(newPwd));}
+  if(newPwd){cfg.cfg_password=newPwd;localStorage.setItem('decotara_cfg_auth','OK_'+newPwd);}
   cfg.iva=parseFloat(document.getElementById('cfg_iva').value)||21;
   cfg.fact_inicio=parseInt(document.getElementById('cfg_fact_inicio').value)||1;
   cfg.stock_min=parseInt(document.getElementById('cfg_stock_min').value)||3;
