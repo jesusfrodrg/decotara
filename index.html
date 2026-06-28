@@ -4854,7 +4854,12 @@ async function saveV(){
       var ventasPdf=vmLineas.map(function(l){return {prod_nombre:l.esOtro?l.nombre:(l.nombre||''),prod_cat:l.esOtro?'':l.cat,pvp:l.pvp,cantidad:l.qty,total:+(l.pvp*l.qty*(1-dto/100)).toFixed(2),ref_propia:l.ref_propia||'',proveedor:l.proveedor||''};});
       generarAlbaran(ventasPdf,cliPdf,fecha,dto,vend,pago,entrega,fechaE||'',notas,numAlbaran);
     }
-    closeM('vm');renderVentas();
+    closeM('vm');
+    // Actualizar stock en pantalla inmediatamente
+    _productosCache=null;_productosCacheTs=0;
+    await loadStockCache();
+    if(curPage==='catalogo')renderCatalogo();else if(curPage==='ventas')renderVentas();
+    else renderVentas();
   }catch(e){toast('Error: '+e.message);}
   btn.disabled=false;btn.textContent='Guardar';
 }
