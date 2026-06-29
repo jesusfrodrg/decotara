@@ -638,6 +638,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
         <div class="sw"><span class="si">🔍</span><input type="text" placeholder="Buscar por cliente, producto, DNI..." id="vsearch"></div>
         <select id="vfest" style="width:112px"><option value="">Todos</option><option>Completada</option><option>Pendiente</option><option>Cancelada</option></select>
       </div>
+      <div id="ventas-pag"></div>
       <div class="pb"><table><thead><tr><th>N</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th><th>Compra</th><th></th></tr></thead><tbody id="vtbody"><tr><td colspan="7" class="ldr"><span class="spin"></span></td></tr></tbody></table></div>
     </div>
   </div>
@@ -1355,7 +1356,7 @@ var DEL=function(p){return api(p,{method:'DELETE'});};
 // ── CACHÉ GLOBAL ──────────────────────────────
 var _cliCache=null,_cliCacheTs=0;
 var _prodCache=null,_prodCacheTs=0;
-var CACHE_TTL=60000; // 60 segundos
+var CACHE_TTL=5*60*1000; // 5 minutos
 
 async function getCachedClientes(force){
   if(!force&&_cliCache&&(Date.now()-_cliCacheTs)<CACHE_TTL)return _cliCache;
@@ -2961,7 +2962,7 @@ async function renderDash(){
     var hoyD=new Date(),primerDia=new Date(hoyD.getFullYear(),hoyD.getMonth(),1).toISOString().split('T')[0];
     var [allMes,ultimas]=await Promise.all([
       GET('/ventas?select=id,total,estado,albaran_num,created_at&estado=eq.Completada&fecha=gte.'+primerDia+'&order=created_at.desc'),
-      GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos),productos(nombre,categoria)&order=created_at.desc&limit=80')
+      GET('/ventas?select=*,albaran_num,clientes(nombre,apellidos),productos(nombre,categoria)&order=created_at.desc&limit=50')
     ]);
     var all=ultimas;
     // comp = ventas completadas de ultimas (tienen datos de productos para gráficos)
@@ -3012,19 +3013,24 @@ async function renderDash(){
   }
 }
 
-async function renderVentas(){
+var _ventasPagina=1;
+var _ventasPorPagina=30;
+async function renderVentas(pagina){
+  if(pagina)_ventasPagina=pagina;
   var q=(document.getElementById('vsearch').value||'').toLowerCase();
   var est=document.getElementById('vfest').value;
   try{
-    var dniField=window._dniOk?',dni':''; var url='/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,telefono,email'+dniField+'),productos(nombre,categoria,ref_propia)&order=created_at.desc';
+    var dniField=window._dniOk?',dni':'';
+    var offset=(_ventasPagina-1)*_ventasPorPagina;
+    var url='/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,telefono,email'+dniField+'),productos(nombre,categoria,ref_propia)&order=created_at.desc';
     if(est)url+='&estado=eq.'+encodeURIComponent(est);
-    // Si hay búsqueda de texto, aplicar filtros server-side
     if(q&&q.length>=2){
-      // Buscar por nombre cliente o id numérico
       if(/^\d+$/.test(q)){url+='&id=eq.'+q;}
+      // Búsqueda: traer más para filtrar client-side
+      url+='&limit=200';
+    } else {
+      url+='&limit='+_ventasPorPagina+'&offset='+offset;
     }
-    // Limitar a 150 registros más recientes (suficiente para ver en pantalla)
-    if(!q)url+='&limit=150';
     var rows=await GET(url);
     if(q)rows=rows.filter(function(v){
       var cliDni=(window._dniOk&&v.clientes&&v.clientes.dni)||'';
@@ -3096,6 +3102,13 @@ async function renderVentas(){
     }).join(''):EM(8,'🧾','Sin ventas');
     window._ventasCache=rows;
     window._comprasCache=compras;
+    // Controles de paginación
+    var pagDiv=document.getElementById('ventas-pag');
+    if(pagDiv){
+      if(!q&&rows.length>0){
+        pagDiv.innerHTML='<div style="display:flex;align-items:center;gap:8px;justify-content:center;padding:10px 0">'          +(_ventasPagina>1?'<button class="btn bs2" onclick="renderVentas('+(_ventasPagina-1)+')" style="font-size:12px">← Anterior</button>':'')          +'<span style="font-size:12px;color:var(--gray)">Página '+_ventasPagina+' · '+rows.length+' registros</span>'          +(rows.length>=_ventasPorPagina?'<button class="btn bs2" onclick="renderVentas('+(_ventasPagina+1)+')" style="font-size:12px">Siguiente →</button>':'')          +'</div>';
+      } else { pagDiv.innerHTML=''; }
+    }
   }catch(e){toast('Error: '+e.message);}
 }
 
@@ -4743,7 +4756,7 @@ async function openVM(id){
   vmLineas=[];
   window._vmTiendaMap={};
   document.getElementById('vm-t').textContent=id?'Editar venta':'Nueva venta';
-  var [cl,pr,tienda]=await Promise.all([getCachedClientes(true),getCachedProductos(),GET('/stock_tienda?select=*&order=nombre.asc').catch(function(){return [];})]);
+  var [cl,pr,tienda]=await Promise.all([getCachedClientes(false),getCachedProductos(false),GET('/stock_tienda?select=*&order=nombre.asc').catch(function(){return [];})]);
   // Populate cliente selector
   document.getElementById('v_cli').innerHTML='<option value="">Seleccionar...</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.nombre+' '+c.apellidos+'</option>';}).join('');
   // Guardar mapa de tienda por producto_id para mostrar badge y preguntar origen
@@ -5131,11 +5144,11 @@ document.addEventListener('DOMContentLoaded',function(){
   // legacy v_prod listener removed
   ['v_cant','v_pvp'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('input',calcT);});
   ['p_pvp','p_cos'].forEach(function(id){document.getElementById(id).addEventListener('input',calcM);});
-  document.getElementById('vsearch').addEventListener('input',renderVentas);
+  document.getElementById('vsearch').addEventListener('input',function(){_ventasPagina=1;renderVentas();});
   document.addEventListener('input',function(e){if(e.target.id==='rect_buscar')renderRectificativas();if(e.target.id==='tienda_buscar')renderStockTienda();});
   document.addEventListener('click',function(e){if(e.target.id==='btnNPtienda')abrirFormTienda();});
   document.addEventListener('change',function(e){if(e.target.id==='rect_mes')renderRectificativas();});
-  document.getElementById('vfest').addEventListener('change',renderVentas);
+  document.getElementById('vfest').addEventListener('change',function(){_ventasPagina=1;renderVentas();});
   document.getElementById('catsearch').addEventListener('input',renderCatalogo);
   document.getElementById('catfilt').addEventListener('change',renderCatalogo);
   document.getElementById('clisearch').addEventListener('input',renderClientes);
