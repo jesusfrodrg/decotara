@@ -1484,7 +1484,8 @@ function filterCartProds(){
   if(!list)return;
   var prods=cartProdsCache.filter(function(p){
     var matchQ=!q||(p.nombre||'').toLowerCase().includes(q)||(p.id||'').toLowerCase().includes(q);
-    var matchC=!cat||(p.categoria||'')===(cat);
+    var _normCat2=function(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/s$/,'').trim();};
+    var matchC=!cat||_normCat2(p.categoria)===_normCat2(cat);
     return matchQ&&matchC;
   });
   if(!prods.length){
@@ -2586,7 +2587,8 @@ async function renderVMCatalog(){
   if(!vmProductos.length){grid.innerHTML='<div style="padding:20px;text-align:center;color:var(--gray);font-size:12px">Cargando...</div>';return;}
   var filtered=vmProductos.filter(function(p){
     var matchQ=!q||(p.nombre||'').toLowerCase().includes(q)||(p.id||'').toLowerCase().includes(q);
-    var matchC=!cat||p.categoria===cat;
+    var _normCat=function(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/s$/,'').trim();};
+    var matchC=!cat||_normCat(p.categoria)===_normCat(cat);
     return matchQ&&matchC;
   });
   if(!filtered.length){grid.innerHTML='<div style="padding:20px;text-align:center;color:var(--gray);font-size:12px">Sin resultados</div>';return;}
