@@ -1923,7 +1923,8 @@ async function confirmarCambioArticulo(){
   html+='<hr class="divider">';
   html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente</div>'      +'<div class="info-line"><b>Nombre:</b> '+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</div>'      +(cli.dni?'<div class="info-line"><b>DNI/NIF:</b> '+cli.dni+'</div>':'')      +(cli.telefono?'<div class="info-line"><b>Teléfono:</b> '+cli.telefono+'</div>':'')      +(cli.email?'<div class="info-line"><b>Email:</b> '+cli.email+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#b45309"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'      +'<div class="info-line"><b>Motivo:</b> Cambio de artículo</div>'    +'</div>'  +'</div>';
   html+='<table><thead><tr><th>Ref.</th><th>Artículo devuelto</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
-  html+='<div class="totals-wrap"><table class="totals-table">'    +'<tr class="tot-sub"><td>Subtotal</td><td>'+fe(-totalRect)+'</td></tr>'    +'<tr><td>TOTAL RECTIFICADO</td><td style="color:#b45309">'+fe(-totalRect)+'</td></tr>'  +'</table></div>';
+  var _ivaCR=getCfg().iva||21;
+  html+='<div class="totals-wrap"><table class="totals-table">'+ivaRows(totalRect,_ivaCR,true)+'<tr style="background:#b45309"><td style="background:#b45309;color:#fff">TOTAL RECTIFICADO</td><td style="background:#b45309;color:#fff;text-align:right;font-weight:800">'+fe(-totalRect)+'</td></tr></table></div>';
   html+='<div style="margin-top:14px;padding:12px;background:#f0fdf4;border:1.5px solid #059669;border-radius:8px;font-size:12px;color:#065f46">'    +'<b>📋 Paso 2:</b> Cierra este documento e introduce la nueva venta del artículo de sustitución. El cliente '+escHtml((cli.nombre||'')+' '+(cli.apellidos||''))+' ya estará seleccionado.'  +'</div>';
   html+='<div class="footer">'+cfg.empresa_nombre+(cfg.empresa_dir?' &nbsp;·&nbsp; '+cfg.empresa_dir:'')+' &nbsp;·&nbsp; '+cfg.empresa_email+'</div>';
   html+='<br><center class="no-print"><button onclick="window.print()" style="background:#b45309;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
@@ -2201,10 +2202,12 @@ function regenerarRectificativa(r){
   }).join('');
   html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
   if(esSubsanacion){
-    html+='<div class="totals-wrap"><table class="totals-table"><tr class="tot-sub"><td>Subtotal</td><td>'+fe(totalRect)+'</td></tr><tr style="background:#C8372D"><td style="background:#C8372D;color:#fff">TOTAL</td><td style="background:#C8372D;color:#fff;text-align:right;font-weight:800">'+fe(totalRect)+'</td></tr></table></div>';
+    var _ivaRS=getCfg().iva||21;
+    html+='<div class="totals-wrap"><table class="totals-table">'+ivaRows(totalRect,_ivaRS,false)+'<tr style="background:#C8372D"><td style="background:#C8372D;color:#fff">TOTAL</td><td style="background:#C8372D;color:#fff;text-align:right;font-weight:800">'+fe(totalRect)+'</td></tr></table></div>';
     html+='<div style="margin-top:18px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px">Esta factura rectificativa por subsanación <b>sustituye íntegramente</b> a la factura <b>'+escHtml(r.factura_origen||'—')+'</b>, quedando esta última sin efecto.</div>';
   } else {
-    html+='<div class="totals-wrap"><table class="totals-table"><tr class="tot-sub"><td>Subtotal</td><td>'+fe(-totalRect)+'</td></tr><tr style="background:#b45309"><td style="background:#b45309;color:#fff">TOTAL RECTIFICADO</td><td style="background:#b45309;color:#fff;text-align:right;font-weight:800">'+fe(-totalRect)+'</td></tr></table></div>';
+    var _ivaR=getCfg().iva||21;
+    html+='<div class="totals-wrap"><table class="totals-table">'+ivaRows(totalRect,_ivaR,true)+'<tr style="background:#b45309"><td style="background:#b45309;color:#fff">TOTAL RECTIFICADO</td><td style="background:#b45309;color:#fff;text-align:right;font-weight:800">'+fe(-totalRect)+'</td></tr></table></div>';
     html+='<div style="margin-top:18px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px">Esta factura rectificativa anula los importes indicados de la factura <b>'+escHtml(r.factura_origen||'—')+'</b> de fecha <b>'+fD(r.fecha)+'</b>.</div>';
   }
   html+='<div class="footer">'+cfg.empresa_nombre+(cfg.empresa_dir?' &nbsp;·&nbsp; '+cfg.empresa_dir:'')+' &nbsp;·&nbsp; '+cfg.empresa_email+'</div>';
@@ -2311,7 +2314,9 @@ async function confirmarSubsanacion(){
   html+='<div style="background:#fff5f5;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#C8372D">'    +'<b>✏️ Factura rectificativa por subsanación</b> — Sustituye y anula la factura <b>'+factOrig+'</b>. Motivo: '+escHtml(motivo)+  '</div>';
   html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#C8372D"></div>Datos del Cliente <span style="font-size:10px;background:#fee2e2;color:#C8372D;padding:1px 6px;border-radius:4px;margin-left:4px">CORREGIDO</span></div>'      +'<div class="info-line"><b>Nombre:</b> '+escHtml(nombre)+'</div>'      +(dni?'<div class="info-line"><b>DNI/NIF:</b> '+escHtml(dni)+'</div>':'')      +(email?'<div class="info-line"><b>Email:</b> '+escHtml(email)+'</div>':'')      +((dir||ciudad)?'<div class="info-line"><b>Dirección:</b> '+escHtml(dir)+(cp?' '+escHtml(cp):'')+(ciudad?', '+escHtml(ciudad):'')+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#C8372D"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'    +'</div>'  +'</div>';
   html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
-  html+='<div class="totals-wrap"><table class="totals-table">'    +'<tr class="tot-sub"><td>Subtotal</td><td>'+fe(totalVenta)+'</td></tr>'    +(dto?'<tr class="tot-sub"><td>Descuento ('+dto+'%)</td><td>-'+fe(totalVenta*dto/100)+'</td></tr>':'')    +'<tr style="background:#C8372D"><td style="background:#C8372D;color:#fff">TOTAL</td><td style="background:#C8372D;color:#fff;text-align:right;font-weight:800">'+fe(totalVenta*(1-dto/100))+'</td></tr>'  +'</table></div>';
+  var _ivaRateS=getCfg().iva||21;
+  var _totalFinalS=totalVenta*(1-dto/100);
+  html+='<div class="totals-wrap"><table class="totals-table">'    +(dto?'<tr class="tot-sub"><td>Descuento ('+dto+'%)</td><td>-'+fe(totalVenta*dto/100)+'</td></tr>':'')    +ivaRows(_totalFinalS,_ivaRateS,false)    +'<tr style="background:#C8372D"><td style="background:#C8372D;color:#fff">TOTAL</td><td style="background:#C8372D;color:#fff;text-align:right;font-weight:800">'+fe(_totalFinalS)+'</td></tr>'  +'</table></div>';
   html+='<div style="margin-top:18px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px">'    +'Esta factura rectificativa por subsanación <b>sustituye íntegramente</b> a la factura <b>'+factOrig+'</b>, quedando esta última sin efecto.'  +'</div>';
   html+='<div class="footer">'+cfg.empresa_nombre+(cfg.empresa_dir?' &nbsp;·&nbsp; '+cfg.empresa_dir:'')+' &nbsp;·&nbsp; '+cfg.empresa_email+'</div>';
   html+='<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
@@ -2326,6 +2331,16 @@ async function confirmarSubsanacion(){
   var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
 }
 
+function calcIVA(total, ivaRate){
+  var base=total/(1+ivaRate/100);
+  var cuota=total-base;
+  return {base:base, cuota:cuota};
+}
+function ivaRows(total, ivaRate, negativo){
+  var i=calcIVA(Math.abs(total), ivaRate);
+  var sign=negativo?-1:1;
+  return '<tr class="tot-sub"><td>Base imponible</td><td>'+fe(sign*i.base)+'</td></tr>'    +'<tr class="tot-sub"><td>IVA ('+ivaRate+'%)</td><td>'+fe(sign*i.cuota)+'</td></tr>';
+}
 async function confirmarRectificativa(){
   var motivo=(document.getElementById('rectMotivo').value||'').trim();
   if(!motivo){toast('Escribe el motivo');document.getElementById('rectMotivo').focus();return;}
@@ -2387,7 +2402,8 @@ async function confirmarRectificativa(){
   html+='<hr class="divider">';
   html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente</div>'      +'<div class="info-line"><b>Nombre:</b> '+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</div>'      +(cli.dni?'<div class="info-line"><b>DNI/NIF:</b> '+cli.dni+'</div>':'')      +(cli.telefono?'<div class="info-line"><b>Teléfono:</b> '+cli.telefono+'</div>':'')      +(cli.email?'<div class="info-line"><b>Email:</b> '+cli.email+'</div>':'')      +((cli.direccion||cli.ciudad)?'<div class="info-line"><b>Dirección:</b> '+(cli.direccion||'')+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#b45309"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'      +'<div class="info-line"><b>Motivo:</b> '+escHtml(motivo)+'</div>'    +'</div>'  +'</div>';
   html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
-  html+='<div class="totals-wrap"><table class="totals-table">'    +'<tr class="tot-sub"><td>Subtotal</td><td>'+fe(-totalRect)+'</td></tr>'    +'<tr><td>TOTAL RECTIFICADO</td><td style="color:#b45309">'+fe(-totalRect)+'</td></tr>'  +'</table></div>';
+  var _ivaCR=getCfg().iva||21;
+  html+='<div class="totals-wrap"><table class="totals-table">'+ivaRows(totalRect,_ivaCR,true)+'<tr style="background:#b45309"><td style="background:#b45309;color:#fff">TOTAL RECTIFICADO</td><td style="background:#b45309;color:#fff;text-align:right;font-weight:800">'+fe(-totalRect)+'</td></tr></table></div>';
   html+='<div style="margin-top:18px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px">'    +'Esta factura rectificativa anula los importes indicados de la factura <b>'+factOrig+'</b> de fecha <b>'+fechaStr+'</b>.'  +'</div>';
   html+='<div class="footer">'+cfg.empresa_nombre+(cfg.empresa_dir?' &nbsp;·&nbsp; '+cfg.empresa_dir:'')+' &nbsp;·&nbsp; '+cfg.empresa_email+'</div>';
   html+='<br><center class="no-print"><button onclick="window.print()" style="background:#b45309;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
