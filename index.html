@@ -366,14 +366,14 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 
 /* Tabs de categoría */
 .vm-cat-tabs{
-  display:flex;
-  gap:5px;
-  flex-wrap:wrap;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
   margin-bottom:10px;
 }
 .vm-cat-tab{
-  padding:5px 12px;
-  border-radius:20px;
+  padding:7px 6px;
+  border-radius:10px;
   border:1.5px solid var(--lgray);
   background:var(--white);
   font-size:11px;
@@ -381,12 +381,18 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   color:var(--gray);
   cursor:pointer;
   transition:all .18s;
+  text-align:center;
   white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.vm-cat-tab:first-child{
+  grid-column:1/-1;
 }
 .vm-cat-tab.active,
 .vm-cat-tab:hover{
-  background:var(--blue);
-  border-color:var(--blue);
+  background:var(--red);
+  border-color:var(--red);
   color:#fff;
 }
 
