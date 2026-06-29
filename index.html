@@ -3641,7 +3641,8 @@ function saveConfig(){
   cfg.pie_factura=document.getElementById('cfg_pie_factura').value.trim();
   var newPwd=document.getElementById('cfg_password').value.trim();
   if(newPwd){cfg.cfg_password=newPwd;localStorage.setItem('decotara_cfg_auth','OK_'+newPwd);}
-  cfg.iva=parseFloat(document.getElementById('cfg_iva').value)||21;
+  var _ivaVal=parseFloat(document.getElementById('cfg_iva').value);
+  cfg.iva=_ivaVal>0?_ivaVal:21;
   cfg.mostrar_iva=document.getElementById('cfg_mostrar_iva').value||'no';
   cfg.prefix_fac=document.getElementById('cfg_prefix_fac').value.trim().toUpperCase()||'FAC';
   cfg.prefix_alb=document.getElementById('cfg_prefix_alb').value.trim().toUpperCase()||'ALB';
