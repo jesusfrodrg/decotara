@@ -4714,7 +4714,9 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
   }
   html+='<div class="sig-wrap"><div class="sig-box"><div class="sig-line">Firma del cliente</div></div></div>';
 
-  html+='<div class="footer">DECOTARA OUTLET · Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza · DECOTARAOUTLET@gmail.com</div>';
+  var _cfgAlb=getCfg();
+  html+='<div class="footer">'+_cfgAlb.empresa_nombre+' · '+(_cfgAlb.empresa_dir||'Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza')+' · '+_cfgAlb.empresa_email+'</div>';
+  html+='<div style="margin-top:10px;font-size:9px;color:#999;border-top:1px solid #eee;padding-top:8px;line-height:1.5"><b>Protección de Datos:</b> En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD, sus datos personales serán tratados por '+_cfgAlb.empresa_nombre+' (CIF: '+(_cfgAlb.empresa_cif||'B21652037')+') con la finalidad de gestionar la relación comercial y cumplir con las obligaciones legales. Sus datos no serán cedidos a terceros salvo obligación legal. Puede ejercer sus derechos de acceso, rectificación, supresión, limitación, portabilidad y oposición escribiendo a '+_cfgAlb.empresa_email+(_cfgAlb.empresa_dir?', '+_cfgAlb.empresa_dir:'')+'. Reclamaciones: www.aepd.es</div>';
   html+='<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
   html+='</body></html>';
 
