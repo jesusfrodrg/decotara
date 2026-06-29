@@ -2454,7 +2454,7 @@ async function generarFacturaLegal(ventaId){
     var filas=ventas.map(function(x){
       var nom=x.prod_nombre||getProdNombre(x,'—');
       var refVal=x.ref_propia||(x.productos&&x.productos.ref_propia?x.productos.ref_propia:'')||'—';
-      return '<tr><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;color:#7c3aed;font-weight:700;font-size:11px">'+refVal+'</td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">'+nom+(x.notas?'<div style="font-size:11px;color:#888;margin-top:2px">'+x.notas+'</div>':'')+'</td>'
+      return '<tr><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;color:#7c3aed;font-weight:700;font-size:11px">'+refVal+'</td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">'+nom+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:center">'+x.cantidad+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right">'+fe(x.pvp)+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right">'+fe(Number(x.total||0))+'</td></tr>';
