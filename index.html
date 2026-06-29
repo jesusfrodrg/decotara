@@ -1123,8 +1123,8 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
             <div class="fi"><label>IVA %</label><input type="number" id="cfg_iva" min="0" max="100" step="0.1" placeholder="21"></div>
             <div class="fi"><label>Mostrar IVA en docs</label>
               <select id="cfg_mostrar_iva">
-                <option value="si">Sí — con desglose</option>
-                <option value="no">No — precio final</option>
+                <option value="si">Sí — con desglose (recomendado)</option>
+                <option value="no">No — precio final (solo albarán)</option>
               </select>
             </div>
             <div class="fi"><label>Nº factura inicial</label><input type="number" id="cfg_fact_inicio" min="1" placeholder="1"></div>
@@ -2471,7 +2471,7 @@ async function generarFacturaLegal(ventaId){
       +'<div class="addr-grid"><div><div class="addr-hd">Facturar a:</div><div class="addr-body">'+(cli.nombre?'<b>'+cli.nombre+' '+cli.apellidos+'</b><br>':'')+(cli.dni?'DNI/NIF: '+cli.dni+'<br>':'')+(cli.direccion?cli.direccion+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'<br>':'')+(cli.telefono?cli.telefono+'<br>':'')+(cli.email?cli.email:'')+'</div></div>'
       +'<div><div class="addr-hd">Dirección de entrega:</div><div class="addr-body">'+(cli.nombre?'<b>'+cli.nombre+' '+cli.apellidos+'</b><br>':'')+(cli.direccion?cli.direccion+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'<br>':'')+(v.entrega?'<b>Entrega:</b> '+v.entrega+(v.fecha_entrega?' — '+fD(v.fecha_entrega):''):'')+'</div></div></div>'
       +'<table class="items"><thead><tr><td class="th" style="width:12%">Referencia</td><td class="th" style="width:43%">Descripción</td><td class="th" style="width:12%;text-align:center">Cantidad</td><td class="th" style="width:16%;text-align:right">Precio Unit.</td><td class="th" style="width:17%;text-align:right">Monto</td></tr></thead><tbody>'+filas+emptyRows+'</tbody></table>'
-      +'<div class="bottom"><div class="gracias">GRACIAS</div><div>'      +'<div class="tot-row"><span>Subtotal</span><span>'+fe(subtotal)+'</span></div>'      +(dto>0?'<div class="tot-row"><span>Descuento ('+dto+'%)</span><span>- '+fe(descuentoVal)+'</span></div>':'')      +(getCfg().mostrar_iva!=='no'?        '<div class="tot-row"><span>Base imponible</span><span>'+fe(total/(1+(getCfg().iva||21)/100))+'</span></div>'        +'<div class="tot-row"><span>IVA ('+(getCfg().iva||21)+'%)</span><span>'+fe(total-total/(1+(getCfg().iva||21)/100))+'</span></div>'      :'')      +'<div class="tot-final"><span>TOTAL</span><span>'+fe(total)+'</span></div>'      +'</div></div>'
+      +'<div class="bottom"><div class="gracias">GRACIAS</div><div>'      +'<div class="tot-row"><span>Subtotal</span><span>'+fe(subtotal)+'</span></div>'      +(dto>0?'<div class="tot-row"><span>Descuento ('+dto+'%)</span><span>- '+fe(descuentoVal)+'</span></div>':'')      +'<div class="tot-row"><span>Base imponible</span><span>'+fe(total/(1+(getCfg().iva||21)/100))+'</span></div>'      +'<div class="tot-row"><span>IVA ('+(getCfg().iva||21)+'%)</span><span>'+fe(total-total/(1+(getCfg().iva||21)/100))+'</span></div>'      +'<div class="tot-final"><span>TOTAL</span><span>'+fe(total)+'</span></div>'      +'</div></div>'
       +'<div class="footer-note">'+(cfg.pie_factura?cfg.pie_factura+'<br>':'')+cfg.empresa_nombre+' · '+cfg.empresa_email+(cfg.empresa_tel?' · '+cfg.empresa_tel:'')+'</div>'
       +'<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>'
       +'</body></html>';
@@ -3226,7 +3226,7 @@ var _CFG_DEFAULTS = {
   iva: 21,
   fact_inicio: 1,
   stock_min: 3,
-  mostrar_iva: 'no',
+  mostrar_iva: 'si',
   prefix_fac: 'FAC',
   prefix_alb: 'ALB',
   prefix_rect: 'RECT',
