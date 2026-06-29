@@ -2603,10 +2603,12 @@ async function renderVMCatalog(){
   grid.addEventListener('click', _vmCatalogClick);
   grid.innerHTML=filtered.map(function(p){
     var inOrder=vmLineas.find(function(l){return l.id===p.id;});
-    var stk=stockCache[p.id]!==undefined?stockCache[p.id]:p.stock||0;
-    // Sumar stock de tienda si tiene vínculo
+    var stk=stockCache[p.id]!==undefined?stockCache[p.id]:(p.stock||0);
+    // Sumar stock de tienda si tiene vínculo (para artículos de almacén)
     var tiendaVinc=window._vmTiendaMap&&window._vmTiendaMap[p.id];
-    var stkTotal=stk+(tiendaVinc?tiendaVinc.stock:0);
+    var stkTienda=tiendaVinc?(tiendaVinc.stock||0):0;
+    // Si es artículo solo de tienda, su stock ya está en p.stock
+    var stkTotal=p._esTienda?stk:(stk+stkTienda);
     var noStk=stkTotal<=0&&!inOrder;
     var cls='vm-card'+(inOrder?' in-order':'')+(noStk?' no-stock':'');
     var addIcon=inOrder?'✓':'+';
