@@ -2596,11 +2596,14 @@ async function renderVMCatalog(){
   grid.innerHTML=filtered.map(function(p){
     var inOrder=vmLineas.find(function(l){return l.id===p.id;});
     var stk=stockCache[p.id]!==undefined?stockCache[p.id]:p.stock||0;
-    var noStk=stk<=0&&!inOrder;
+    // Sumar stock de tienda si tiene vínculo
+    var tiendaVinc=window._vmTiendaMap&&window._vmTiendaMap[p.id];
+    var stkTotal=stk+(tiendaVinc?tiendaVinc.stock:0);
+    var noStk=stkTotal<=0&&!inOrder;
     var cls='vm-card'+(inOrder?' in-order':'')+(noStk?' no-stock':'');
     var addIcon=inOrder?'✓':'+';
     var icon=CAT_ICON[p.categoria]||'🏷️';
-    var stkLabel=noStk?'Sin stock':(stk<=3?'⚠️ '+stk+' ud':'📦 '+stk+' ud');
+    var stkLabel=noStk?'Sin stock':(stkTotal<=3?'⚠️ '+stkTotal+' ud':'📦 '+stkTotal+' ud');
     return '<div class="'+cls+' vmc-clickable" data-pid="'+p.id+'" data-pnom="'+escHtml(p.nombre)+'" data-pcat="'+escHtml(p.categoria)+'" data-ppvp="'+p.pvp+'" data-ref="'+escHtml(p.ref_propia||'')+'">'
       +'<span class="vmc-icon">'+icon+'</span>'
       +'<div class="vmc-info">'
@@ -2657,7 +2660,9 @@ async function toggleVMProduct(id,nom,cat,pvp){
     return;
   } else {
     var stk=stockCache[id]!==undefined?stockCache[id]:99;
-    if(stk<=0){toast('Sin stock disponible');return;}
+    var _tiendaVincCheck=window._vmTiendaMap&&window._vmTiendaMap[id];
+    var stkCheck=stk+(_tiendaVincCheck?_tiendaVincCheck.stock:0);
+    if(stkCheck<=0){toast('Sin stock disponible');return;}
     var _vmprod=vmProductos.find(function(x){return x.id===id;})||{};
     var _tiendaVinc=window._vmTiendaMap&&window._vmTiendaMap[id];
     var origenElegido='almacen';
