@@ -4812,8 +4812,8 @@ async function openVM(id){
     var _icons={'Sofa':'🛋️','Canape':'🛏️','Colchon':'💤','Sillon':'🪑','Comedor':'🍽️','Dormitorio':'🌙','Auxiliar':'📦','Otros':'🏷️'};
     var tabs=document.getElementById('vm_cat_tabs');
     if(tabs){
-      tabs.innerHTML='<button type="button" class="vm-cat-tab active" data-cat="" onclick="vmSetCat(this,\'\'))">🏠 Todas</button>'
-        +_cats.map(function(c){return '<button type="button" class="vm-cat-tab" data-cat="'+c+'" onclick="vmSetCat(this,\''+c+'\')">'+(_icons[c]||'🏷️')+' '+c+'</button>';}).join('');
+      tabs.innerHTML='<button type="button" class="vm-cat-tab active" data-cat="" onclick="vmSetCat(this,\'\')" >🏠 Todas</button>'
+        +_cats.map(function(c){return '<button type="button" class="vm-cat-tab" data-cat="'+c+'" onclick="vmSetCat(this,\''+c+'\')" >'+(_icons[c]||'🏷️')+' '+c+'</button>';}).join('');
     }
     document.getElementById('vm_prod_cat').innerHTML='<option value="">Todas</option>'+_cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
   })();
