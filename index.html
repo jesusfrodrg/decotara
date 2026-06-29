@@ -637,6 +637,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <div class="sr">
         <div class="sw"><span class="si">🔍</span><input type="text" placeholder="Buscar por cliente, producto, DNI..." id="vsearch"></div>
         <select id="vfest" style="width:112px"><option value="">Todos</option><option>Completada</option><option>Pendiente</option><option>Cancelada</option></select>
+        <select id="vfcat" style="width:112px"><option value="">Categoría</option></select>
       </div>
       <div id="ventas-pag"></div>
       <div class="pb"><table><thead><tr><th>N</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th><th>Compra</th><th></th></tr></thead><tbody id="vtbody"><tr><td colspan="7" class="ldr"><span class="spin"></span></td></tr></tbody></table></div>
@@ -2151,6 +2152,8 @@ async function renderRectificativas(){
   try{
     var url='/rectificativas?select=*&order=created_at.desc&limit=200';
     var rows=await GET(url);
+    // Filtrar por categoría client-side
+    if(vcat)rows=rows.filter(function(r){return r.productos&&r.productos.categoria===vcat;});
     // Llenar selector de meses
     var sel=document.getElementById('rect_mes');
     if(sel&&sel.options.length<=1){
@@ -3116,6 +3119,8 @@ async function renderVentas(pagina){
   if(pagina)_ventasPagina=pagina;
   var q=(document.getElementById('vsearch').value||'').toLowerCase();
   var est=document.getElementById('vfest').value;
+  var vcat=document.getElementById('vfcat')?document.getElementById('vfcat').value:'';
+  var vcat=document.getElementById('vfcat')?document.getElementById('vfcat').value:'';
   try{
     var dniField=window._dniOk?',dni':'';
     var offset=(_ventasPagina-1)*_ventasPorPagina;
@@ -5207,6 +5212,13 @@ document.addEventListener('DOMContentLoaded',function(){
   document.addEventListener('click',function(e){if(e.target.id==='btnNPtienda')abrirFormTienda();});
   document.addEventListener('change',function(e){if(e.target.id==='rect_mes')renderRectificativas();});
   document.getElementById('vfest').addEventListener('change',function(){_ventasPagina=1;renderVentas();});
+  // Rellenar categorías en filtro de ventas
+  (function(){
+    var cats=getCfg().categorias||['Sofa','Canape','Colchon','Sillon','Comedor','Dormitorio','Auxiliar','Otros'];
+    var sel=document.getElementById('vfcat');
+    if(sel)sel.innerHTML='<option value="">Categoría</option>'+cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
+  })();
+  document.getElementById('vfcat').addEventListener('change',function(){_ventasPagina=1;renderVentas();});
   document.getElementById('catsearch').addEventListener('input',renderCatalogo);
   document.getElementById('catfilt').addEventListener('change',renderCatalogo);
   document.getElementById('clisearch').addEventListener('input',renderClientes);
