@@ -960,14 +960,6 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <!-- Tabs categoría -->
       <div class="vm-cat-tabs" id="vm_cat_tabs">
         <button type="button" class="vm-cat-tab active" data-cat="" onclick="vmSetCat(this,'')">🏠 Todas</button>
-        <button type="button" class="vm-cat-tab" data-cat="Sofa" onclick="vmSetCat(this,'Sofa')">🛋️ Sofá</button>
-        <button type="button" class="vm-cat-tab" data-cat="Canape" onclick="vmSetCat(this,'Canape')">🛏️ Canapé</button>
-        <button type="button" class="vm-cat-tab" data-cat="Colchon" onclick="vmSetCat(this,'Colchon')">💤 Colchón</button>
-        <button type="button" class="vm-cat-tab" data-cat="Sillon" onclick="vmSetCat(this,'Sillon')">🪑 Sillón</button>
-        <button type="button" class="vm-cat-tab" data-cat="Comedor" onclick="vmSetCat(this,'Comedor')">🍽️ Comedor</button>
-        <button type="button" class="vm-cat-tab" data-cat="Dormitorio" onclick="vmSetCat(this,'Dormitorio')">🌙 Dormitorio</button>
-        <button type="button" class="vm-cat-tab" data-cat="Auxiliar" onclick="vmSetCat(this,'Auxiliar')">📦 Auxiliar</button>
-        <button type="button" class="vm-cat-tab" data-cat="Otros" onclick="vmSetCat(this,'Otros')">🏷️ Otros</button>
       </div>
       <!-- Campo oculto para compatibilidad -->
       <select id="vm_prod_cat" style="display:none"><option value="">Todas</option></select>
@@ -4814,6 +4806,17 @@ async function openVM(id){
   veditId=id||null;
   vmLineas=[];
   window._vmTiendaMap={};
+  // Generar tabs de categoría dinámicamente desde configuración
+  (function(){
+    var _cats=getCfg().categorias||['Sofa','Canape','Colchon','Sillon','Comedor','Dormitorio','Auxiliar','Otros'];
+    var _icons={'Sofa':'🛋️','Canape':'🛏️','Colchon':'💤','Sillon':'🪑','Comedor':'🍽️','Dormitorio':'🌙','Auxiliar':'📦','Otros':'🏷️'};
+    var tabs=document.getElementById('vm_cat_tabs');
+    if(tabs){
+      tabs.innerHTML='<button type="button" class="vm-cat-tab active" data-cat="" onclick="vmSetCat(this,\'\'))">🏠 Todas</button>'
+        +_cats.map(function(c){return '<button type="button" class="vm-cat-tab" data-cat="'+c+'" onclick="vmSetCat(this,\''+c+'\')">'+(_icons[c]||'🏷️')+' '+c+'</button>';}).join('');
+    }
+    document.getElementById('vm_prod_cat').innerHTML='<option value="">Todas</option>'+_cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
+  })();
   document.getElementById('vm-t').textContent=id?'Editar venta':'Nueva venta';
   var [cl,pr,tienda]=await Promise.all([getCachedClientes(false),getCachedProductos(false),GET('/stock_tienda?select=*&order=nombre.asc').catch(function(){return [];})]);
   // Populate cliente selector
