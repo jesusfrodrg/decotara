@@ -2512,7 +2512,7 @@ async function confirmarRectificativa(){
     +cfg.empresa_email+'<br>'
     +'<b>Rectifica:</b> '+factOrig+' · '+escHtml(motivo)
     +'</div></div></div>';
-  html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
+  html+='<table class="items"><thead><tr><td class="th" style="width:13%">REF.</td><td class="th">DESCRIPCIÓN</td><td class="th" style="text-align:center;width:10%">CANT.</td><td class="th" style="text-align:right;width:18%">PRECIO</td><td class="th" style="text-align:right;width:18%">TOTAL</td></tr></thead><tbody>'+filas+'</tbody></table>';
   var _ivaCR=getCfg().iva||21;
   html+='<div class="totals-wrap"><table class="totals-table">'+ivaRows(totalRect,_ivaCR,true)+'<tr style="background:#C8372D"><td style="background:#C8372D;color:#fff">TOTAL RECTIFICADO</td><td style="background:#C8372D;color:#fff;text-align:right;font-weight:800">'+fe(-totalRect)+'</td></tr></table></div>';
   html+='<div style="margin-top:18px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px">'    +'Esta factura rectificativa anula los importes indicados de la factura <b>'+factOrig+'</b> de fecha <b>'+fechaStr+'</b>.'  +'</div>';
