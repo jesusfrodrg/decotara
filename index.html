@@ -1934,7 +1934,6 @@ async function confirmarCambioArticulo(){
     +'<tr><td class="meta-hd">Rectifica a</td><td class="meta-hd">Motivo</td></tr>'
     +'<tr><td class="meta-val" style="font-weight:700">'+factOrig+'</td><td class="meta-val">Cambio de artículo</td></tr>'
     +'</table></div>';
-  html+='<hr class="divider">';
   html+='<div class="addr-grid">'
     +'<div><div class="addr-hd">Facturar a:</div><div class="addr-body">'
     +'<b>'+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</b><br>'
@@ -1949,7 +1948,7 @@ async function confirmarCambioArticulo(){
     +cfg.empresa_email+'<br>'
     +'<b>Rectifica:</b> '+factOrig+' · Cambio de artículo'
     +'</div></div></div>';
-  html+='<table><thead><tr><th>Ref.</th><th>Artículo devuelto</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
+  html+='<table class="items"><thead><tr><td class="th" style="width:13%">Ref.</td><td class="th">Artículo devuelto</td><td class="th" style="text-align:center;width:10%">Cant.</td><td class="th" style="text-align:right;width:18%">Precio</td><td class="th" style="text-align:right;width:18%">Total</td></tr></thead><tbody>'+filas+'</tbody></table>';
   var _ivaCR=getCfg().iva||21;
   html+='<div class="totals-wrap"><table class="totals-table">'+ivaRows(totalRect,_ivaCR,true)+'<tr style="background:#C8372D"><td style="background:#C8372D;color:#fff">TOTAL RECTIFICADO</td><td style="background:#C8372D;color:#fff;text-align:right;font-weight:800">'+fe(-totalRect)+'</td></tr></table></div>';
   html+='<div style="margin-top:14px;padding:12px;background:#f0fdf4;border:1.5px solid #059669;border-radius:8px;font-size:12px;color:#065f46">'    +'<b>📋 Paso 2:</b> Cierra este documento e introduce la nueva venta del artículo de sustitución. El cliente '+escHtml((cli.nombre||'')+' '+(cli.apellidos||''))+' ya estará seleccionado.'  +'</div>';
@@ -2253,7 +2252,7 @@ function regenerarRectificativa(r){
       '<td class="right" style="'+(negativo?'color:#C8372D;':'')+' font-weight:700">'+fe(negativo?-Math.abs(tot):Math.abs(tot))+'</td>'+
     '</tr>';
   }).join('');
-  html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
+  html+='<table class="items"><thead><tr><td class="th" style="width:13%">Ref.</td><td class="th">Descripción</td><td class="th" style="text-align:center;width:10%">Cant.</td><td class="th" style="text-align:right;width:18%">Precio</td><td class="th" style="text-align:right;width:18%">Total</td></tr></thead><tbody>'+filas+'</tbody></table>';
   if(esSubsanacion){
     var _ivaRS=getCfg().iva||21;
     html+='<div class="totals-wrap"><table class="totals-table">'+ivaRows(totalRect,_ivaRS,false)+'<tr style="background:#C8372D"><td style="background:#C8372D;color:#fff">TOTAL</td><td style="background:#C8372D;color:#fff;text-align:right;font-weight:800">'+fe(totalRect)+'</td></tr></table></div>';
@@ -2472,7 +2471,13 @@ async function confirmarRectificativa(){
 
   var filas=seleccionadas.map(function(x){
     var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'—';
-    return '<tr>'+'<td style="color:#C8372D;font-weight:700;font-size:11px">'+escHtml(ref)+'</td>'+'<td>'+escHtml(x._nomEdit)+'</td>'+'<td class="center">'+Number(x.cantidad||1)+'</td>'+'<td class="right">'+fe(x._pvpEdit)+'</td>'+'<td class="right" style="color:#C8372D;font-weight:700">'+fe(-x._totEdit)+'</td>'+'</tr>';
+    return '<tr>'
+      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;color:#7c3aed;font-weight:700;font-size:11px">'+escHtml(ref)+'</td>'
+      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">'+escHtml(x._nomEdit)+'</td>'
+      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:center">'+Number(x.cantidad||1)+'</td>'
+      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right">'+fe(x._pvpEdit)+'</td>'
+      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right;color:#C8372D;font-weight:700">'+fe(-x._totEdit)+'</td>'
+      +'</tr>';
   }).join('');
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura Rectificativa '+numRect+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
