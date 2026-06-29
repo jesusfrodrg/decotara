@@ -1935,7 +1935,20 @@ async function confirmarCambioArticulo(){
     +'<tr><td class="meta-val" style="font-weight:700">'+factOrig+'</td><td class="meta-val">Cambio de artículo</td></tr>'
     +'</table></div>';
   html+='<hr class="divider">';
-  html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente</div>'      +'<div class="info-line"><b>Nombre:</b> '+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</div>'      +(cli.dni?'<div class="info-line"><b>DNI/NIF:</b> '+cli.dni+'</div>':'')      +(cli.telefono?'<div class="info-line"><b>Teléfono:</b> '+cli.telefono+'</div>':'')      +(cli.email?'<div class="info-line"><b>Email:</b> '+cli.email+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#C8372D"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'      +'<div class="info-line"><b>Motivo:</b> Cambio de artículo</div>'    +'</div>'  +'</div>';
+  html+='<div class="addr-grid">'
+    +'<div><div class="addr-hd">Facturar a:</div><div class="addr-body">'
+    +'<b>'+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</b><br>'
+    +(cli.dni?'DNI/NIF: '+cli.dni+'<br>':'')
+    +(cli.telefono?cli.telefono+'<br>':'')
+    +(cli.email?cli.email:'')
+    +'</div></div>'
+    +'<div><div class="addr-hd">Datos de la Empresa:</div><div class="addr-body">'
+    +'<b>'+cfg.empresa_nombre+'</b><br>'
+    +'CIF: '+(cfg.empresa_cif||'B21652037')+'<br>'
+    +(cfg.empresa_dir?cfg.empresa_dir+'<br>':'')
+    +cfg.empresa_email+'<br>'
+    +'<b>Rectifica:</b> '+factOrig+' · Cambio de artículo'
+    +'</div></div></div>';
   html+='<table><thead><tr><th>Ref.</th><th>Artículo devuelto</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
   var _ivaCR=getCfg().iva||21;
   html+='<div class="totals-wrap"><table class="totals-table">'+ivaRows(totalRect,_ivaCR,true)+'<tr style="background:#C8372D"><td style="background:#C8372D;color:#fff">TOTAL RECTIFICADO</td><td style="background:#C8372D;color:#fff;text-align:right;font-weight:800">'+fe(-totalRect)+'</td></tr></table></div>';
@@ -2213,8 +2226,21 @@ function regenerarRectificativa(r){
     html+='<div style="background:#fff5f5;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#C8372D"><b>✏️ Factura rectificativa por subsanación</b> — Sustituye y anula la factura <b>'+escHtml(r.factura_origen||'—')+'</b>. Motivo: '+escHtml(motivoReal)+'</div>';
   }
   // Cliente
-  html+='<div class="info-grid"><div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente'+(esSubsanacion?' <span style="font-size:10px;background:#fee2e2;color:#C8372D;padding:1px 6px;border-radius:4px;margin-left:4px">CORREGIDO</span>':'')+'</div><div class="info-line"><b>Nombre:</b> '+escHtml(r.cliente_nombre||'—')+'</div>'+(r.cliente_dni?'<div class="info-line"><b>DNI/NIF:</b> '+escHtml(r.cliente_dni)+'</div>':'')+(r.cliente_telefono?'<div class="info-line"><b>Teléfono:</b> '+escHtml(r.cliente_telefono)+'</div>':'')+(r.cliente_email?'<div class="info-line"><b>Email:</b> '+escHtml(r.cliente_email)+'</div>':'')+(r.cliente_direccion||r.cliente_ciudad?'<div class="info-line"><b>Dirección:</b> '+escHtml(r.cliente_direccion||'')+(r.cliente_cp?' '+escHtml(r.cliente_cp):'')+(r.cliente_ciudad?', '+escHtml(r.cliente_ciudad):'')+'</div>':'')+'</div>';
-  html+='<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#C8372D"></div>Datos de la Empresa</div><div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div><div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'+(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')+'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div><div class="info-line"><b>Rectifica a:</b> '+escHtml(r.factura_origen||'—')+'</div>'+(esSubsanacion?'':('<div class="info-line"><b>Motivo:</b> '+escHtml(r.motivo||'')+'</div>'))+'</div></div>';
+  html+='<div class="addr-grid">'
+    +'<div><div class="addr-hd">Facturar a:'+(esSubsanacion?' <span style="font-size:10px;background:#fee2e2;color:#C8372D;padding:2px 6px;border-radius:3px">CORREGIDO</span>':'')+'</div><div class="addr-body">'
+    +'<b>'+escHtml(r.cliente_nombre||'—')+'</b><br>'
+    +(r.cliente_dni?'DNI/NIF: '+escHtml(r.cliente_dni)+'<br>':'')
+    +(r.cliente_telefono?escHtml(r.cliente_telefono)+'<br>':'')
+    +(r.cliente_email?escHtml(r.cliente_email)+'<br>':'')
+    +(r.cliente_direccion?escHtml(r.cliente_direccion)+(r.cliente_cp?' '+escHtml(r.cliente_cp):'')+(r.cliente_ciudad?', '+escHtml(r.cliente_ciudad):'')+' ':'')
+    +'</div></div>'
+    +'<div><div class="addr-hd">Datos de la Empresa:</div><div class="addr-body">'
+    +'<b>'+cfg.empresa_nombre+'</b><br>'
+    +'CIF: '+(cfg.empresa_cif||'B21652037')+'<br>'
+    +(cfg.empresa_dir?cfg.empresa_dir+'<br>':'')
+    +cfg.empresa_email+'<br>'
+    +'<b>Rectifica:</b> '+escHtml(r.factura_origen||'—')+(esSubsanacion?'':(' · '+escHtml(r.motivo||'')))
+    +'</div></div></div>';
   // Tabla artículos
   var filas=arts.map(function(a){
     var negativo=!esSubsanacion;
@@ -2352,7 +2378,20 @@ async function confirmarSubsanacion(){
     +'</table></div>';
   html+='<hr class="divider">';
   html+='<div style="background:#fff5f5;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#C8372D">'    +'<b>✏️ Factura rectificativa por subsanación</b> — Sustituye y anula la factura <b>'+factOrig+'</b>. Motivo: '+escHtml(motivo)+  '</div>';
-  html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#C8372D"></div>Datos del Cliente <span style="font-size:10px;background:#fee2e2;color:#C8372D;padding:1px 6px;border-radius:4px;margin-left:4px">CORREGIDO</span></div>'      +'<div class="info-line"><b>Nombre:</b> '+escHtml(nombre)+'</div>'      +(dni?'<div class="info-line"><b>DNI/NIF:</b> '+escHtml(dni)+'</div>':'')      +(email?'<div class="info-line"><b>Email:</b> '+escHtml(email)+'</div>':'')      +((dir||ciudad)?'<div class="info-line"><b>Dirección:</b> '+escHtml(dir)+(cp?' '+escHtml(cp):'')+(ciudad?', '+escHtml(ciudad):'')+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#C8372D"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'    +'</div>'  +'</div>';
+  html+='<div class="addr-grid">'
+    +'<div><div class="addr-hd">Facturar a: <span style="font-size:10px;background:#fee2e2;color:#C8372D;padding:2px 6px;border-radius:3px">CORREGIDO</span></div><div class="addr-body">'
+    +'<b>'+escHtml(nombre)+'</b><br>'
+    +(dni?'DNI/NIF: '+escHtml(dni)+'<br>':'')
+    +(email?escHtml(email)+'<br>':'')
+    +((dir||ciudad)?escHtml(dir)+(cp?' '+escHtml(cp):'')+(ciudad?', '+escHtml(ciudad):''):'')
+    +'</div></div>'
+    +'<div><div class="addr-hd">Datos de la Empresa:</div><div class="addr-body">'
+    +'<b>'+cfg.empresa_nombre+'</b><br>'
+    +'CIF: '+(cfg.empresa_cif||'B21652037')+'<br>'
+    +(cfg.empresa_dir?cfg.empresa_dir+'<br>':'')
+    +cfg.empresa_email+'<br>'
+    +'<b>Rectifica:</b> '+factOrig+' · Subsanación'
+    +'</div></div></div>';
   html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
   var _ivaRateS=getCfg().iva||21;
   var _totalFinalS=totalVenta*(1-dto/100);
@@ -2453,7 +2492,21 @@ async function confirmarRectificativa(){
     +'<tr><td class="meta-val" style="font-weight:700">'+factOrig+'</td><td class="meta-val">Devolución/Anulación</td></tr>'
     +'</table></div>';
   html+='<hr class="divider">';
-  html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente</div>'      +'<div class="info-line"><b>Nombre:</b> '+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</div>'      +(cli.dni?'<div class="info-line"><b>DNI/NIF:</b> '+cli.dni+'</div>':'')      +(cli.telefono?'<div class="info-line"><b>Teléfono:</b> '+cli.telefono+'</div>':'')      +(cli.email?'<div class="info-line"><b>Email:</b> '+cli.email+'</div>':'')      +((cli.direccion||cli.ciudad)?'<div class="info-line"><b>Dirección:</b> '+(cli.direccion||'')+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#C8372D"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'      +'<div class="info-line"><b>Motivo:</b> '+escHtml(motivo)+'</div>'    +'</div>'  +'</div>';
+  html+='<div class="addr-grid">'
+    +'<div><div class="addr-hd">Facturar a:</div><div class="addr-body">'
+    +'<b>'+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</b><br>'
+    +(cli.dni?'DNI/NIF: '+cli.dni+'<br>':'')
+    +(cli.telefono?cli.telefono+'<br>':'')
+    +(cli.email?cli.email+'<br>':'')
+    +((cli.direccion||cli.ciudad)?(cli.direccion||'')+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:''):'') 
+    +'</div></div>'
+    +'<div><div class="addr-hd">Datos de la Empresa:</div><div class="addr-body">'
+    +'<b>'+cfg.empresa_nombre+'</b><br>'
+    +'CIF: '+(cfg.empresa_cif||'B21652037')+'<br>'
+    +(cfg.empresa_dir?cfg.empresa_dir+'<br>':'')
+    +cfg.empresa_email+'<br>'
+    +'<b>Rectifica:</b> '+factOrig+' · '+escHtml(motivo)
+    +'</div></div></div>';
   html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
   var _ivaCR=getCfg().iva||21;
   html+='<div class="totals-wrap"><table class="totals-table">'+ivaRows(totalRect,_ivaCR,true)+'<tr style="background:#C8372D"><td style="background:#C8372D;color:#fff">TOTAL RECTIFICADO</td><td style="background:#C8372D;color:#fff;text-align:right;font-weight:800">'+fe(-totalRect)+'</td></tr></table></div>';
