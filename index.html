@@ -2608,7 +2608,7 @@ async function renderVMCatalog(){
       +'<span class="vmc-icon">'+icon+'</span>'
       +'<div class="vmc-info">'
       +'<div class="vmc-nom">'+escHtml(p.nombre)+'</div>'
-      +'<div class="vmc-cat">'+escHtml(p.categoria||'')+(p.ref_propia?'<span style="background:#ede9fe;color:#5b21b6;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">'+escHtml(p.ref_propia)+'</span>':'')+(window._vmTiendaMap&&window._vmTiendaMap[p.id]?'<span style="background:#0d9488;color:#fff;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">🏪 Tienda</span>':'')+'</div>'
+      +'<div class="vmc-cat">'+escHtml(p.categoria||'')+(p.ref_propia?'<span style="background:#ede9fe;color:#5b21b6;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">'+escHtml(p.ref_propia)+'</span>':'')+'</div>'
       +'</div>'
       +'<div class="vmc-footer">'
       +'<span class="vmc-pvp">'+fe(p.pvp)+'</span>'
