@@ -1920,7 +1920,20 @@ async function confirmarCambioArticulo(){
   // Generar PDF rectificativa
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rectificativa '+numRect+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
   html+='<div class="doc-date">Fecha: '+fD(new Date().toISOString().slice(0,10))+'</div>';
-  html+='<div class="hdr">'    +'<div class="hdr-left">'      +'<div class="doc-type" style="color:#C8372D">RECTIFICATIVA</div>'      +'<div class="doc-badge" style="background:#C8372D">'+numRect+' · Cambio de artículo</div>'    +'</div>'    +'<div class="hdr-right">'      +'<img class="logo-circle" src="'+window._LOGO_B64+'">'      +'<div class="brand-name">'+cfg.empresa_nombre+'</div>'      +'<div class="brand-sub">'+cfg.empresa_email+'</div>'    +'</div>'  +'</div>';
+  html+='<div class="top"><div><img class="logo-img" src="'+window._LOGO_B64+'"><div class="logo-name">'+cfg.empresa_nombre+'</div></div>'
+    +'<div style="text-align:right"><div class="doc-title">RECTIFICATIVA</div>'
+    +'<div class="doc-badge">'+numRect+' · Cambio de artículo</div>'
+    +'<div class="doc-date">'+fD(new Date().toISOString().slice(0,10))+'</div></div></div>';
+  html+='<div class="info-grid"><div class="empresa-info">'
+    +'CIF: '+(cfg.empresa_cif||'B21652037')+'<br>'
+    +(cfg.empresa_dir?cfg.empresa_dir+'<br>':'')
+    +(cfg.empresa_tel?cfg.empresa_tel+'<br>':'')
+    +cfg.empresa_email+'</div>'
+    +'<table class="meta-table"><tr><td class="meta-hd">Nº Rectificativa</td><td class="meta-hd">Fecha</td></tr>'
+    +'<tr><td class="meta-val" style="font-weight:700;color:#C8372D">'+numRect+'</td><td class="meta-val">'+fD(new Date().toISOString().slice(0,10))+'</td></tr>'
+    +'<tr><td class="meta-hd">Rectifica a</td><td class="meta-hd">Motivo</td></tr>'
+    +'<tr><td class="meta-val" style="font-weight:700">'+factOrig+'</td><td class="meta-val">Cambio de artículo</td></tr>'
+    +'</table></div>';
   html+='<hr class="divider">';
   html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente</div>'      +'<div class="info-line"><b>Nombre:</b> '+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</div>'      +(cli.dni?'<div class="info-line"><b>DNI/NIF:</b> '+cli.dni+'</div>':'')      +(cli.telefono?'<div class="info-line"><b>Teléfono:</b> '+cli.telefono+'</div>':'')      +(cli.email?'<div class="info-line"><b>Email:</b> '+cli.email+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#C8372D"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'      +'<div class="info-line"><b>Motivo:</b> Cambio de artículo</div>'    +'</div>'  +'</div>';
   html+='<table><thead><tr><th>Ref.</th><th>Artículo devuelto</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
@@ -2181,7 +2194,20 @@ function regenerarRectificativa(r){
   var totalRect=Math.abs(Number(r.importe||0));
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rectificativa '+r.numero+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
   html+='<div class="doc-date">Fecha: '+fD(r.fecha)+'</div>';
-  html+='<div class="hdr"><div class="hdr-left"><div class="doc-type" style="color:#C8372D">RECTIFICATIVA</div><div class="doc-badge" style="background:#C8372D">'+escHtml(r.numero)+(esSubsanacion?' · Subsanación':'')+'</div></div><div class="hdr-right"><img class="logo-circle" src="'+window._LOGO_B64+'"><div class="brand-name">'+cfg.empresa_nombre+'</div><div class="brand-sub">'+cfg.empresa_email+'</div></div></div>';
+  html+='<div class="top"><div><img class="logo-img" src="'+window._LOGO_B64+'"><div class="logo-name">'+cfg.empresa_nombre+'</div></div>'
+    +'<div style="text-align:right"><div class="doc-title">RECTIFICATIVA</div>'
+    +'<div class="doc-badge">'+escHtml(r.numero)+(esSubsanacion?' · Subsanación':'· Devolución')+'</div>'
+    +'<div class="doc-date">'+fD(r.fecha)+'</div></div></div>';
+  html+='<div class="info-grid"><div class="empresa-info">'
+    +'CIF: '+(cfg.empresa_cif||'B21652037')+'<br>'
+    +(cfg.empresa_dir?cfg.empresa_dir+'<br>':'')
+    +(cfg.empresa_tel?cfg.empresa_tel+'<br>':'')
+    +cfg.empresa_email+'</div>'
+    +'<table class="meta-table"><tr><td class="meta-hd">Nº Rectificativa</td><td class="meta-hd">Fecha</td></tr>'
+    +'<tr><td class="meta-val" style="font-weight:700;color:#C8372D">'+escHtml(r.numero)+'</td><td class="meta-val">'+fD(r.fecha)+'</td></tr>'
+    +'<tr><td class="meta-hd">Rectifica a</td><td class="meta-hd">Motivo</td></tr>'
+    +'<tr><td class="meta-val" style="font-weight:700">'+escHtml(r.factura_origen||'—')+'</td><td class="meta-val">'+escHtml(esSubsanacion?motivoReal:(r.motivo||''))+'</td></tr>'
+    +'</table></div>';
   html+='<hr class="divider">';
   if(esSubsanacion){
     html+='<div style="background:#fff5f5;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#C8372D"><b>✏️ Factura rectificativa por subsanación</b> — Sustituye y anula la factura <b>'+escHtml(r.factura_origen||'—')+'</b>. Motivo: '+escHtml(motivoReal)+'</div>';
@@ -2310,7 +2336,20 @@ async function confirmarSubsanacion(){
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rectificativa '+numRect+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
   html+='<div class="doc-date">Fecha: '+fD(new Date().toISOString().slice(0,10))+'</div>';
-  html+='<div class="hdr">'    +'<div class="hdr-left">'      +'<div class="doc-type" style="color:#C8372D">RECTIFICATIVA</div>'      +'<div class="doc-badge" style="background:#C8372D">'+numRect+' · Subsanación</div>'    +'</div>'    +'<div class="hdr-right">'      +'<img class="logo-circle" src="'+window._LOGO_B64+'">'      +'<div class="brand-name">'+cfg.empresa_nombre+'</div>'      +'<div class="brand-sub">'+cfg.empresa_email+'</div>'    +'</div>'  +'</div>';
+  html+='<div class="top"><div><img class="logo-img" src="'+window._LOGO_B64+'"><div class="logo-name">'+cfg.empresa_nombre+'</div></div>'
+    +'<div style="text-align:right"><div class="doc-title">RECTIFICATIVA</div>'
+    +'<div class="doc-badge">'+numRect+' · Subsanación</div>'
+    +'<div class="doc-date">'+fD(new Date().toISOString().slice(0,10))+'</div></div></div>';
+  html+='<div class="info-grid"><div class="empresa-info">'
+    +'CIF: '+(cfg.empresa_cif||'B21652037')+'<br>'
+    +(cfg.empresa_dir?cfg.empresa_dir+'<br>':'')
+    +(cfg.empresa_tel?cfg.empresa_tel+'<br>':'')
+    +cfg.empresa_email+'</div>'
+    +'<table class="meta-table"><tr><td class="meta-hd">Nº Rectificativa</td><td class="meta-hd">Fecha</td></tr>'
+    +'<tr><td class="meta-val" style="font-weight:700;color:#C8372D">'+numRect+'</td><td class="meta-val">'+fD(new Date().toISOString().slice(0,10))+'</td></tr>'
+    +'<tr><td class="meta-hd">Rectifica a</td><td class="meta-hd">Motivo</td></tr>'
+    +'<tr><td class="meta-val" style="font-weight:700">'+factOrig+'</td><td class="meta-val" style="color:#C8372D">'+escHtml(motivo)+'</td></tr>'
+    +'</table></div>';
   html+='<hr class="divider">';
   html+='<div style="background:#fff5f5;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#C8372D">'    +'<b>✏️ Factura rectificativa por subsanación</b> — Sustituye y anula la factura <b>'+factOrig+'</b>. Motivo: '+escHtml(motivo)+  '</div>';
   html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#C8372D"></div>Datos del Cliente <span style="font-size:10px;background:#fee2e2;color:#C8372D;padding:1px 6px;border-radius:4px;margin-left:4px">CORREGIDO</span></div>'      +'<div class="info-line"><b>Nombre:</b> '+escHtml(nombre)+'</div>'      +(dni?'<div class="info-line"><b>DNI/NIF:</b> '+escHtml(dni)+'</div>':'')      +(email?'<div class="info-line"><b>Email:</b> '+escHtml(email)+'</div>':'')      +((dir||ciudad)?'<div class="info-line"><b>Dirección:</b> '+escHtml(dir)+(cp?' '+escHtml(cp):'')+(ciudad?', '+escHtml(ciudad):'')+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#C8372D"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'    +'</div>'  +'</div>';
@@ -2399,7 +2438,20 @@ async function confirmarRectificativa(){
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura Rectificativa '+numRect+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
   html+='<div class="doc-date">Fecha: '+fD(new Date().toISOString().slice(0,10))+'</div>';
-  html+='<div class="hdr">'    +'<div class="hdr-left">'      +'<div class="doc-type" style="color:#C8372D">RECTIFICATIVA</div>'      +'<div class="doc-badge" style="background:#C8372D">'+numRect+'</div>'    +'</div>'    +'<div class="hdr-right">'      +'<img class="logo-circle" src="'+window._LOGO_B64+'">'      +'<div class="brand-name">'+cfg.empresa_nombre+'</div>'      +'<div class="brand-sub">'+cfg.empresa_email+'</div>'    +'</div>'  +'</div>';
+  html+='<div class="top"><div><img class="logo-img" src="'+window._LOGO_B64+'"><div class="logo-name">'+cfg.empresa_nombre+'</div></div>'
+    +'<div style="text-align:right"><div class="doc-title">RECTIFICATIVA</div>'
+    +'<div class="doc-badge">'+numRect+'</div>'
+    +'<div class="doc-date">'+fD(new Date().toISOString().slice(0,10))+'</div></div></div>';
+  html+='<div class="info-grid"><div class="empresa-info">'
+    +'CIF: '+(cfg.empresa_cif||'B21652037')+'<br>'
+    +(cfg.empresa_dir?cfg.empresa_dir+'<br>':'')
+    +(cfg.empresa_tel?cfg.empresa_tel+'<br>':'')
+    +cfg.empresa_email+'</div>'
+    +'<table class="meta-table"><tr><td class="meta-hd">Nº Rectificativa</td><td class="meta-hd">Fecha</td></tr>'
+    +'<tr><td class="meta-val" style="font-weight:700;color:#C8372D">'+numRect+'</td><td class="meta-val">'+fD(new Date().toISOString().slice(0,10))+'</td></tr>'
+    +'<tr><td class="meta-hd">Rectifica a</td><td class="meta-hd">Motivo</td></tr>'
+    +'<tr><td class="meta-val" style="font-weight:700">'+factOrig+'</td><td class="meta-val">Devolución/Anulación</td></tr>'
+    +'</table></div>';
   html+='<hr class="divider">';
   html+='<div class="info-grid">'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente</div>'      +'<div class="info-line"><b>Nombre:</b> '+(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:'')+'</div>'      +(cli.dni?'<div class="info-line"><b>DNI/NIF:</b> '+cli.dni+'</div>':'')      +(cli.telefono?'<div class="info-line"><b>Teléfono:</b> '+cli.telefono+'</div>':'')      +(cli.email?'<div class="info-line"><b>Email:</b> '+cli.email+'</div>':'')      +((cli.direccion||cli.ciudad)?'<div class="info-line"><b>Dirección:</b> '+(cli.direccion||'')+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'</div>':'')    +'</div>'    +'<div class="info-box"><div class="info-title"><div class="info-title-bar" style="background:#C8372D"></div>Datos de la Empresa</div>'      +'<div class="info-line"><b>Nombre:</b> '+cfg.empresa_nombre+'</div>'      +'<div class="info-line"><b>CIF:</b> '+(cfg.empresa_cif||'B21652037')+'</div>'      +(cfg.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg.empresa_dir+'</div>':'')      +'<div class="info-line"><b>Mail:</b> '+cfg.empresa_email+'</div>'      +'<div class="info-line"><b>Rectifica a:</b> '+factOrig+'</div>'      +'<div class="info-line"><b>Motivo:</b> '+escHtml(motivo)+'</div>'    +'</div>'  +'</div>';
   html+='<table><thead><tr><th>Ref.</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody></table>';
@@ -4585,64 +4637,14 @@ async function generarReporteVendedor(vendedor,desdeParam,hastaParam){
   }catch(e){toast('Error: '+e.message);}
 }
 
-var CSS_ALBARAN=`
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;font-size:13px;color:#1A1A1A;background:#fff;padding:36px 40px;max-width:860px;margin:0 auto}
-/* HEADER */
-.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}
-.hdr-left{}
-.doc-type{font-family:'Arial Black',Arial,sans-serif;font-size:52px;font-weight:900;color:#1A1A1A;line-height:1;letter-spacing:-1px}
-.doc-badge{display:inline-block;background:#C8372D;color:#fff;font-weight:800;font-size:13px;padding:4px 14px;border-radius:3px;margin-top:6px;letter-spacing:.5px}
-.hdr-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-.logo-circle{width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #C8372D}
-.brand-name{font-size:16px;font-weight:900;color:#C8372D;letter-spacing:2px}
-.brand-sub{font-size:10px;color:#888;letter-spacing:2px}
-.doc-date{font-size:12px;color:#555;margin-bottom:16px}
-/* DIVIDER */
-.divider{border:none;border-top:2.5px solid #C8372D;margin:20px 0}
-/* TWO COL INFO */
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
-.info-box{}
-.info-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;color:#C8372D;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
-.info-title-bar{width:28px;height:5px;background:#C8372D;border-radius:2px}
-.info-line{font-size:12px;color:#333;line-height:1.8}
-.info-line b{color:#1A1A1A}
-/* DESCRIPTION BOX */
-.desc-box{background:#f8f8f8;border-left:4px solid #C8372D;padding:12px 16px;font-size:12px;color:#555;line-height:1.7;margin-bottom:22px;border-radius:0 6px 6px 0}
-/* TABLE */
-table{width:100%;border-collapse:collapse;margin-bottom:20px}
-thead tr{background:#C8372D;color:#fff}
-th{padding:10px 12px;text-align:left;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
-th.right,td.right{text-align:right}
-th.center,td.center{text-align:center}
-td{padding:9px 12px;border-bottom:1px solid #f0f0f0;font-size:12px}
-tr:nth-child(even) td{background:#fafafa}
-.tfoot-row td{background:#C8372D;color:#fff;font-weight:800;padding:10px 12px}
-/* TOTALS */
-.totals-wrap{display:flex;justify-content:flex-end;margin-bottom:24px}
-.totals-table{width:260px;border-collapse:collapse}
-.totals-table td{padding:7px 12px;font-size:12px;border-bottom:1px solid #f0f0f0}
-.totals-table tr:last-child td{background:#C8372D;color:#fff;font-weight:800;font-size:14px;padding:10px 12px}
-.totals-table td:last-child{text-align:right;font-weight:700}
-/* PAYMENT INFO */
-.pay-box{margin-bottom:24px}
-.pay-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;color:#C8372D;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
-.pay-line{font-size:12px;color:#333;line-height:1.8}
-/* SIGNATURE */
-.sig-wrap{display:flex;justify-content:flex-end;margin-top:16px}
-.sig-box{text-align:center;width:180px}
-.sig-line{border-top:1.5px solid #333;padding-top:6px;font-size:11px;color:#555}
-/* FOOTER */
-.footer{text-align:center;font-size:10px;color:#bbb;margin-top:28px;padding-top:14px;border-top:1px solid #f0f0f0}
-@media print{.no-print{display:none!important}}
-`;
+var CSS_ALBARAN='*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#fff;padding:32px 36px;max-width:800px;margin:0 auto}.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}.logo-img{width:76px;height:76px;border-radius:50%;object-fit:cover;border:3px solid #C8372D}.logo-name{font-size:12px;color:#222;font-weight:700;margin-top:5px}.doc-title{font-size:42px;font-weight:900;color:#C8372D;text-align:right}.doc-badge{display:inline-block;background:#C8372D;color:#fff;font-weight:800;font-size:13px;padding:4px 14px;border-radius:3px;margin-top:6px;letter-spacing:.5px;text-align:right}.doc-date{font-size:12px;color:#555;margin-bottom:4px;text-align:right}.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}.empresa-info{font-size:12px;color:#222;line-height:1.9}.meta-table{border-collapse:collapse;width:100%}.meta-hd{background:#C8372D;color:#fff;font-weight:700;font-size:11px;padding:5px 10px;text-transform:uppercase;letter-spacing:.5px}.meta-val{padding:6px 10px;background:#fff;border:1px solid #C8372D;font-size:12px}.addr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}.addr-hd{background:#C8372D;color:#fff;font-weight:700;font-size:11px;padding:5px 10px;text-transform:uppercase;letter-spacing:.5px}.addr-body{font-size:12px;line-height:1.8;padding:8px 10px;border:1px solid #e0e0e0;border-top:none;min-height:90px}table.items{width:100%;border-collapse:collapse}table.items .th{background:#C8372D;color:#fff;font-weight:700;font-size:11px;padding:8px 12px;text-transform:uppercase;letter-spacing:.5px}.tot-row{display:flex;justify-content:space-between;padding:6px 12px;font-size:13px;border-bottom:1px solid #e8e8e8}.tot-sub{}.tot-final{display:flex;justify-content:space-between;padding:9px 12px;font-size:15px;font-weight:900;background:#C8372D;color:#fff}.totals-wrap{display:flex;justify-content:flex-end;margin-bottom:16px}.totals-table{width:280px;border-collapse:collapse}.totals-table td{padding:7px 12px;font-size:12px;border-bottom:1px solid #e8e8e8}.totals-table td:last-child{text-align:right;font-weight:700}.sig-wrap{display:flex;justify-content:flex-end;margin-top:16px}.sig-box{text-align:center;width:180px}.sig-line{border-top:1.5px solid #333;padding-top:6px;font-size:11px;color:#555}.footer-note{text-align:center;font-size:11px;color:#888;margin-top:16px;font-style:italic;border-top:1px solid #eee;padding-top:12px}.info-box{margin-bottom:8px}.info-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;color:#C8372D;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}.info-title-bar{width:28px;height:5px;background:#C8372D;border-radius:2px}.info-line{font-size:12px;color:#333;line-height:1.8}.info-line b{color:#1A1A1A}.desc-box{background:#f8f8f8;border-left:4px solid #C8372D;padding:12px 16px;font-size:12px;color:#555;line-height:1.7;margin-bottom:22px;border-radius:0 6px 6px 0}@media print{.no-print{display:none!important}}';
+
 
 function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,notas,numAlbaran){
   var cfg_=getCfg();
   var subtotal=ventas.reduce(function(s,v){return s+v.pvp*v.cantidad;},0);
   var descuentoVal=subtotal*(dto/100);
   var total=ventas.reduce(function(s,v){return s+v.total;},0);
-
   var numStr=numAlbaran||'—';
   var fechaStr=fD(fecha);
   var cliNom=cli?(cli.nombre+' '+cli.apellidos):'—';
@@ -4653,68 +4655,74 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
 
   var filas=ventas.map(function(v){
     var ref=v.ref_propia||'—';
-    return '<tr>'
-      +'<td style="color:#7c3aed;font-weight:700;font-size:11px">'+ref+'</td>'
-      +'<td>'+(v.prod_nombre||getProdNombre(v)||'—')+'</td>'
-      +'<td class="center">'+v.cantidad+'</td>'
-      +'<td class="right">'+fe(v.pvp)+'</td>'
-      +(dto>0?'<td class="right">'+dto+'%</td>':'')
-      +'<td class="right">'+fe(v.total)+'</td>'
-      +'</tr>';
+    return '<tr><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;color:#7c3aed;font-weight:700;font-size:11px">'+ref+'</td>'
+      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">'+(v.prod_nombre||getProdNombre(v)||'—')+'</td>'
+      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:center">'+v.cantidad+'</td>'
+      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right">'+fe(v.pvp)+'</td>'
+      +(dto>0?'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right">'+dto+'%</td>':'')
+      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right;font-weight:700">'+fe(v.total)+'</td></tr>';
   }).join('');
 
-  var html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Albarán ${numStr}</title><style>${CSS_ALBARAN}</style></head><body>`;
-  html+='<div class="doc-date">Fecha: '+fechaStr+'</div>';
-  html+='<div class="hdr"><div class="hdr-left"><div class="doc-type">ALBARÁN</div><div class="doc-badge">ALBARÁN Nº '+numStr+'</div></div>'
-    +'<div class="hdr-right"><img class="logo-circle" src="'+window._LOGO_B64+'"><div class="brand-name">DECOTARA</div><div class="brand-sub">OUTLET</div></div></div>';
-  html+='<hr class="divider">';
-
-  html+='<div class="info-grid">'
-    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos del Cliente</div>'
-      +'<div class="info-line"><b>Nombre:</b> '+cliNom+'</div>'
-      +(cliDni?'<div class="info-line"><b>DNI/NIF:</b> '+cliDni+'</div>':'')
-      +(cliDir?'<div class="info-line"><b>Dirección:</b> '+cliDir+'</div>':'')
-      +(cliTel?'<div class="info-line"><b>Teléfono:</b> '+cliTel+'</div>':'')
-      +(cliEmail?'<div class="info-line"><b>Email:</b> '+cliEmail+'</div>':'')
-    +'</div>'
-    +'<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Datos de la Empresa</div>'
-      +'<div class="info-line"><b>Nombre:</b> '+cfg_.empresa_nombre+'</div>'
-      +'<div class="info-line"><b>CIF:</b> B21652037</div>'
-      +(cfg_.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg_.empresa_dir+'</div>':'')
-      +(cfg_.empresa_tel?'<div class="info-line"><b>Teléfono:</b> '+cfg_.empresa_tel+'</div>':'')
-      +'<div class="info-line"><b>Mail:</b> '+cfg_.empresa_email+'</div>'
-      +'<div class="info-line"><b>Vendedor:</b> '+vendedor+'</div>'
-    +'</div>'
-  +'</div>';
-
-  html+='<table><thead><tr><th style="width:14%">Referencia</th><th>Descripción</th><th class="center">Cant.</th><th class="right">Precio</th>'+(dto>0?'<th class="right">Dto.</th>':'')+'<th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody>'
-    +'<tfoot><tr class="tfoot-row"><td colspan="'+(dto>0?5:4)+'">Total</td><td class="right">'+fe(total)+'</td></tr></tfoot>'
-  +'</table>';
-
-  html+='<div class="totals-wrap"><table class="totals-table">'
-    +'<tr><td>Subtotal</td><td>'+fe(subtotal)+'</td></tr>'
-    +(dto>0?'<tr><td>Descuento ('+dto+'%)</td><td>- '+fe(descuentoVal)+'</td></tr>':'')
-    +'<tr><td>TOTAL</td><td>'+fe(total)+'</td></tr>'
-  +'</table></div>';
-
-  html+='<div class="pay-box"><div class="pay-title"><div class="info-title-bar"></div>Información de Pago</div>'
-    +'<div class="pay-line"><b>Forma de pago:</b> '+pago+'</div>'
-    +(entrega?'<div class="pay-line"><b>Entrega:</b> '+entrega+(fechaEntrega?' — '+fD(fechaEntrega):' — A concretar')+'</div>':'')
-  +'</div>';
-
-  if(notas){
-    html+='<div style="margin-top:18px">'
-      +'<div class="info-title" style="margin-bottom:8px"><div class="info-title-bar"></div>Observaciones</div>'
-      +'<div style="font-size:12px;color:#444;padding:10px 14px;border:1px solid #e0e0e0;border-radius:6px;line-height:1.7">'+notas+'</div>'
-    +'</div>';
+  var emptyRows='';
+  for(var i=0;i<Math.max(0,5-ventas.length);i++){
+    emptyRows+='<tr><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">&nbsp;</td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td>'+(dto>0?'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td>':'')+'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td></tr>';
   }
-  html+='<div class="sig-wrap"><div class="sig-box"><div class="sig-line">Firma del cliente</div></div></div>';
 
-  var _cfgAlb=getCfg();
-  html+='<div style="margin-top:10px;font-size:9px;color:#999;border-top:1px solid #eee;padding-top:8px;line-height:1.5"><b>Protección de Datos:</b> En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD, sus datos personales serán tratados por '+_cfgAlb.empresa_nombre+' (CIF: '+(_cfgAlb.empresa_cif||'B21652037')+') con la finalidad de gestionar la relación comercial y cumplir con las obligaciones legales. Sus datos no serán cedidos a terceros salvo obligación legal. Puede ejercer sus derechos de acceso, rectificación, supresión, limitación, portabilidad y oposición escribiendo a '+_cfgAlb.empresa_email+(_cfgAlb.empresa_dir?', '+_cfgAlb.empresa_dir:'')+'. Reclamaciones: www.aepd.es</div>';
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Albarán '+numStr+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
+  // CABECERA igual que factura legal
+  html+='<div class="top"><div><img class="logo-img" src="'+window._LOGO_B64+'"><div class="logo-name">'+cfg_.empresa_nombre+'</div></div>'
+    +'<div style="text-align:right"><div class="doc-title">ALBARÁN</div>'
+    +'<div class="doc-badge">'+numStr+'</div>'
+    +'<div class="doc-date">'+fechaStr+'</div></div></div>';
+
+  // DATOS EMPRESA y META
+  html+='<div class="info-grid"><div class="empresa-info">'
+    +'CIF: '+(cfg_.empresa_cif||'B21652037')+'<br>'
+    +(cfg_.empresa_dir?cfg_.empresa_dir+'<br>':'')
+    +(cfg_.empresa_tel?cfg_.empresa_tel+'<br>':'')
+    +cfg_.empresa_email+'</div>'
+    +'<table class="meta-table"><tr><td class="meta-hd">Nº Albarán</td><td class="meta-hd">Fecha</td></tr>'
+    +'<tr><td class="meta-val" style="font-weight:700;color:#C8372D">'+numStr+'</td><td class="meta-val">'+fechaStr+'</td></tr>'
+    +'<tr><td class="meta-hd">Vendedor</td><td class="meta-hd">Forma de Pago</td></tr>'
+    +'<tr><td class="meta-val">'+vendedor+'</td><td class="meta-val">'+pago+'</td></tr></table></div>';
+
+  // FACTURAR A / ENTREGA
+  html+='<div class="addr-grid">'
+    +'<div><div class="addr-hd">Cliente:</div><div class="addr-body">'
+    +(cliNom?'<b>'+cliNom+'</b><br>':'')
+    +(cliDni?'DNI/NIF: '+cliDni+'<br>':'')
+    +(cliDir?cliDir+'<br>':'')
+    +(cliTel?cliTel+'<br>':'')
+    +(cliEmail?cliEmail:'')
+    +'</div></div>'
+    +'<div><div class="addr-hd">Entrega:</div><div class="addr-body">'
+    +(entrega?'<b>'+entrega+'</b><br>':'')
+    +(fechaEntrega?'Fecha: '+fD(fechaEntrega):'A concretar')
+    +(notas?'<br><br><i>'+notas+'</i>':'')
+    +'</div></div></div>';
+
+  // TABLA ARTÍCULOS
+  html+='<table class="items"><thead><tr>'
+    +'<td class="th" style="width:13%">Referencia</td>'
+    +'<td class="th" style="width:45%">Descripción</td>'
+    +'<td class="th" style="width:10%;text-align:center">Cant.</td>'
+    +'<td class="th" style="width:15%;text-align:right">Precio</td>'
+    +(dto>0?'<td class="th" style="text-align:right">Dto.</td>':'')
+    +'<td class="th" style="width:17%;text-align:right">Total</td>'
+    +'</tr></thead><tbody>'+filas+emptyRows+'</tbody></table>';
+
+  // TOTALES y FIRMA
+  html+='<div class="bottom"><div class="sig-wrap" style="justify-content:flex-start;margin-top:0">'
+    +'<div class="sig-box"><div class="sig-line">Firma del cliente</div></div></div>'
+    +'<div><div class="tot-row"><span>Subtotal</span><span>'+fe(subtotal)+'</span></div>'
+    +(dto>0?'<div class="tot-row"><span>Descuento ('+dto+'%)</span><span>- '+fe(descuentoVal)+'</span></div>':'')
+    +'<div class="tot-final"><span>TOTAL</span><span>'+fe(total)+'</span></div>'
+    +'</div></div>';
+
+  // RGPD
+  html+='<div style="margin-top:10px;font-size:9px;color:#999;border-top:1px solid #eee;padding-top:8px;line-height:1.5"><b>Protección de Datos:</b> En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD, sus datos personales serán tratados por '+cfg_.empresa_nombre+' (CIF: '+(cfg_.empresa_cif||'B21652037')+') con la finalidad de gestionar la relación comercial y cumplir con las obligaciones legales. Sus datos no serán cedidos a terceros salvo obligación legal. Puede ejercer sus derechos de acceso, rectificación, supresión, limitación, portabilidad y oposición escribiendo a '+cfg_.empresa_email+(cfg_.empresa_dir?', '+cfg_.empresa_dir:'')+'. Reclamaciones: www.aepd.es</div>';
   html+='<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>';
   html+='</body></html>';
-
   var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
 }
 
