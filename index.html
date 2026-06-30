@@ -2763,7 +2763,14 @@ function renderVMLineas(){
       +'</div></div>'
       +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
       +'<label style="font-size:9px;color:var(--gray);text-transform:uppercase;font-weight:700">Uds.</label>'
-      +'<input type="number" min="1" value="'+l.qty+'" style="width:48px;text-align:center" data-qi="'+i+'" class="vm-qty-inp">'
+      +(function(){
+        var _maxS=99;
+        if(l._esTienda&&l._tiendaId){var _tMap=window._vmTiendaMap||{};Object.values(_tMap).forEach(function(t){if(t.id===l._tiendaId)_maxS=t.stock||0;});}
+        else if(l.id&&stockCache[l.id]!==undefined){_maxS=stockCache[l.id];}
+        var _tiVinc=window._vmTiendaMap&&window._vmTiendaMap[l.id];
+        if(_tiVinc&&!l._esTienda)_maxS=(stockCache[l.id]||0)+(_tiVinc.stock||0);
+        return '<input type="number" min="1" max="'+_maxS+'" value="'+l.qty+'" style="width:48px;text-align:center" data-qi="'+i+'" data-max="'+_maxS+'" class="vm-qty-inp">';
+      })()
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
       +'<label style="font-size:9px;color:var(--gray);text-transform:uppercase;font-weight:700">Precio €</label>'
@@ -2785,7 +2792,7 @@ function renderVMLineas(){
   };
   cont.oninput=function(e){
     var qty=e.target.closest('.vm-qty-inp');
-    if(qty){vmQtyChange(parseInt(qty.dataset.qi),qty.value);return;}
+    if(qty){vmQtyChange(parseInt(qty.dataset.qi),qty.value,qty.dataset.max);return;}
   };
   cont.onchange=function(e){
     var pvp=e.target.closest('.vm-pvp-inp');
@@ -2795,25 +2802,12 @@ function renderVMLineas(){
   };
 }
 
-function vmQtyChange(i,val){
+function vmQtyChange(i,val,maxVal){
   var qty=Math.max(1,parseInt(val)||1);
-  var l=vmLineas[i];
-  if(l){
-    // Calcular stock disponible
-    var maxStk=99;
-    if(l._esTienda&&l._tiendaId){
-      // Artículo de tienda
-      var tItem=null;
-      Object.values(window._vmTiendaMap||{}).forEach(function(t){if(t.id===l._tiendaId)tItem=t;});
-      if(tItem)maxStk=tItem.stock||0;
-    } else if(l.id){
-      var almStk=stockCache[l.id];
-      if(almStk!==undefined)maxStk=almStk;
-    }
-    if(qty>maxStk){
-      toast('⚠️ Solo hay '+maxStk+' ud. disponibles');
-      qty=maxStk;
-    }
+  var maxStk=maxVal?parseInt(maxVal):99;
+  if(qty>maxStk&&maxStk>0){
+    toast('⚠️ Solo hay '+maxStk+' ud. disponibles');
+    qty=maxStk;
   }
   vmLineas[i].qty=Math.max(1,qty);
   renderVMLineas();
