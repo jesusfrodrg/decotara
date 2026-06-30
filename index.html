@@ -2701,19 +2701,19 @@ async function toggleVMProduct(id,nom,cat,pvp){
   var existing=vmLineas.findIndex(function(l){return l.id===id||(l._productoId&&l._productoId===id);});
   if(existing>=0){
     var l=vmLineas[existing];
-    var prodKey=l._productoId||l.id;
-    // Para artículos de tienda sin vínculo, prodKey puede ser el id de tienda
-    var _tVinc2=window._vmTiendaMap&&(window._vmTiendaMap[prodKey]||window._vmTiendaMap[l.id]);
-    // Stock almacén: buscar por prodKey o por _productoId de la línea
-    var _almKey=l._productoId||prodKey;
-    var _almDisp=stockCache[_almKey]!==undefined?stockCache[_almKey]:0;
-    // Stock tienda: de _vmTiendaMap o del artículo si es solo-tienda
+    // Determinar clave del producto en almacén
+    var _almId=l._esTienda?(l._productoId||null):(l.id&&l.id.indexOf('TI_')===0?null:l.id);
+    var prodKey=_almId||l.id;
+    // Stock en almacén
+    var _almDisp=_almId?(stockCache[_almId]!==undefined?stockCache[_almId]:0):0;
+    // Stock en tienda
+    var _tVinc2=_almId&&window._vmTiendaMap?window._vmTiendaMap[_almId]:null;
     var _tndDisp=0;
-    if(_tVinc2)_tndDisp=_tVinc2.stock||0;
+    if(_tVinc2){_tndDisp=_tVinc2.stock||0;}
     else if(l._esTienda&&l._tiendaId){
-      // Buscar en vmProductos
+      // Artículo solo-tienda: buscar en vmProductos
       var _tprod=vmProductos.find(function(p){return p._tiendaId===l._tiendaId;});
-      if(_tprod)_tndDisp=_tprod.stock||0;
+      _tndDisp=_tprod?(_tprod.stock||0):0;
     }
     var stockTotal=_almDisp+_tndDisp;
     var totalPedido=vmLineas.reduce(function(s,ll){return s+((ll._productoId||ll.id)===prodKey?ll.qty:0);},0);
