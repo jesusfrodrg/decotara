@@ -2683,9 +2683,10 @@ function escHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 // - Si es artículo personalizado (producto_id null), extrae el nombre desde notas
 //   (el nombre se guarda como primera línea de notas, antes de \n)
 function getProdNombre(v, fallback){
+  if(v.prod_nombre)return v.prod_nombre;
   if(v.productos && v.productos.nombre) return v.productos.nombre;
-  if(!v.producto_id && v.notas){
-    // El nombre del artículo personalizado es la primera línea de notas
+  // Solo artículos personalizados (esOtro) usan notas como nombre
+  if(v.esOtro&&!v.producto_id && v.notas){
     var primera = (v.notas||'').split('\n')[0].trim();
     if(primera) return primera;
   }
@@ -5167,7 +5168,7 @@ async function saveV(){
       // Generar PDF factura automáticamente
       var cliRes=await GET('/clientes?select=*&id=eq.'+cId);
       var cliPdf=cliRes.length?cliRes[0]:{nombre:'',apellidos:'',ciudad:'',codigo_postal:'',direccion:''};
-      var ventasPdf=vmLineas.map(function(l){return {prod_nombre:l.esOtro?l.nombre:(l.nombre||''),prod_cat:l.esOtro?'':l.cat,pvp:l.pvp,cantidad:l.qty,total:+(l.pvp*l.qty*(1-dto/100)).toFixed(2),ref_propia:l.ref_propia||'',proveedor:l.proveedor||''};});
+      var ventasPdf=vmLineas.map(function(l){return {prod_nombre:l.esOtro?l.nombre:(l.nombre||''),prod_cat:l.esOtro?'':l.cat,pvp:l.pvp,cantidad:l.qty,total:+(l.pvp*l.qty*(1-dto/100)).toFixed(2),ref_propia:l.ref_propia||'',proveedor:l.proveedor||'',esOtro:l.esOtro||false};});
       // Guardar datos para generar albarán después
       window._lastAlbaranData={ventas:ventasPdf,cli:cliPdf,fecha:fecha,dto:dto,vend:vend,pago:pago,entrega:entrega,fechaE:fechaE||'',notas:notas,num:numAlbaran};
     }
