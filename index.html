@@ -2702,7 +2702,20 @@ function getProdCat(v){
 async function toggleVMProduct(id,nom,cat,pvp){
   var existing=vmLineas.findIndex(function(l){return l.id===id;});
   if(existing>=0){
-    // Si ya está en el pedido, incrementar cantidad en vez de eliminar
+    // Verificar stock máximo antes de incrementar
+    var l=vmLineas[existing];
+    var maxStk=99;
+    if(l._esTienda&&l._tiendaId){
+      Object.values(window._vmTiendaMap||{}).forEach(function(t){if(t.id===l._tiendaId)maxStk=t.stock||0;});
+    } else {
+      var _tVinc=window._vmTiendaMap&&window._vmTiendaMap[l.id];
+      var _almStk=stockCache[l.id]!==undefined?stockCache[l.id]:99;
+      maxStk=_almStk+(_tVinc?(_tVinc.stock||0):0);
+    }
+    if(l.qty>=maxStk){
+      toast('⚠️ Solo hay '+maxStk+' ud. disponibles de "'+l.nombre+'"');
+      return;
+    }
     vmLineas[existing].qty+=1;
     renderVMLineas();
     renderVMCatalog();
