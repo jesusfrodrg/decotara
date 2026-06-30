@@ -2750,8 +2750,13 @@ async function toggleVMProduct(id,nom,cat,pvp){
     } else if(_restAlm>0&&_restTnd<=0){
       if(!confirm('⚠️ Solo queda '+_restAlm+' ud. en Almacén de "'+nom+'". ¿Añadir al pedido?'))return;
       var exAlm2=vmLineas.findIndex(function(ll){return (ll._productoId||ll.id)===prodKey&&!ll._esTienda;});
-      if(exAlm2>=0){vmLineas[exAlm2].qty+=1;}
-      else{vmLineas.push({id:prodKey,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:l.proveedor||'',_esTienda:false,_tiendaId:null,_productoId:prodKey});}
+      if(exAlm2>=0){vmLineas[exAlm2].qty+=1;renderVMLineas();renderVMCatalog();}
+      else{
+        vmLineas.push({id:prodKey,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:l.proveedor||'',_esTienda:false,_tiendaId:null,_productoId:prodKey});
+        if(l.proveedor)await vmSetProveedor(vmLineas.length-1,l.proveedor);
+        else{renderVMLineas();renderVMCatalog();}
+      }
+      return;
     }
     renderVMLineas();
     renderVMCatalog();
