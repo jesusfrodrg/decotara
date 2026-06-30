@@ -5113,8 +5113,16 @@ async function saveV(){
         // IMPORTANTE: producto_id solo puede apuntar a tabla productos — nunca ID de tienda
         var pId2=null;
         if(!l.esOtro){
-          if(_esTienda){pId2=l._productoId||null;}
-          else{pId2=(l.id&&l.id.indexOf('TI_')===0)?null:l.id;}
+          var _rawId=l.id||'';
+          var _isTiendaId=_rawId.indexOf('TI_')===0||_esTienda;
+          if(_isTiendaId){
+            // Artículo de tienda: usar producto_id del almacén vinculado (puede ser null)
+            pId2=l._productoId||null;
+          } else {
+            pId2=_rawId||null;
+          }
+          // Última verificación: asegurarse que no sea un ID de tienda
+          if(pId2&&(pId2.indexOf('TI_')===0)){pId2=null;}
         }
         // Stock
         if(_esTienda||l._tiendaId){
