@@ -2712,14 +2712,14 @@ async function toggleVMProduct(id,nom,cat,pvp){
     var l=vmLineas[existing];
     var _almId2=(id&&id.indexOf('TI_')!==0)?id:(l._productoId||null);
     var _tVinc2=_almId2&&window._vmTiendaMap?window._vmTiendaMap[_almId2]:null;
-    // Stock ORIGINAL al abrir la venta
+    // Stock original de cada origen
     var _almOrig=_almId2?(stockCache[_almId2]||0):0;
     var _tndOrig=_tVinc2?(_tVinc2.stock||0):0;
-    // Cuánto ya pedido de cada origen en esta línea
-    var _yaAlm=l._qtyAlmacen||(!l._esTienda?l.qty:0);
-    var _yaTnd=l._qtyTienda||(l._esTienda?l.qty:0);
-    var _restAlm2=_almOrig-_yaAlm;
-    var _restTnd2=_tndOrig-_yaTnd;
+    // Inicializar contadores si no existen
+    if(l._qtyAlmacen===undefined)l._qtyAlmacen=l._esTienda?0:l.qty;
+    if(l._qtyTienda===undefined)l._qtyTienda=l._esTienda?l.qty:0;
+    var _restAlm2=_almOrig-l._qtyAlmacen;
+    var _restTnd2=_tndOrig-l._qtyTienda;
     if(_restAlm2<=0&&_restTnd2<=0){
       toast('⚠️ No hay más stock de "'+nom+'"');return;
     }
@@ -2736,12 +2736,11 @@ async function toggleVMProduct(id,nom,cat,pvp){
     }
     vmLineas[existing].qty+=1;
     if(origenSig3==='tienda'){
-      vmLineas[existing]._qtyTienda=(_yaTnd+1);
+      vmLineas[existing]._qtyTienda+=1;
       if(!vmLineas[existing]._tiendaId&&_tVinc2)vmLineas[existing]._tiendaId=_tVinc2.id;
     } else {
-      vmLineas[existing]._qtyAlmacen=(_yaAlm+1);
+      vmLineas[existing]._qtyAlmacen+=1;
       if(_almId2)vmLineas[existing]._productoId=_almId2;
-      vmLineas[existing]._esTienda=false;
     }
     renderVMLineas();renderVMCatalog();return;
   } else {
