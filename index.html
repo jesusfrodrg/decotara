@@ -2698,7 +2698,7 @@ function getProdCat(v){
 }
 
 async function toggleVMProduct(id,nom,cat,pvp){
-  var existing=vmLineas.findIndex(function(l){return l.id===id;});
+  var existing=vmLineas.findIndex(function(l){return l.id===id||(l._productoId&&l._productoId===id);});
   if(existing>=0){
     var l=vmLineas[existing];
     // Calcular stock disponible según origen elegido
