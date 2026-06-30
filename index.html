@@ -2710,17 +2710,16 @@ async function toggleVMProduct(id,nom,cat,pvp){
   });
   if(existing>=0){
     var l=vmLineas[existing];
-    // ID del almacén — siempre es el 'id' que viene del catálogo (nunca TI_xxx)
     var _almId2=(id&&id.indexOf('TI_')!==0)?id:(l._productoId||null);
-    // Stock total disponible
-    var _almDisp2=_almId2?(stockCache[_almId2]||0):0;
     var _tVinc2=_almId2&&window._vmTiendaMap?window._vmTiendaMap[_almId2]:null;
-    var _tndDisp2=_tVinc2?(_tVinc2.stock||0):0;
-    // Cuánto ya está pedido de tienda y de almacén
-    var _usadoTnd2=vmLineas.reduce(function(s,ll){return s+(ll._esTienda&&(ll.id===_almId2||ll._productoId===_almId2||(ll._tiendaId&&_tVinc2&&ll._tiendaId===_tVinc2.id))?ll.qty-(ll._qtyAlmacen||0):0);},0);
-    var _usadoAlm2=vmLineas.reduce(function(s,ll){return s+(!ll._esTienda&&(ll.id===_almId2||ll._productoId===_almId2)?ll.qty-(ll._qtyTienda||0):(ll._qtyAlmacen||0));},0);
-    var _restAlm2=_almDisp2-_usadoAlm2;
-    var _restTnd2=_tndDisp2-_usadoTnd2;
+    // Stock ORIGINAL al abrir la venta
+    var _almOrig=_almId2?(stockCache[_almId2]||0):0;
+    var _tndOrig=_tVinc2?(_tVinc2.stock||0):0;
+    // Cuánto ya pedido de cada origen en esta línea
+    var _yaAlm=l._qtyAlmacen||(!l._esTienda?l.qty:0);
+    var _yaTnd=l._qtyTienda||(l._esTienda?l.qty:0);
+    var _restAlm2=_almOrig-_yaAlm;
+    var _restTnd2=_tndOrig-_yaTnd;
     if(_restAlm2<=0&&_restTnd2<=0){
       toast('⚠️ No hay más stock de "'+nom+'"');return;
     }
@@ -2737,11 +2736,12 @@ async function toggleVMProduct(id,nom,cat,pvp){
     }
     vmLineas[existing].qty+=1;
     if(origenSig3==='tienda'){
-      vmLineas[existing]._qtyTienda=(vmLineas[existing]._qtyTienda||0)+1;
+      vmLineas[existing]._qtyTienda=(_yaTnd+1);
       if(!vmLineas[existing]._tiendaId&&_tVinc2)vmLineas[existing]._tiendaId=_tVinc2.id;
     } else {
-      vmLineas[existing]._qtyAlmacen=(vmLineas[existing]._qtyAlmacen||0)+1;
+      vmLineas[existing]._qtyAlmacen=(_yaAlm+1);
       if(_almId2)vmLineas[existing]._productoId=_almId2;
+      vmLineas[existing]._esTienda=false;
     }
     renderVMLineas();renderVMCatalog();return;
   } else {
