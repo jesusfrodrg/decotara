@@ -2716,13 +2716,18 @@ async function toggleVMProduct(id,nom,cat,pvp){
     var _tiendaVinc=window._vmTiendaMap&&window._vmTiendaMap[id];
     var origenElegido='almacen';
     var _tiendaId=null;
-    if(_tiendaVinc&&_tiendaVinc.stock>0){
+    var _esArticuloSoloTienda=!!_vmprod._esTienda;
+    if(_esArticuloSoloTienda){
+      // Artículo que solo existe en tienda, sin vínculo con almacén
+      origenElegido='tienda';
+      _tiendaId=_vmprod._tiendaId;
+    } else if(_tiendaVinc&&_tiendaVinc.stock>0){
       var stockAlm=stockCache[id]||0;
       origenElegido=await preguntarOrigenStock(id,1,stockAlm,_tiendaVinc);
       if(origenElegido==='cancelar')return;
       if(origenElegido==='tienda')_tiendaId=_tiendaVinc.id;
     }
-    vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:_vmprod.proveedor||'',_esTienda:origenElegido==='tienda',_tiendaId:_tiendaId,_productoId:id});
+    vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:_vmprod.proveedor||'',_esTienda:origenElegido==='tienda',_tiendaId:_tiendaId,_productoId:_esArticuloSoloTienda?null:id});
     if(_vmprod.proveedor){
       await vmSetProveedor(vmLineas.length-1,_vmprod.proveedor);
     } else {
