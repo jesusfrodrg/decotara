@@ -2751,9 +2751,16 @@ async function toggleVMProduct(id,nom,cat,pvp){
     renderVMCatalog();
     return;
   } else {
-    var stk=stockCache[id]!==undefined?stockCache[id]:99;
+    var _vmprodCheck=vmProductos.find(function(x){return x.id===id;})||{};
+    var stk;
+    if(_vmprodCheck._esTienda){
+      // Artículo solo-tienda: stock real es el de vmProductos
+      stk=_vmprodCheck.stock||0;
+    } else {
+      stk=stockCache[id]!==undefined?stockCache[id]:(_vmprodCheck.stock||0);
+    }
     var _tiendaVincCheck=window._vmTiendaMap&&window._vmTiendaMap[id];
-    var stkCheck=stk+(_tiendaVincCheck?_tiendaVincCheck.stock:0);
+    var stkCheck=_vmprodCheck._esTienda?stk:(stk+(_tiendaVincCheck?_tiendaVincCheck.stock:0));
     if(stkCheck<=0){toast('Sin stock disponible');return;}
     var _vmprod=vmProductos.find(function(x){return x.id===id;})||{};
     var _tiendaVinc=window._vmTiendaMap&&window._vmTiendaMap[id];
@@ -2761,8 +2768,12 @@ async function toggleVMProduct(id,nom,cat,pvp){
     var _tiendaId=null;
     var _esArticuloSoloTienda=!!_vmprod._esTienda;
     if(_esArticuloSoloTienda){
-      // Artículo que solo existe en tienda, sin vínculo con almacén
-      if(_vmprod.stock===1){
+      // Artículo que solo existe en tienda — verificar stock real
+      var _stkSoloTnd=_vmprod.stock||0;
+      // Calcular ya pedido de este artículo
+      var _yaPedidoTnd=vmLineas.reduce(function(s,ll){return s+((ll._tiendaId&&ll._tiendaId===_vmprod._tiendaId)?ll.qty:0);},0);
+      if(_yaPedidoTnd>=_stkSoloTnd){toast('⚠️ No hay más stock de "'+nom+'" en tienda ('+_stkSoloTnd+' ud.)');return;}
+      if(_stkSoloTnd===1){
         if(!confirm('⚠️ Este es el último artículo en tienda ("'+nom+'"). ¿Confirmar venta?'))return;
       }
       origenElegido='tienda';
