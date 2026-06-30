@@ -5575,31 +5575,36 @@ document.addEventListener('DOMContentLoaded',function(){
       if(confirm('¿Eliminar esta venta?')){
         (async function(){
           try{
-            // Obtener datos frescos de Supabase (con stock_origen y tienda_id)
-            var vv=await GET('/ventas?select=producto_id,cantidad,proveedor,stock_origen,tienda_id,albaran_num&id=eq.'+id);
-            var vDel=vv.length?vv[0]:null;
+            // Obtener TODAS las líneas del mismo albarán
+            var vv1=await GET('/ventas?select=producto_id,cantidad,stock_origen,tienda_id,albaran_num&id=eq.'+id);
+            var albNum=vv1.length?vv1[0].albaran_num:null;
+            var todasLineas=vv1;
+            if(albNum){
+              todasLineas=await GET('/ventas?select=producto_id,cantidad,stock_origen,tienda_id,albaran_num&albaran_num=eq.'+encodeURIComponent(albNum));
+            }
             // Preguntar si quiere restablecer stock
-            if(vDel&&vDel.cantidad){
-              var restablecer=confirm('¿Desea restablecer el stock de este artículo?');
-              if(restablecer){
+            var restablecer=todasLineas.length>0&&confirm('¿Desea restablecer el stock de '+(todasLineas.length>1?'todos los artículos':'este artículo')+'?');
+            if(restablecer){
+              var stockOps=[];
+              todasLineas.forEach(function(vDel){
+                if(!vDel.cantidad)return;
                 var origen=vDel.stock_origen||'almacen';
                 if(origen==='tienda'&&vDel.tienda_id){
-                  // Devolver a tienda
-                  var tRows=await GET('/stock_tienda?select=id,stock&id=eq.'+vDel.tienda_id);
-                  if(tRows.length){
-                    var nsT=tRows[0].stock+Number(vDel.cantidad||1);
-                    await PATCH('/stock_tienda?id=eq.'+vDel.tienda_id,{stock:nsT});
-                    toast('✅ Stock devuelto a tienda: '+nsT+' ud.');
-                  } else {
-                    await devolverStock(vDel.producto_id,vDel.cantidad);
-                  }
-                } else {
-                  // Devolver a almacén
-                  await devolverStock(vDel.producto_id,vDel.cantidad);
+                  stockOps.push(GET('/stock_tienda?select=id,stock&id=eq.'+vDel.tienda_id).then(function(tRows){
+                    if(tRows.length)return PATCH('/stock_tienda?id=eq.'+tRows[0].id,{stock:tRows[0].stock+Number(vDel.cantidad)});
+                  }));
+                } else if(vDel.producto_id){
+                  stockOps.push(devolverStock(vDel.producto_id,vDel.cantidad));
                 }
-              }
+              });
+              await Promise.all(stockOps);
             }
-            await DEL('/ventas?id=eq.'+id);
+            // Borrar todas las líneas del albarán
+            if(albNum){
+              await DEL('/ventas?albaran_num=eq.'+encodeURIComponent(albNum));
+            } else {
+              await DEL('/ventas?id=eq.'+id);
+            }
             await loadStockCache();
             // Si no quedan ventas, resetear contadores de factura y referencias
             var ventasRestantes=await GET('/ventas?select=id&limit=1');
