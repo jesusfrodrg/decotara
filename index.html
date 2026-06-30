@@ -5098,9 +5098,13 @@ async function saveV(){
       }
       var numAlbaran='ALB-'+String(nAlb+1).padStart(4,'0');
       var primeraId=null;
-      // Preparar todos los IDs primero
+      // Generar IDs secuencialmente (evita duplicados)
       var _ids=[];
-      for(var li2=0;li2<vmLineas.length;li2++){_ids.push(await nextVentaId());}
+      var _baseId=await nextVentaId();
+      var _baseNum=parseInt((_baseId||'VEN-0000').replace('VEN-',''))||0;
+      for(var li2=0;li2<vmLineas.length;li2++){
+        _ids.push('VEN-'+String(_baseNum+li2).padStart(4,'0'));
+      }
       primeraId=_ids[0];
       // Guardar todas las ventas en paralelo
       var _posts=vmLineas.map(function(l,li){
