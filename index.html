@@ -2702,7 +2702,9 @@ async function toggleVMProduct(id,nom,cat,pvp){
   if(existing>=0){
     var l=vmLineas[existing];
     // Determinar clave del producto en almacén
-    var _almId=l._esTienda?(l._productoId||null):(l.id&&l.id.indexOf('TI_')===0?null:l.id);
+    // 'id' es siempre el ID del producto en almacén (el que se pasó al pulsar)
+    var _almId=(id&&id.indexOf('TI_')===0)?null:id;
+    if(!_almId)_almId=l._esTienda?(l._productoId||null):(l.id&&l.id.indexOf('TI_')===0?null:l.id);
     var prodKey=_almId||l.id;
     // Stock en almacén
     var _almDisp=_almId?(stockCache[_almId]!==undefined?stockCache[_almId]:0):0;
