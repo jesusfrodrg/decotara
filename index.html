@@ -2700,17 +2700,28 @@ function getProdCat(v){
 async function toggleVMProduct(id,nom,cat,pvp){
   var existing=vmLineas.findIndex(function(l){return l.id===id;});
   if(existing>=0){
-    // Verificar stock máximo antes de incrementar
     var l=vmLineas[existing];
+    // Calcular stock disponible según origen elegido
     var maxStk=99;
     if(l._esTienda&&l._tiendaId){
       Object.values(window._vmTiendaMap||{}).forEach(function(t){if(t.id===l._tiendaId)maxStk=t.stock||0;});
     } else {
-      var _tVinc=window._vmTiendaMap&&window._vmTiendaMap[l.id];
-      var _almStk=stockCache[l.id]!==undefined?stockCache[l.id]:99;
-      maxStk=_almStk+(_tVinc?(_tVinc.stock||0):0);
+      var _almStk2=stockCache[l.id]!==undefined?stockCache[l.id]:99;
+      maxStk=_almStk2;
     }
     if(l.qty>=maxStk){
+      // Verificar si hay stock en el otro origen
+      var _tVinc2=window._vmTiendaMap&&window._vmTiendaMap[l.id];
+      if(!l._esTienda&&_tVinc2&&_tVinc2.stock>0){
+        // Hay stock en tienda, preguntar si quiere añadir desde tienda
+        var origenExtra=await preguntarOrigenStock(l.id,1,0,_tVinc2);
+        if(origenExtra==='cancelar')return;
+        if(origenExtra==='tienda'){
+          // Añadir nueva línea desde tienda
+          vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:l.proveedor||'',_esTienda:true,_tiendaId:_tVinc2.id,_productoId:id});
+          renderVMLineas();renderVMCatalog();return;
+        }
+      }
       toast('⚠️ Solo hay '+maxStk+' ud. disponibles de "'+l.nombre+'"');
       return;
     }
