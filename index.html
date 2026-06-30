@@ -2701,36 +2701,16 @@ async function toggleVMProduct(id,nom,cat,pvp){
   var existing=vmLineas.findIndex(function(l){return l.id===id||(l._productoId&&l._productoId===id);});
   if(existing>=0){
     var l=vmLineas[existing];
-    // Calcular stock disponible según origen elegido
-    var maxStk=99;
-    if(l._esTienda&&l._tiendaId){
-      Object.values(window._vmTiendaMap||{}).forEach(function(t){if(t.id===l._tiendaId)maxStk=t.stock||0;});
-    } else {
-      var _almStk2=stockCache[l.id]!==undefined?stockCache[l.id]:99;
-      maxStk=_almStk2;
-    }
-    if(l.qty>=maxStk){
-      // Verificar si hay stock en el otro origen
-      var _tVinc2=window._vmTiendaMap&&window._vmTiendaMap[l.id];
-      // Buscar si hay stock en el otro origen
-      var _tVinc2=window._vmTiendaMap&&window._vmTiendaMap[l._productoId||l.id];
-      var _almStk3=stockCache[l._productoId||l.id]||0;
-      var hayOtroOrigen=(l._esTienda&&_almStk3>0)||(!l._esTienda&&_tVinc2&&_tVinc2.stock>0);
-      if(hayOtroOrigen){
-        var _otroTienda=l._esTienda?null:_tVinc2;
-        var _otroAlm=l._esTienda?_almStk3:0;
-        var origenExtra=await preguntarOrigenStock(l._productoId||l.id,1,_otroAlm,_otroTienda||{stock:0,nombre:nom});
-        if(origenExtra==='cancelar')return;
-        // Añadir nueva línea con el otro origen
-        var _newEsTienda=origenExtra==='tienda';
-        var _newTiendaId=_newEsTienda?(_tVinc2?_tVinc2.id:null):null;
-        var _newProdId=_newEsTienda?null:(l._productoId||l.id);
-        vmLineas.push({id:l._productoId||l.id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:l.proveedor||'',_esTienda:_newEsTienda,_tiendaId:_newTiendaId,_productoId:_newProdId});
-        if(l.proveedor)await vmSetProveedor(vmLineas.length-1,l.proveedor);
-        else{renderVMLineas();renderVMCatalog();}
-        return;
-      }
-      toast('⚠️ Solo hay '+maxStk+' ud. disponibles de "'+l.nombre+'"');
+    var prodKey=l._productoId||l.id;
+    // Stock total disponible (almacén + tienda)
+    var _tVinc2=window._vmTiendaMap&&window._vmTiendaMap[prodKey];
+    var _almDisp=stockCache[prodKey]!==undefined?stockCache[prodKey]:0;
+    var _tndDisp=_tVinc2?(_tVinc2.stock||0):0;
+    var stockTotal=_almDisp+_tndDisp;
+    // Total ya en el pedido de este artículo (todas las líneas)
+    var totalPedido=vmLineas.reduce(function(s,ll){return s+((ll._productoId||ll.id)===prodKey?ll.qty:0);},0);
+    if(totalPedido>=stockTotal){
+      toast('⚠️ No hay más stock de "'+nom+'" ('+stockTotal+' ud. disponibles)');
       return;
     }
     vmLineas[existing].qty+=1;
