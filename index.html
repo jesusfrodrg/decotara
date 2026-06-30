@@ -2712,15 +2712,23 @@ async function toggleVMProduct(id,nom,cat,pvp){
     if(l.qty>=maxStk){
       // Verificar si hay stock en el otro origen
       var _tVinc2=window._vmTiendaMap&&window._vmTiendaMap[l.id];
-      if(!l._esTienda&&_tVinc2&&_tVinc2.stock>0){
-        // Hay stock en tienda, preguntar si quiere añadir desde tienda
-        var origenExtra=await preguntarOrigenStock(l.id,1,0,_tVinc2);
+      // Buscar si hay stock en el otro origen
+      var _tVinc2=window._vmTiendaMap&&window._vmTiendaMap[l._productoId||l.id];
+      var _almStk3=stockCache[l._productoId||l.id]||0;
+      var hayOtroOrigen=(l._esTienda&&_almStk3>0)||(!l._esTienda&&_tVinc2&&_tVinc2.stock>0);
+      if(hayOtroOrigen){
+        var _otroTienda=l._esTienda?null:_tVinc2;
+        var _otroAlm=l._esTienda?_almStk3:0;
+        var origenExtra=await preguntarOrigenStock(l._productoId||l.id,1,_otroAlm,_otroTienda||{stock:0,nombre:nom});
         if(origenExtra==='cancelar')return;
-        if(origenExtra==='tienda'){
-          // Añadir nueva línea desde tienda
-          vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:l.proveedor||'',_esTienda:true,_tiendaId:_tVinc2.id,_productoId:id});
-          renderVMLineas();renderVMCatalog();return;
-        }
+        // Añadir nueva línea con el otro origen
+        var _newEsTienda=origenExtra==='tienda';
+        var _newTiendaId=_newEsTienda?(_tVinc2?_tVinc2.id:null):null;
+        var _newProdId=_newEsTienda?null:(l._productoId||l.id);
+        vmLineas.push({id:l._productoId||l.id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:l.proveedor||'',_esTienda:_newEsTienda,_tiendaId:_newTiendaId,_productoId:_newProdId});
+        if(l.proveedor)await vmSetProveedor(vmLineas.length-1,l.proveedor);
+        else{renderVMLineas();renderVMCatalog();}
+        return;
       }
       toast('⚠️ Solo hay '+maxStk+' ud. disponibles de "'+l.nombre+'"');
       return;
