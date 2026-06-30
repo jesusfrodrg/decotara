@@ -2733,11 +2733,6 @@ async function toggleVMProduct(id,nom,cat,pvp){
         if(_tiendaVinc.stock===1){
           if(!confirm('⚠️ Este es el último artículo en tienda ("'+nom+'"). ¿Confirmar venta?'))return;
         }
-      } else {
-        var stkAlmCk=stockCache[id]||0;
-        if(stkAlmCk===1){
-          if(!confirm('⚠️ Queda solo 1 unidad en almacén ("'+nom+'"). ¿Confirmar venta?'))return;
-        }
       }
     }
     vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:_vmprod.proveedor||'',_esTienda:origenElegido==='tienda',_tiendaId:_tiendaId,_productoId:_esArticuloSoloTienda?null:id});
