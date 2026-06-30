@@ -2708,60 +2708,42 @@ async function toggleVMProduct(id,nom,cat,pvp){
     if(l.id&&window._vmTiendaMap&&window._vmTiendaMap[l.id]&&window._vmTiendaMap[l.id].id===id)return true;
     return false;
   });
-  console.log('toggleVM id='+id+' existing='+existing+' lineas='+JSON.stringify(vmLineas.map(function(l){return {id:l.id,pid:l._productoId,tid:l._tiendaId,et:l._esTienda};})));
   if(existing>=0){
     var l=vmLineas[existing];
-    // Determinar clave del producto en almacén
-    // 'id' es siempre el ID del producto en almacén (el que se pasó al pulsar)
-    var _almId=(id&&id.indexOf('TI_')===0)?null:id;
-    if(!_almId)_almId=l._esTienda?(l._productoId||null):(l.id&&l.id.indexOf('TI_')===0?null:l.id);
-    var prodKey=_almId||l.id;
-    // Stock en almacén
-    var _almDisp=_almId?(stockCache[_almId]!==undefined?stockCache[_almId]:0):0;
-    // Stock en tienda
-    var _tVinc2=_almId&&window._vmTiendaMap?window._vmTiendaMap[_almId]:null;
-    var _tndDisp=0;
-    if(_tVinc2){_tndDisp=_tVinc2.stock||0;}
-    else if(l._esTienda&&l._tiendaId){
-      // Artículo solo-tienda: buscar en vmProductos
-      var _tprod=vmProductos.find(function(p){return p._tiendaId===l._tiendaId;});
-      _tndDisp=_tprod?(_tprod.stock||0):0;
+    // ID del almacén — siempre es el 'id' que viene del catálogo (nunca TI_xxx)
+    var _almId2=(id&&id.indexOf('TI_')!==0)?id:(l._productoId||null);
+    // Stock total disponible
+    var _almDisp2=_almId2?(stockCache[_almId2]||0):0;
+    var _tVinc2=_almId2&&window._vmTiendaMap?window._vmTiendaMap[_almId2]:null;
+    var _tndDisp2=_tVinc2?(_tVinc2.stock||0):0;
+    // Cuánto ya está pedido de tienda y de almacén
+    var _usadoTnd2=vmLineas.reduce(function(s,ll){return s+(ll._esTienda&&(ll.id===_almId2||ll._productoId===_almId2||(ll._tiendaId&&_tVinc2&&ll._tiendaId===_tVinc2.id))?ll.qty-(ll._qtyAlmacen||0):0);},0);
+    var _usadoAlm2=vmLineas.reduce(function(s,ll){return s+(!ll._esTienda&&(ll.id===_almId2||ll._productoId===_almId2)?ll.qty-(ll._qtyTienda||0):(ll._qtyAlmacen||0));},0);
+    var _restAlm2=_almDisp2-_usadoAlm2;
+    var _restTnd2=_tndDisp2-_usadoTnd2;
+    if(_restAlm2<=0&&_restTnd2<=0){
+      toast('⚠️ No hay más stock de "'+nom+'"');return;
     }
-    var stockTotal=_almDisp+_tndDisp;
-    var totalPedido=vmLineas.reduce(function(s,ll){return s+((ll._productoId||ll.id)===prodKey?ll.qty:0);},0);
-    if(totalPedido>=stockTotal){
-      toast('⚠️ No hay más stock de "'+nom+'" ('+stockTotal+' ud. disponibles)');
-      return;
+    var origenSig3='';
+    if(_restAlm2>0&&_restTnd2>0){
+      origenSig3=await preguntarOrigenStock(_almId2||id,1,_restAlm2,{stock:_restTnd2,nombre:nom,id:_tVinc2?_tVinc2.id:null});
+      if(origenSig3==='cancelar')return;
+    } else if(_restAlm2>0){
+      if(!confirm('⚠️ Solo queda '+_restAlm2+' ud. en Almacén de "'+nom+'". ¿Añadir?'))return;
+      origenSig3='almacen';
+    } else {
+      if(!confirm('⚠️ Solo queda '+_restTnd2+' ud. en Tienda de "'+nom+'". ¿Añadir?'))return;
+      origenSig3='tienda';
     }
-    // Calcular cuánto resta disponible en cada origen
-    var _usadoAlm=vmLineas.reduce(function(s,ll){return s+(((ll._productoId||ll.id)===prodKey&&!ll._esTienda)?ll.qty:0);},0);
-    var _usadoTnd=vmLineas.reduce(function(s,ll){return s+(((ll._productoId||ll.id)===prodKey&&ll._esTienda)?ll.qty:0);},0);
-    var _restAlm=_almDisp-_usadoAlm;
-    var _restTnd=_tndDisp-_usadoTnd;
-    var origenSig2='';
-    if(_restAlm>0&&_restTnd>0){
-      // Quedan en ambos — preguntar
-      origenSig2=await preguntarOrigenStock(prodKey,1,_restAlm,{stock:_restTnd,nombre:nom,id:_tVinc2?_tVinc2.id:null});
-      if(origenSig2==='cancelar')return;
-    } else if(_restAlm>0){
-      if(!confirm('⚠️ Solo queda '+_restAlm+' ud. en Almacén de "'+nom+'". ¿Añadir?'))return;
-      origenSig2='almacen';
-    } else if(_restTnd>0){
-      if(!confirm('⚠️ Solo queda '+_restTnd+' ud. en Tienda de "'+nom+'". ¿Añadir?'))return;
-      origenSig2='tienda';
-    }
-    // Siempre sumar a la línea existente (misma referencia)
     vmLineas[existing].qty+=1;
-    // Guardar origen mixto si cambió
-    if(origenSig2==='tienda'&&!l._esTienda){
+    if(origenSig3==='tienda'){
       vmLineas[existing]._qtyTienda=(vmLineas[existing]._qtyTienda||0)+1;
-    } else if(origenSig2==='almacen'&&l._esTienda){
+      if(!vmLineas[existing]._tiendaId&&_tVinc2)vmLineas[existing]._tiendaId=_tVinc2.id;
+    } else {
       vmLineas[existing]._qtyAlmacen=(vmLineas[existing]._qtyAlmacen||0)+1;
-      vmLineas[existing]._productoId=_almKey;
+      if(_almId2)vmLineas[existing]._productoId=_almId2;
     }
-    renderVMLineas();
-    renderVMCatalog();
-    return;
+    renderVMLineas();renderVMCatalog();return;
   } else {
     var _vmprodCheck=vmProductos.find(function(x){return x.id===id;})||{};
     var stk;
