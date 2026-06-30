@@ -5103,40 +5103,41 @@ async function saveV(){
       var _baseNum=parseInt((_baseId||'VEN-0000').replace('VEN-',''))||0;
       var _ids=vmLineas.map(function(_,i){return 'VEN-'+String(_baseNum+i).padStart(4,'0');});
       primeraId=_ids[0];
-      // Preparar payload de todas las ventas
-      var _payload=vmLineas.map(function(l,li){
+      // Preparar stock ops (sin GETs — usar caché)
+      var _stockOps=[];
+      // Guardar ventas + actualizar stock en paralelo
+      var _allOps=vmLineas.map(function(l,li){
         var total=+(l.pvp*l.qty*(1-dto/100)).toFixed(2);
         var notasFin=l.esOtro?(l.nombre+(notas?'\n'+notas:'')):notas;
         var _esTienda=l._esTienda||false;
-        var pId2=l.esOtro?null:(_esTienda?l._productoId:l.id);
-        return {id:_ids[li],cliente_id:cId,fecha:fecha,producto_id:pId2,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:numAlbaran,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null,stock_origen:_esTienda?'tienda':'almacen',tienda_id:l._tiendaId||null};
-      });
-      // INSERT masivo — una sola llamada para todas las ventas
-      await POST('/ventas',_payload);
-      // Actualizar stock usando caché (sin GETs adicionales)
-      var _stockOps=[];
-      vmLineas.forEach(function(l){
-        var _esTienda=l._esTienda||false;
-        var pId3=l.esOtro?null:(_esTienda?l._productoId:l.id);
+        // IMPORTANTE: producto_id solo puede apuntar a tabla productos — nunca ID de tienda
+        var pId2=null;
+        if(!l.esOtro){
+          if(_esTienda){pId2=l._productoId||null;}
+          else{pId2=(l.id&&l.id.indexOf('TI_')===0)?null:l.id;}
+        }
+        // Stock
         if(_esTienda||l._tiendaId){
           var _qtyTnd=l._esTienda?l.qty-(l._qtyAlmacen||0):(l._qtyTienda||0);
           var _qtyAlm=l._esTienda?(l._qtyAlmacen||0):l.qty-(l._qtyTienda||0);
           if(_qtyTnd>0&&l._tiendaId){
-            var _curTnd=stockCache['TI_'+l._tiendaId]!==undefined?stockCache['TI_'+l._tiendaId]:(window._vmTiendaMap&&window._vmTiendaMap[pId3]?window._vmTiendaMap[pId3].stock:0);
-            var _nsTnd=Math.max(0,_curTnd-_qtyTnd);
+            var _tMap=window._vmTiendaMap||{};
+            var _tItem=Object.values(_tMap).find(function(t){return t.id===l._tiendaId;})||{stock:0};
+            var _nsTnd=Math.max(0,(_tItem.stock||0)-_qtyTnd);
             _stockOps.push(PATCH('/stock_tienda?id=eq.'+l._tiendaId,{stock:_nsTnd}));
           }
-          if(_qtyAlm>0&&pId3){
-            stockCache[pId3]=Math.max(0,(stockCache[pId3]||0)-_qtyAlm);
-            _stockOps.push(PATCH('/productos?id=eq.'+pId3,{stock:stockCache[pId3]}));
+          if(_qtyAlm>0&&pId2){
+            stockCache[pId2]=Math.max(0,(stockCache[pId2]||0)-_qtyAlm);
+            _stockOps.push(PATCH('/productos?id=eq.'+pId2,{stock:stockCache[pId2]}));
           }
-        } else if(pId3){
-          stockCache[pId3]=Math.max(0,(stockCache[pId3]||0)-l.qty);
-          _stockOps.push(PATCH('/productos?id=eq.'+pId3,{stock:stockCache[pId3]}));
+        } else if(pId2){
+          stockCache[pId2]=Math.max(0,(stockCache[pId2]||0)-l.qty);
+          _stockOps.push(PATCH('/productos?id=eq.'+pId2,{stock:stockCache[pId2]}));
         }
+        return POST('/ventas',{id:_ids[li],cliente_id:cId,fecha:fecha,producto_id:pId2,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:numAlbaran,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null,stock_origen:_esTienda?'tienda':'almacen',tienda_id:l._tiendaId||null});
       });
-      // Todos los updates de stock en paralelo
-      await Promise.all(_stockOps);
+      // Todo en paralelo: ventas + stock
+      await Promise.all(_allOps.concat(_stockOps));
       actualizarCampana();
       var msg=vmLineas.length>1?vmLineas.length+' ventas registradas · '+numAlbaran+' ✓':'Venta registrada · '+numAlbaran+' ✓';
       toast(msg);
