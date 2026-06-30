@@ -2698,7 +2698,15 @@ function getProdCat(v){
 }
 
 async function toggleVMProduct(id,nom,cat,pvp){
-  var existing=vmLineas.findIndex(function(l){return l.id===id||(l._productoId&&l._productoId===id);});
+  // Buscar línea existente: por id directo, por productoId, o por artículo de tienda vinculado al mismo almacén
+  var _tVincBusq=window._vmTiendaMap&&window._vmTiendaMap[id];
+  var existing=vmLineas.findIndex(function(l){
+    if(l.id===id)return true;
+    if(l._productoId&&l._productoId===id)return true;
+    // Si el artículo del catálogo tiene tienda vinculada, buscar línea que venga de esa tienda
+    if(_tVincBusq&&l._tiendaId&&l._tiendaId===_tVincBusq.id)return true;
+    return false;
+  });
   if(existing>=0){
     var l=vmLineas[existing];
     // Determinar clave del producto en almacén
