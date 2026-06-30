@@ -2797,7 +2797,25 @@ function renderVMLineas(){
 
 function vmQtyChange(i,val){
   var qty=Math.max(1,parseInt(val)||1);
-  vmLineas[i].qty=qty;
+  var l=vmLineas[i];
+  if(l){
+    // Calcular stock disponible
+    var maxStk=99;
+    if(l._esTienda&&l._tiendaId){
+      // Artículo de tienda
+      var tItem=null;
+      Object.values(window._vmTiendaMap||{}).forEach(function(t){if(t.id===l._tiendaId)tItem=t;});
+      if(tItem)maxStk=tItem.stock||0;
+    } else if(l.id){
+      var almStk=stockCache[l.id];
+      if(almStk!==undefined)maxStk=almStk;
+    }
+    if(qty>maxStk){
+      toast('⚠️ Solo hay '+maxStk+' ud. disponibles');
+      qty=maxStk;
+    }
+  }
+  vmLineas[i].qty=Math.max(1,qty);
   renderVMLineas();
 }
 
