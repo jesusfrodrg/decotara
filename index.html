@@ -2604,7 +2604,7 @@ async function generarFacturaLegal(ventaId){
     for(var i=0;i<Math.max(0,6-ventas.length);i++){
       emptyRows+='<tr><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">&nbsp;</td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td></tr>';
     }
-    var CSS='*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#222;background:#fff;padding:32px 36px;max-width:800px;margin:0 auto}.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}.logo-img{width:76px;height:76px;border-radius:50%;object-fit:cover;border:3px solid #C8372D}.logo-name{font-size:12px;color:#222;font-weight:700;margin-top:5px}.factura-title{font-size:42px;font-weight:900;color:#C8372D;text-align:right}.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}.empresa-info{font-size:12px;color:#222;line-height:1.9}.meta-table{border-collapse:collapse;width:100%}.meta-hd{background:#C8372D;color:#fff;font-weight:700;font-size:11px;padding:5px 10px;text-transform:uppercase;letter-spacing:.5px}.meta-val{padding:6px 10px;background:#fff;border:1px solid #C8372D;font-size:12px}.addr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}.addr-hd{background:#C8372D;color:#fff;font-weight:700;font-size:11px;padding:5px 10px;text-transform:uppercase;letter-spacing:.5px}.addr-body{font-size:12px;line-height:1.8;padding:8px 10px;border:1px solid #e0e0e0;border-top:none;min-height:90px}table.items{width:100%;border-collapse:collapse}table.items .th{background:#C8372D;color:#fff;font-weight:700;font-size:11px;padding:8px 12px;text-transform:uppercase;letter-spacing:.5px}.bottom{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:0;align-items:center}.gracias{font-size:28px;font-weight:900;color:#C8372D;text-align:center}.tot-row{display:flex;justify-content:space-between;padding:6px 12px;font-size:13px;border-bottom:1px solid #e8e8e8}.tot-final{display:flex;justify-content:space-between;padding:9px 12px;font-size:15px;font-weight:900;background:#C8372D;color:#fff}.footer-note{text-align:center;font-size:11px;color:#888;margin-top:16px;font-style:italic;border-top:1px solid #eee;padding-top:12px}@media print{.no-print{display:none!important}}';
+    var CSS='*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;color:#222;background:#fff;padding:20px 28px;max-width:800px;margin:0 auto}.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}.logo-img{width:76px;height:76px;border-radius:50%;object-fit:cover;border:3px solid #C8372D}.logo-name{font-size:12px;color:#222;font-weight:700;margin-top:5px}.factura-title{font-size:42px;font-weight:900;color:#C8372D;text-align:right}.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}.empresa-info{font-size:12px;color:#222;line-height:1.9}.meta-table{border-collapse:collapse;width:100%}.meta-hd{background:#C8372D;color:#fff;font-weight:700;font-size:11px;padding:5px 10px;text-transform:uppercase;letter-spacing:.5px}.meta-val{padding:6px 10px;background:#fff;border:1px solid #C8372D;font-size:12px}.addr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}.addr-hd{background:#C8372D;color:#fff;font-weight:700;font-size:11px;padding:5px 10px;text-transform:uppercase;letter-spacing:.5px}.addr-body{font-size:12px;line-height:1.8;padding:8px 10px;border:1px solid #e0e0e0;border-top:none;min-height:90px}table.items{width:100%;border-collapse:collapse}table.items .th{background:#C8372D;color:#fff;font-weight:700;font-size:11px;padding:8px 12px;text-transform:uppercase;letter-spacing:.5px}.bottom{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:0;align-items:center}.gracias{font-size:28px;font-weight:900;color:#C8372D;text-align:center}.tot-row{display:flex;justify-content:space-between;padding:6px 12px;font-size:13px;border-bottom:1px solid #e8e8e8}.tot-final{display:flex;justify-content:space-between;padding:9px 12px;font-size:15px;font-weight:900;background:#C8372D;color:#fff}.footer-note{text-align:center;font-size:11px;color:#888;margin-top:16px;font-style:italic;border-top:1px solid #eee;padding-top:12px}@media print{.no-print{display:none!important}}';
     var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura '+numFact+'</title><style>'+CSS+'</style></head><body>'
       +'<div class="top"><div><img class="logo-img" src="'+window._LOGO_B64+'"><div class="logo-name">'+cfg.empresa_nombre+'</div></div><div class="factura-title">FACTURA</div></div>'
       +'<div class="info-grid"><div class="empresa-info">'+'CIF: B21652037<br>'+(cfg.empresa_dir?cfg.empresa_dir+'<br>':'')+(cfg.empresa_tel?cfg.empresa_tel+'<br>':'')+cfg.empresa_email+'</div>'
@@ -4879,18 +4879,15 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
 
   var filas=ventas.map(function(v){
     var ref=v.ref_propia||'—';
-    return '<tr><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;color:#7c3aed;font-weight:700;font-size:11px">'+ref+'</td>'
-      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">'+(v.prod_nombre||getProdNombre(v)||'—')+'</td>'
-      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:center">'+v.cantidad+'</td>'
-      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right">'+fe(v.pvp)+'</td>'
-      +(dto>0?'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right">'+dto+'%</td>':'')
-      +'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8;text-align:right;font-weight:700">'+fe(v.total)+'</td></tr>';
+    return '<tr><td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;color:#7c3aed;font-weight:700;font-size:11px">'+ref+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+(v.prod_nombre||getProdNombre(v)||'—')+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:center;font-size:12px">'+v.cantidad+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:right;font-size:12px">'+fe(v.pvp)+'</td>'
+      +(dto>0?'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:right;font-size:12px">'+dto+'%</td>':'')
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:right;font-weight:700;font-size:12px">'+fe(v.total)+'</td></tr>';
   }).join('');
 
   var emptyRows='';
-  for(var i=0;i<Math.max(0,5-ventas.length);i++){
-    emptyRows+='<tr><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8">&nbsp;</td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td><td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td>'+(dto>0?'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td>':'')+'<td style="padding:9px 12px;border-bottom:1px solid #e8e8e8"></td></tr>';
-  }
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Albarán '+numStr+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
   // CABECERA igual que factura legal
@@ -5127,11 +5124,23 @@ async function saveV(){
       actualizarCampana();
       var msg=vmLineas.length>1?vmLineas.length+' ventas registradas · '+numAlbaran+' ✓':'Venta registrada · '+numAlbaran+' ✓';
       toast(msg);
+      // Botón rápido para ver albarán
+      setTimeout(function(){
+        var tb=document.getElementById('toast-bar');
+        if(tb&&window._lastAlbaranData){
+          var btn=document.createElement('button');
+          btn.textContent='📄 Ver albarán';
+          btn.style.cssText='background:#fff;color:#C8372D;border:none;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;margin-left:8px';
+          btn.onclick=function(){var d=window._lastAlbaranData;generarAlbaran(d.ventas,d.cli,d.fecha,d.dto,d.vend,d.pago,d.entrega,d.fechaE,d.notas,d.num);};
+          tb.appendChild(btn);
+        }
+      },100);
       // Generar PDF factura automáticamente
       var cliRes=await GET('/clientes?select=*&id=eq.'+cId);
       var cliPdf=cliRes.length?cliRes[0]:{nombre:'',apellidos:'',ciudad:'',codigo_postal:'',direccion:''};
       var ventasPdf=vmLineas.map(function(l){return {prod_nombre:l.esOtro?l.nombre:(l.nombre||''),prod_cat:l.esOtro?'':l.cat,pvp:l.pvp,cantidad:l.qty,total:+(l.pvp*l.qty*(1-dto/100)).toFixed(2),ref_propia:l.ref_propia||'',proveedor:l.proveedor||''};});
-      generarAlbaran(ventasPdf,cliPdf,fecha,dto,vend,pago,entrega,fechaE||'',notas,numAlbaran);
+      // Guardar datos para generar albarán después
+      window._lastAlbaranData={ventas:ventasPdf,cli:cliPdf,fecha:fecha,dto:dto,vend:vend,pago:pago,entrega:entrega,fechaE:fechaE||'',notas:notas,num:numAlbaran};
     }
     closeM('vm');
     // Actualizar stock en pantalla inmediatamente
