@@ -5574,15 +5574,11 @@ document.addEventListener('DOMContentLoaded',function(){
       if(confirm('¿Eliminar esta venta?')){
         (async function(){
           try{
-            // Obtener datos de la venta
-            var vRows=window._ventasCache||[];
-            var vDel=vRows.find(function(x){return x.id===id;});
-            if(!vDel||(vDel&&!vDel.producto_id)){
-              var vv=await GET('/ventas?select=producto_id,cantidad,proveedor,stock_origen,tienda_id&id=eq.'+id);
-              if(vv.length)vDel=vv[0];
-            }
+            // Obtener datos frescos de Supabase (con stock_origen y tienda_id)
+            var vv=await GET('/ventas?select=producto_id,cantidad,proveedor,stock_origen,tienda_id,albaran_num&id=eq.'+id);
+            var vDel=vv.length?vv[0]:null;
             // Preguntar si quiere restablecer stock
-            if(vDel&&vDel.producto_id&&vDel.cantidad){
+            if(vDel&&vDel.cantidad){
               var restablecer=confirm('¿Desea restablecer el stock de este artículo?');
               if(restablecer){
                 var origen=vDel.stock_origen||'almacen';
