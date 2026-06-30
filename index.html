@@ -2190,8 +2190,6 @@ async function renderRectificativas(){
   try{
     var url='/rectificativas?select=*&order=created_at.desc&limit=200';
     var rows=await GET(url);
-    // Filtrar por categoría client-side
-    if(vcat)rows=rows.filter(function(r){return r.productos&&r.productos.categoria===vcat;});
     // Llenar selector de meses
     var sel=document.getElementById('rect_mes');
     if(sel&&sel.options.length<=1){
@@ -3207,7 +3205,6 @@ async function renderVentas(pagina){
   if(pagina)_ventasPagina=pagina;
   var q=(document.getElementById('vsearch').value||'').toLowerCase();
   var est=document.getElementById('vfest').value;
-  var vcat=document.getElementById('vfcat')?document.getElementById('vfcat').value:'';
   var vcat=document.getElementById('vfcat')?document.getElementById('vfcat').value:'';
   try{
     var dniField=window._dniOk?',dni':'';
