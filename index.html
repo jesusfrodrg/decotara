@@ -2778,13 +2778,11 @@ async function toggleVMProduct(id,nom,cat,pvp){
         }
       }
     }
-    vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:'',proveedor:_vmprod.proveedor||'',_esTienda:origenElegido==='tienda',_tiendaId:_tiendaId,_productoId:_esArticuloSoloTienda?null:id});
-    if(_vmprod.proveedor){
-      await vmSetProveedor(vmLineas.length-1,_vmprod.proveedor);
-    } else {
-      renderVMLineas();
-      renderVMCatalog();
-    }
+    // Usar referencia existente del artículo, no generar nueva
+    var _refExistente=_vmprod.ref_propia||'';
+    vmLineas.push({id:id,nombre:nom,cat:cat,pvp:pvp,qty:1,esOtro:false,ref_propia:_refExistente,proveedor:_vmprod.proveedor||'',_esTienda:origenElegido==='tienda',_tiendaId:_tiendaId,_productoId:_esArticuloSoloTienda?null:id});
+    renderVMLineas();
+    renderVMCatalog();
   }
 }
 
