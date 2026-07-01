@@ -4868,7 +4868,8 @@ function descargarReportePDF(){
       +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:center;font-size:12px">'+a.uds+'</td>'
       +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:right;font-weight:700;font-size:12px">'+fe(a.total)+'</td></tr>';
   }).join('');
-  html+='<table class="items" style="margin-top:14px"><thead><tr>'
+  html+='<div class="info-title" style="margin:20px 0 10px"><div class="info-title-bar"></div>Ventas por Artículo</div>';
+  html+='<table class="items" style="margin-bottom:6px"><thead><tr>'
     +'<td class="th" style="width:46%">Artículo</td>'
     +'<td class="th" style="width:18%;text-align:center">Nº Ventas</td>'
     +'<td class="th" style="width:18%;text-align:center">Uds.</td>'
@@ -4876,13 +4877,13 @@ function descargarReportePDF(){
     +'</tr></thead><tbody>'+artRows+'</tbody></table>';
 
   // TOTAL DESTACADO
-  html+='<div style="display:flex;justify-content:flex-end;margin:12px 0">'
+  html+='<div style="display:flex;justify-content:flex-end;margin:14px 0 22px">'
     +'<div style="min-width:250px"><div class="tot-final"><span>TOTAL DEL PERIODO</span><span>'+fe(tot)+'</span></div></div>'
   +'</div>';
 
   // DETALLE DE VENTAS
-  html+='<div class="info-title" style="margin:14px 0 8px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
-  html+='<table class="items"><thead><tr>'
+  html+='<div class="info-title" style="margin:20px 0 10px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
+  html+='<table class="items" style="margin-bottom:16px"><thead><tr>'
     +'<td class="th" style="width:9%">Nº</td>'
     +'<td class="th" style="width:11%">Fecha</td>'
     +'<td class="th" style="width:18%">Cliente</td>'
