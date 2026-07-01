@@ -4973,7 +4973,7 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
     +'<div><div class="addr-hd">Entrega:</div><div class="addr-body">'
     +(entrega?'<b>'+entrega+'</b><br>':'')
     +(fechaEntrega?'Fecha: '+fD(fechaEntrega):'A concretar')
-    +(notas?'<br><i style="color:#888">'+escHtml(notas)+'</i>':'')
+    +(notas?'<br><span style="font-size:11px;color:#888"><b>Obs:</b> '+escHtml(notas)+'</span>':'')
     +'</div></div></div>';
 
   // TABLA ARTÍCULOS
@@ -5135,7 +5135,7 @@ async function saveV(){
       // Edición: actualizar la venta existente con la primera línea
       var l=vmLineas[0];
       var total=+(l.pvp*l.qty*(1-dto/100)).toFixed(2);
-      var notasFin=l.esOtro?(l.nombre+(notas?'\n'+notas:'')):notas;
+      var notasFin=notas; // nombre va en nombre_articulo, no en notas
       await PATCH('/ventas?id=eq.'+veditId,{cliente_id:cId,fecha:fecha,producto_id:l.esOtro?null:l.id,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null});
       toast('Venta actualizada ✓');
     } else {
