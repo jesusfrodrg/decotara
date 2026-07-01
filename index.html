@@ -1845,6 +1845,27 @@ async function nextVentaId(){
   }
 }
 
+async function nextAlbaranNum(){
+  // Genera el siguiente numero de albaran verificando que no exista ya
+  // (evita que 2 ventas guardadas casi a la vez colisionen en el mismo numero)
+  try{
+    var rows=await GET('/ventas?select=albaran_num&albaran_num=not.is.null&order=created_at.desc&limit=50');
+    var maxN=0;
+    rows.forEach(function(r){
+      var m=(r.albaran_num||'').match(/ALB-0*(\d+)/);
+      if(m){var v=parseInt(m[1]);if(v>maxN)maxN=v;}
+    });
+    for(var i=1;i<=15;i++){
+      var candidate='ALB-'+String(maxN+i).padStart(4,'0');
+      var chk=await GET('/ventas?select=id&albaran_num=eq.'+candidate+'&limit=1');
+      if(!chk.length)return candidate;
+    }
+    return 'ALB-T'+Date.now().toString().slice(-6);
+  }catch(e){
+    return 'ALB-T'+Date.now().toString().slice(-6);
+  }
+}
+
 // ══════ MODAL VENTA - NUEVO SELECTOR CATÁLOGO ══════
 // ══════ FACTURA LEGAL ══════
 
@@ -5153,14 +5174,8 @@ async function saveV(){
       toast('Venta actualizada ✓');
     } else {
       // Nueva venta: crear una entrada por línea con el mismo albaran_num
-      // Generar un único número de albarán para toda la compra
-      var lastAlbRes=await GET('/ventas?select=albaran_num&albaran_num=not.is.null&order=created_at.desc&limit=1');
-      var nAlb=0;
-      if(lastAlbRes.length&&lastAlbRes[0].albaran_num){
-        var mAlb=lastAlbRes[0].albaran_num.match(/ALB-0*(\d+)/);
-        if(mAlb)nAlb=parseInt(mAlb[1])||0;
-      }
-      var numAlbaran='ALB-'+String(nAlb+1).padStart(4,'0');
+      // Generar un único número de albarán para toda la compra (verificado, sin colisiones)
+      var numAlbaran=await nextAlbaranNum();
       var primeraId=null;
       // Generar IDs en una sola consulta
       var _baseId=await nextVentaId();
@@ -5284,17 +5299,11 @@ async function saveCart(){
   if(!cart.length){toast('El carrito está vacío');return;}
   var btn=document.getElementById('btnSCart');btn.disabled=true;btn.textContent='Guardando...';
   try{
-    // Obtener número ALB y VEN en paralelo
-    var [lastAlb,lastVen]=await Promise.all([
-      GET('/ventas?select=albaran_num&albaran_num=not.is.null&order=created_at.desc&limit=1'),
+    // Obtener número ALB (verificado, sin colisiones) y VEN en paralelo
+    var [numAlbaran,lastVen]=await Promise.all([
+      nextAlbaranNum(),
       GET('/ventas?select=id&order=id.desc&limit=1')
     ]);
-    var nAlb=0;
-    if(lastAlb.length&&lastAlb[0].albaran_num){
-      var m=lastAlb[0].albaran_num.match(/ALB-(\d+)/);
-      if(m)nAlb=parseInt(m[1])||0;
-    }
-    var numAlbaran='ALB-'+String(nAlb+1).padStart(4,'0');
     var _allRows=await GET('/ventas?select=id&order=id.desc&limit=100');
     var _usedN=new Set(_allRows.map(function(r){var m=(r.id||'').match(/VEN-(\d+)/);return m?parseInt(m[1]):0;}));
     var n=_usedN.size?Math.max.apply(null,Array.from(_usedN)):0;
