@@ -646,7 +646,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
         <select id="vfcat" style="width:112px"><option value="">Categoría</option></select>
       </div>
       <div id="ventas-pag"></div>
-      <div class="pb"><table><thead><tr><th>N</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th><th>Compra</th><th></th></tr></thead><tbody id="vtbody"><tr><td colspan="7" class="ldr"><span class="spin"></span></td></tr></tbody></table></div>
+      <div class="pb"><table><thead><tr><th>Albarán</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th><th>Compra</th><th></th></tr></thead><tbody id="vtbody"><tr><td colspan="7" class="ldr"><span class="spin"></span></td></tr></tbody></table></div>
     </div>
   </div>
 
@@ -3381,8 +3381,8 @@ async function renderVentas(pagina){
         '</div>'+
       '</td></tr>';
       return '<tr style="cursor:pointer" data-expand="'+expandId+'">'+
-        '<td><b style="color:var(--blue)">'+primeraId+'</b>'+
-          '<div style="font-size:9px;color:var(--gray);margin-top:1px">'+albNum+'</div>'+
+        '<td><b style="color:var(--blue)">'+albNum+'</b>'+
+          '<div style="font-size:9px;color:var(--gray);margin-top:1px">'+primeraId+'</div>'+
         '</td>'+
         '<td>'+fD(v0.fecha)+'</td>'+
         '<td><div>'+(v0.clientes?v0.clientes.nombre+' '+v0.clientes.apellidos:'—')+'</div>'+
