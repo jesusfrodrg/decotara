@@ -1864,7 +1864,7 @@ async function iniciarCambioArticulo(ventaId){
     // Renderizar artículos con checkboxes y campos editables
     var cont=document.getElementById('rectArticulos');
     cont.innerHTML=ventas.map(function(x,i){
-      var nom=(x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo';
+      var nom=(x.productos&&x.productos.nombre)||x.nombre_articulo||x.prod_nombre||'Artículo';
       var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'';
       var pvp=Number(x.pvp||0);
       return '<div style="background:#f9f9f9;border:1.5px solid #e0e0e0;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">'        +'<label style="display:flex;align-items:center;gap:10px;cursor:pointer">'          +'<input type="checkbox" data-ri="'+i+'" class="rect-chk" style="width:18px;height:18px;accent-color:#059669" checked>'          +'<div style="flex:1;font-weight:700;font-size:13px">'+escHtml(nom)+'</div>'          +(ref?'<span style="font-size:10px;color:#C8372D;font-weight:700">'+escHtml(ref)+'</span>':'')        +'</label>'        +'<div style="display:grid;grid-template-columns:1fr auto;gap:8px;padding-left:28px">'          +'<div>'            +'<div style="font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:2px">Descripción</div>'            +'<input type="text" data-desc="'+i+'" value="'+escHtml(nom)+'" style="width:100%;padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px">'          +'</div>'          +'<div>'            +'<div style="font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:2px">Precio €</div>'            +'<input type="number" data-pvp="'+i+'" value="'+pvp+'" step="0.01" min="0" style="width:80px;padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;text-align:right;color:#C8372D;font-weight:700">'          +'</div>'        +'</div>'      +'</div>';
@@ -1915,7 +1915,7 @@ async function confirmarCambioArticulo(){
     var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'—';
     var descEl=document.querySelector('[data-desc="'+x._ri+'"]');
     var pvpEl=document.querySelector('[data-pvp="'+x._ri+'"]');
-    var nom=descEl?descEl.value:((x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo');
+    var nom=descEl?descEl.value:((x.productos&&x.productos.nombre)||x.nombre_articulo||x.prod_nombre||'Artículo');
     var pvp=pvpEl?Math.max(0,parseFloat(pvpEl.value)||0):Number(x.pvp||0);
     var qty=Number(x.cantidad||1);
     var tot=pvp*qty;
@@ -2314,7 +2314,7 @@ async function generarFacturaRectificativa(ventaId){
     // Renderizar artículos con checkboxes
     var cont=document.getElementById('rectArticulos');
     cont.innerHTML=ventas.map(function(x,i){
-      var nom=(x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo';
+      var nom=(x.productos&&x.productos.nombre)||x.nombre_articulo||x.prod_nombre||'Artículo';
       var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'';
       var pvp=Number(x.pvp||0);
       return '<div style="background:#f9f9f9;border:1.5px solid #e0e0e0;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">'        +'<label style="display:flex;align-items:center;gap:10px;cursor:pointer">'          +'<input type="checkbox" data-ri="'+i+'" class="rect-chk" style="width:18px;height:18px;accent-color:#C8372D" checked>'          +'<div style="flex:1;font-weight:700;font-size:13px">'+escHtml(nom)+'</div>'          +(ref?'<span style="font-size:10px;color:#C8372D;font-weight:700">'+escHtml(ref)+'</span>':'')        +'</label>'        +'<div style="display:grid;grid-template-columns:1fr auto;gap:8px;padding-left:28px">'          +'<div>'            +'<div style="font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:2px">Descripción</div>'            +'<input type="text" data-desc="'+i+'" value="'+escHtml(nom)+'" style="width:100%;padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px">'          +'</div>'          +'<div>'            +'<div style="font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:2px">Precio €</div>'            +'<input type="number" data-pvp="'+i+'" value="'+pvp+'" step="0.01" min="0" style="width:80px;padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;text-align:right;color:#C8372D;font-weight:700">'          +'</div>'        +'</div>'      +'</div>';
@@ -2384,7 +2384,7 @@ async function confirmarSubsanacion(){
   var totalVenta=ventas.reduce(function(s,x){return s+Number(x.total||0);},0);
   var dto=v.descuento||0;
   var filas=ventas.map(function(x){
-    var nom=(x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo';
+    var nom=(x.productos&&x.productos.nombre)||x.nombre_articulo||x.prod_nombre||'Artículo';
     var ref=x.ref_propia||(x.productos&&x.productos.ref_propia)||'—';
     return '<tr>'      +'<td style="color:#C8372D;font-weight:700;font-size:11px">'+escHtml(ref)+'</td>'      +'<td>'+escHtml(nom)+'</td>'      +'<td class="center">'+Number(x.cantidad||1)+'</td>'      +'<td class="right">'+fe(Number(x.pvp||0))+'</td>'      +'<td class="right" style="font-weight:700">'+fe(Number(x.total||0))+'</td>'    +'</tr>';
   }).join('');
@@ -2463,7 +2463,7 @@ async function confirmarRectificativa(){
     x._ri=ri;
     var descEl=document.querySelector('[data-desc="'+ri+'"]');
     var pvpEl=document.querySelector('[data-pvp="'+ri+'"]');
-    x._nomEdit=descEl?descEl.value:((x.productos&&x.productos.nombre)||x.prod_nombre||'Artículo');
+    x._nomEdit=descEl?descEl.value:((x.productos&&x.productos.nombre)||x.nombre_articulo||x.prod_nombre||'Artículo');
     x._pvpEdit=pvpEl?Math.max(0,parseFloat(pvpEl.value)||0):Number(x.pvp||0);
     x._totEdit=x._pvpEdit*Number(x.cantidad||1);
     return x;
