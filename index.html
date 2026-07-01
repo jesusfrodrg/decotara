@@ -4814,8 +4814,9 @@ function descargarReportePDF(){
   var filas=rptData.map(function(v){
     var estado=v.estado||'Completada';
     var estColor=estado==='Completada'?'#15803d':estado==='Pendiente'?'#92400e':'#991b1b';
+    var albNum=v.albaran_num||'—';
     return '<tr>'
-      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;color:#C8372D;font-weight:700;font-size:11px">'+v.id+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;color:#C8372D;font-weight:700;font-size:11px">'+albNum+'</td>'
       +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+fD(v.fecha)+'</td>'
       +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td>'
       +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+(v.prod_nombre||getProdNombre(v))+'</td>'
@@ -4852,30 +4853,6 @@ function descargarReportePDF(){
     }).join('')
   +'</div>';
 
-  // RESUMEN POR ARTÍCULO
-  var artMap={};
-  rptData.forEach(function(v){
-    var key=v.producto_id||('_'+getProdNombre(v));
-    var nombre=v.prod_nombre||getProdNombre(v,'—');
-    if(!artMap[key]){artMap[key]={nombre:nombre,ventas:0,uds:0,total:0};}
-    artMap[key].ventas++;
-    artMap[key].uds+=Number(v.cantidad||1);
-    artMap[key].total+=Number(v.total||0);
-  });
-  var artRows=Object.values(artMap).sort(function(a,b){return b.total-a.total;}).map(function(a){
-    return '<tr><td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px"><b>'+a.nombre+'</b></td>'
-      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:center;font-size:12px">'+a.ventas+'</td>'
-      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:center;font-size:12px">'+a.uds+'</td>'
-      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:right;font-weight:700;font-size:12px">'+fe(a.total)+'</td></tr>';
-  }).join('');
-  html+='<div class="info-title" style="margin:20px 0 10px"><div class="info-title-bar"></div>Ventas por Artículo</div>';
-  html+='<table class="items" style="margin-bottom:6px"><thead><tr>'
-    +'<td class="th" style="width:46%">Artículo</td>'
-    +'<td class="th" style="width:18%;text-align:center">Nº Ventas</td>'
-    +'<td class="th" style="width:18%;text-align:center">Uds.</td>'
-    +'<td class="th" style="width:18%;text-align:right">Total</td>'
-    +'</tr></thead><tbody>'+artRows+'</tbody></table>';
-
   // TOTAL DESTACADO
   html+='<div style="display:flex;justify-content:flex-end;margin:14px 0 22px">'
     +'<div style="min-width:250px"><div class="tot-final"><span>TOTAL DEL PERIODO</span><span>'+fe(tot)+'</span></div></div>'
@@ -4884,12 +4861,12 @@ function descargarReportePDF(){
   // DETALLE DE VENTAS
   html+='<div class="info-title" style="margin:20px 0 10px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
   html+='<table class="items" style="margin-bottom:16px"><thead><tr>'
-    +'<td class="th" style="width:9%">Nº</td>'
-    +'<td class="th" style="width:11%">Fecha</td>'
-    +'<td class="th" style="width:18%">Cliente</td>'
-    +'<td class="th" style="width:22%">Producto</td>'
-    +'<td class="th" style="width:7%;text-align:center">Cant.</td>'
-    +'<td class="th" style="width:13%">Vendedor</td>'
+    +'<td class="th" style="width:11%">Albarán</td>'
+    +'<td class="th" style="width:10%">Fecha</td>'
+    +'<td class="th" style="width:17%">Cliente</td>'
+    +'<td class="th" style="width:21%">Producto</td>'
+    +'<td class="th" style="width:6%;text-align:center">Cant.</td>'
+    +'<td class="th" style="width:12%">Vendedor</td>'
     +'<td class="th" style="width:11%;text-align:right">Total</td>'
     +'<td class="th" style="width:9%">Estado</td>'
     +'</tr></thead><tbody>'+filas+'</tbody></table>';
