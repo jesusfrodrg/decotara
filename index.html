@@ -4958,10 +4958,7 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
     +'<div class="tot-final"><span>TOTAL</span><span>'+fe(total)+'</span></div>'
     +'</div></div>';
   // FIRMA al final
-  html+='<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:20px">'
-    +'<div style="font-size:11px;color:#888">'
-      +(entrega?'<b>Entrega:</b> '+escHtml(entrega)+(fechaEntrega?' · '+fD(fechaEntrega):' · A concretar'):'')
-    +'</div>'
+  html+='<div style="display:flex;justify-content:flex-end;align-items:flex-end;margin-top:20px">'
     +'<div class="sig-box"><div class="sig-line">Firma del cliente</div></div>'
     +'</div>';
 
