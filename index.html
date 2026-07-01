@@ -4801,6 +4801,7 @@ function descargarReportePDF(){
   var ticketMedio=numVentas?tot/numVentas:0;
   var nComp=rptData.filter(function(v){return v.estado==='Completada';}).length;
   var nPend=rptData.filter(function(v){return v.estado==='Pendiente';}).length;
+  var fechaStr=new Date().toLocaleDateString('es-ES');
 
   var porVend={};
   rptData.forEach(function(v){
@@ -4812,65 +4813,46 @@ function descargarReportePDF(){
 
   var filas=rptData.map(function(v){
     var estado=v.estado||'Completada';
-    var badgeColor=estado==='Completada'?'#15803d':estado==='Pendiente'?'#92400e':'#991b1b';
-    var badgeBg=estado==='Completada'?'#dcfce7':estado==='Pendiente'?'#fef3c7':'#fee2e2';
+    var estColor=estado==='Completada'?'#15803d':estado==='Pendiente'?'#92400e':'#991b1b';
     return '<tr>'
-      +'<td><b style="color:#C8372D">'+v.id+'</b></td>'
-      +'<td>'+fD(v.fecha)+'</td>'
-      +'<td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td>'
-      +'<td>'+(v.prod_nombre||getProdNombre(v))+'</td>'
-      +'<td class="center">'+v.cantidad+'</td>'
-      +'<td>'+(v.vendedor||'—')+'</td>'
-      +'<td class="right"><b>'+fe(v.total)+'</b></td>'
-      +'<td><span style="background:'+badgeBg+';color:'+badgeColor+';padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700">'+estado+'</span></td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;color:#C8372D;font-weight:700;font-size:11px">'+v.id+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+fD(v.fecha)+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+(v.prod_nombre||getProdNombre(v))+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:center;font-size:12px">'+v.cantidad+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+(v.vendedor||'—')+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:right;font-weight:700;font-size:12px">'+fe(v.total)+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:11px;color:'+estColor+';font-weight:700">'+estado+'</td>'
       +'</tr>';
   }).join('');
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+rptTitleStr+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
 
-  // ── Fecha generación ──
-  html+='<div class="doc-date">Generado el: '+new Date().toLocaleDateString('es-ES')+'</div>';
+  // CABECERA — igual que albarán/factura/rectificativa
+  html+='<div class="top"><div><img class="logo-img" src="'+window._LOGO_B64+'"><div class="logo-name">'+cfg_.empresa_nombre+'</div></div>'
+    +'<div style="text-align:right"><div class="doc-title">REPORTE</div>'
+    +'<div class="doc-badge">'+rptTitleStr+'</div>'
+    +'<div class="doc-date">Generado el '+fechaStr+'</div></div></div>';
 
-  // ── Cabecera estilo factura ──
-  html+='<div class="hdr">'
-    +'<div class="hdr-left">'
-      +'<div class="doc-type">REPORTE</div>'
-      +'<div class="doc-badge">'+rptTitleStr+'</div>'
-    +'</div>'
-    +'<div class="hdr-right">'
-      +'<img class="logo-circle" src="'+window._LOGO_B64+'">'
-      +'<div class="brand-name">'+cfg_.empresa_nombre+'</div>'
-      +'<div class="brand-sub">'+cfg_.empresa_email+'</div>'
-    +'</div>'
-  +'</div>';
-  html+='<hr class="divider">';
+  // DATOS EMPRESA y RESUMEN
+  html+='<div class="info-grid"><div class="empresa-info">'
+    +'CIF: '+(cfg_.empresa_cif||'B21652037')+'<br>'
+    +(cfg_.empresa_dir?cfg_.empresa_dir+'<br>':'')
+    +(cfg_.empresa_tel?cfg_.empresa_tel+'<br>':'')
+    +cfg_.empresa_email+'</div>'
+    +'<table class="meta-table"><tr><td class="meta-hd">Total Ventas</td><td class="meta-hd">Ticket Medio</td></tr>'
+    +'<tr><td class="meta-val" style="font-weight:700;color:#C8372D">'+numVentas+'</td><td class="meta-val">'+fe(ticketMedio)+'</td></tr>'
+    +'<tr><td class="meta-hd">Completadas</td><td class="meta-hd">Pendientes</td></tr>'
+    +'<tr><td class="meta-val">'+nComp+' ('+Math.round(nComp/numVentas*100)+'%)</td><td class="meta-val">'+nPend+'</td></tr></table></div>';
 
-  // ── Dirección empresa ──
-  html+='<div style="font-size:11px;color:#888;margin-bottom:18px">'
-    +cfg_.empresa_nombre+' &nbsp;·&nbsp; CIF: B21652037'
-    +(cfg_.empresa_dir?' &nbsp;·&nbsp; '+cfg_.empresa_dir:'')
-    +(cfg_.empresa_tel?' &nbsp;·&nbsp; '+cfg_.empresa_tel:'')
-    +' &nbsp;·&nbsp; '+cfg_.empresa_email
-  +'</div>';
-
-  // ── Dos columnas: resumen + vendedores ──
-  html+='<div class="info-grid">'
-    +'<div class="info-box">'
-      +'<div class="info-title"><div class="info-title-bar"></div>Resumen del Periodo</div>'
-      +'<div class="info-line"><b>Total ventas:</b> '+numVentas+'</div>'
-      +'<div class="info-line"><b>Completadas:</b> '+nComp+' ('+Math.round(nComp/numVentas*100)+'%)</div>'
-      +'<div class="info-line"><b>Pendientes:</b> '+nPend+'</div>'
-      +'<div class="info-line"><b>Ticket medio:</b> '+fe(ticketMedio)+'</div>'
-    +'</div>'
-    +'<div class="info-box">'
-      +'<div class="info-title"><div class="info-title-bar"></div>Desglose por Vendedor</div>'
-      +Object.keys(porVend).sort(function(a,b){return porVend[b].tot-porVend[a].tot;}).map(function(v){
-        return '<div class="info-line"><b>'+v+':</b> '+fe(porVend[v].tot)+' ('+porVend[v].n+' ventas)</div>';
-      }).join('')
-    +'</div>'
+  // DESGLOSE POR VENDEDOR
+  html+='<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Desglose por Vendedor</div>'
+    +Object.keys(porVend).sort(function(a,b){return porVend[b].tot-porVend[a].tot;}).map(function(v){
+      return '<div class="info-line"><b>'+v+':</b> '+fe(porVend[v].tot)+' ('+porVend[v].n+' ventas)</div>';
+    }).join('')
   +'</div>';
 
-  // ── Resumen por artículo ──
+  // RESUMEN POR ARTÍCULO
   var artMap={};
   rptData.forEach(function(v){
     var key=v.producto_id||('_'+getProdNombre(v));
@@ -4881,31 +4863,38 @@ function descargarReportePDF(){
     artMap[key].total+=Number(v.total||0);
   });
   var artRows=Object.values(artMap).sort(function(a,b){return b.total-a.total;}).map(function(a){
-    return '<tr><td><b>'+a.nombre+'</b></td><td class="center">'+a.ventas+'</td><td class="center">'+a.uds+'</td><td class="right"><b>'+fe(a.total)+'</b></td></tr>';
+    return '<tr><td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px"><b>'+a.nombre+'</b></td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:center;font-size:12px">'+a.ventas+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:center;font-size:12px">'+a.uds+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:right;font-weight:700;font-size:12px">'+fe(a.total)+'</td></tr>';
   }).join('');
-  html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Ventas por Artículo</div>';
-  html+='<table><thead><tr><th>Artículo</th><th class="center">Nº Ventas</th><th class="center">Uds.</th><th class="right">Total</th></tr></thead><tbody>'+artRows+'</tbody></table>';
+  html+='<table class="items" style="margin-top:14px"><thead><tr>'
+    +'<td class="th" style="width:46%">Artículo</td>'
+    +'<td class="th" style="width:18%;text-align:center">Nº Ventas</td>'
+    +'<td class="th" style="width:18%;text-align:center">Uds.</td>'
+    +'<td class="th" style="width:18%;text-align:right">Total</td>'
+    +'</tr></thead><tbody>'+artRows+'</tbody></table>';
 
-  // ── Total destacado ──
-  html+='<div class="totals-wrap"><table class="totals-table">'
-    +'<tr><td>TOTAL DEL PERIODO</td><td>'+fe(tot)+'</td></tr>'
-  +'</table></div>';
-
-  // ── Tabla detalle ──
-  html+='<div class="info-title" style="margin-bottom:12px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
-  html+='<table>'
-    +'<thead><tr><th>Nº</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th class="center">Cant.</th><th>Vendedor</th><th class="right">Total</th><th>Estado</th></tr></thead>'
-    +'<tbody>'+filas+'</tbody>'
-    +'<tfoot><tr class="tfoot-row"><td colspan="6">TOTAL</td><td class="right">'+fe(tot)+'</td><td></td></tr></tfoot>'
-  +'</table>';
-
-  // ── Pie ──
-  html+='<div class="footer">'
-    +cfg_.empresa_nombre
-    +(cfg_.empresa_dir?' &nbsp;·&nbsp; '+cfg_.empresa_dir:'')
-    +' &nbsp;·&nbsp; '+cfg_.empresa_email
-    +' &nbsp;·&nbsp; Generado el '+new Date().toLocaleDateString('es-ES')
+  // TOTAL DESTACADO
+  html+='<div style="display:flex;justify-content:flex-end;margin:12px 0">'
+    +'<div style="min-width:250px"><div class="tot-final"><span>TOTAL DEL PERIODO</span><span>'+fe(tot)+'</span></div></div>'
   +'</div>';
+
+  // DETALLE DE VENTAS
+  html+='<div class="info-title" style="margin:14px 0 8px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
+  html+='<table class="items"><thead><tr>'
+    +'<td class="th" style="width:9%">Nº</td>'
+    +'<td class="th" style="width:11%">Fecha</td>'
+    +'<td class="th" style="width:18%">Cliente</td>'
+    +'<td class="th" style="width:22%">Producto</td>'
+    +'<td class="th" style="width:7%;text-align:center">Cant.</td>'
+    +'<td class="th" style="width:13%">Vendedor</td>'
+    +'<td class="th" style="width:11%;text-align:right">Total</td>'
+    +'<td class="th" style="width:9%">Estado</td>'
+    +'</tr></thead><tbody>'+filas+'</tbody></table>';
+
+  // PIE + RGPD (igual que el resto de documentos)
+  html+='<div style="margin-top:10px;font-size:9px;color:#999;border-top:1px solid #eee;padding-top:8px;line-height:1.5"><b>Protección de Datos:</b> En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD, sus datos personales serán tratados por '+cfg_.empresa_nombre+' (CIF: '+(cfg_.empresa_cif||'B21652037')+') con la finalidad de gestionar la relación comercial y cumplir con las obligaciones legales. Sus datos no serán cedidos a terceros salvo obligación legal. Puede ejercer sus derechos de acceso, rectificación, supresión, limitación, portabilidad y oposición escribiendo a '+cfg_.empresa_email+(cfg_.empresa_dir?', '+cfg_.empresa_dir:'')+'. Reclamaciones: www.aepd.es</div>';
   if(cfg_.pie_factura){
     html+='<div style="text-align:center;font-size:11px;color:#aaa;margin-top:6px">'+cfg_.pie_factura+'</div>';
   }
