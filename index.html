@@ -987,6 +987,8 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
             <div class="fi full"><label style="font-size:11px">Nombre del artículo *</label><input type="text" id="vm_otros_nombre" placeholder="Ej: Sofá 3 plazas gris..."></div>
             <div class="fi"><label style="font-size:11px">Precio (€) *</label><input type="number" id="vm_otros_pvp" step="0.01" placeholder="0.00" min="0"></div>
             <div class="fi"><label style="font-size:11px">Cantidad</label><input type="number" id="vm_otros_qty" min="1" value="1"></div>
+            <div class="fi"><label style="font-size:11px">Proveedor</label><select id="vm_otros_prov" onchange="vmOtrosGenRef()"><option value="">Sin proveedor</option></select></div>
+            <div class="fi"><label style="font-size:11px">Referencia</label><input type="text" id="vm_otros_ref" placeholder="Auto..." readonly style="background:var(--xlgray);color:var(--mid)"></div>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px">
             <button type="button" onclick="addVMOtros()" class="btn bp" style="flex:1;font-size:12px">✅ Añadir al pedido</button>
@@ -2879,6 +2881,26 @@ function vmQtyChange(i,val,maxVal){
   renderVMLineas();
 }
 
+
+async function vmOtrosGenRef(){
+  var prov=document.getElementById('vm_otros_prov').value;
+  var refEl=document.getElementById('vm_otros_ref');
+  if(!prov){refEl.value='';return;}
+  var pfx=(_PROV_PREFIX&&_PROV_PREFIX[prov])||'';
+  if(!pfx){refEl.value='';return;}
+  try{
+    var results=await Promise.all([
+      GET('/productos?select=ref_propia&proveedor=eq.'+encodeURIComponent(prov)+'&ref_propia=not.is.null&order=ref_propia.desc&limit=1').catch(function(){return [];}),
+      GET('/stock_tienda?select=ref_propia&ref_propia=like.'+encodeURIComponent(pfx)+'*&order=ref_propia.desc&limit=1').catch(function(){return [];}),
+      GET('/ventas?select=ref_propia&ref_propia=like.'+encodeURIComponent(pfx)+'*&order=ref_propia.desc&limit=1').catch(function(){return [];})
+    ]);
+    var lastNum=0;
+    results.forEach(function(rows){
+      if(rows.length&&rows[0].ref_propia){var m=rows[0].ref_propia.match(/(\d+)$/);if(m)lastNum=Math.max(lastNum,parseInt(m[1])||0);}
+    });
+    refEl.value=pfx+'-'+String(lastNum+1).padStart(3,'0');
+  }catch(e){refEl.value='';}
+}
 async function vmSetProveedor(i, prov){
   vmLineas[i].proveedor=prov;
   if(!prov){vmLineas[i].ref_propia='';renderVMLineas();return;}
@@ -2935,19 +2957,30 @@ function vmSetCat(btn, cat){
 function toggleVMOtros(){
   var w=document.getElementById('vm_otros_wrap');
   w.style.display=w.style.display==='none'?'':'none';
+  if(w.style.display!=='none'){
+    var sel=document.getElementById('vm_otros_prov');
+    if(sel){
+      var cats=getCfg().proveedores||[];
+      sel.innerHTML='<option value="">Sin proveedor</option>'+cats.map(function(p){return '<option value="'+p.label+'">'+p.label+'</option>';}).join('');
+    }
+  }
 }
 
 function _addVMOtrosCore(){
   // Returns true if added OK, false if validation failed
   var nom=(document.getElementById('vm_otros_nombre').value||'').trim();
   var pvp=parseFloat(document.getElementById('vm_otros_pvp').value)||0;
+  var otrosProv=document.getElementById('vm_otros_prov')?document.getElementById('vm_otros_prov').value:'';
+  var otrosRef=document.getElementById('vm_otros_ref')?document.getElementById('vm_otros_ref').value:'';
   var qty=Math.max(1,parseInt(document.getElementById('vm_otros_qty').value)||1);
   if(!nom){toast('Escribe el nombre del artículo');return false;}
   if(!pvp){toast('Indica el precio');return false;}
-  vmLineas.push({id:'__otros__'+Date.now(),nombre:nom,cat:'',pvp:pvp,qty:qty,esOtro:true});
+  vmLineas.push({id:'__otros__'+Date.now(),nombre:nom,cat:'',pvp:pvp,qty:qty,esOtro:true,ref_propia:otrosRef||'',proveedor:otrosProv||''});
   document.getElementById('vm_otros_nombre').value='';
   document.getElementById('vm_otros_pvp').value='';
   document.getElementById('vm_otros_qty').value=1;
+  if(document.getElementById('vm_otros_prov'))document.getElementById('vm_otros_prov').value='';
+  if(document.getElementById('vm_otros_ref'))document.getElementById('vm_otros_ref').value='';
   renderVMLineas();
   return true;
 }
