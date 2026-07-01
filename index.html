@@ -3338,10 +3338,11 @@ async function renderVentas(pagina){
       var cliNom=(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'');
       return (cliNom+' '+(getProdNombre(v,''))+' '+v.id+' '+cliDni).toLowerCase().indexOf(q)>-1;
     });
-    // Agrupar por compra (fecha+cliente+vendedor mismo día = misma compra = mismo albarán)
+    // Agrupar por compra: el numero de albaran es el identificador real de una compra.
+    // Solo si no hay albaran (ventas antiguas) se usa fecha+cliente+vendedor como respaldo.
     var compras={};var comprasOrder=[];
     rows.forEach(function(v){
-      var key=(v.cliente_id||'')+'_'+(v.fecha||'')+'_'+(v.vendedor||'');
+      var key=v.albaran_num||((v.cliente_id||'')+'_'+(v.fecha||'')+'_'+(v.vendedor||''));
       if(!compras[key]){compras[key]=[];comprasOrder.push(key);}
       compras[key].push(v);
     });
