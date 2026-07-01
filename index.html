@@ -3201,7 +3201,7 @@ function showConnError(msg){
 
 
 async function initApp(){
-  fillVendSelects();
+  await fillVendSelects();
   applyConfigOnLoad();
   var cajafecha=document.getElementById('caja_fecha');
   if(cajafecha)cajafecha.value=new Date().toISOString().split('T')[0];
@@ -3497,15 +3497,25 @@ async function renderClientes(){
 
 
 // ══════ VENDEDORES ══════
-var _vendedores = ['Jaime','Samanta','Diana'];
+var _vendedores = [];        // array de nombres (para selects existentes)
+var _vendedoresRows = [];    // array de {id,nombre} (para poder eliminar por id)
+var _vendCache=null,_vendCacheTs=0;
 
-function loadVendedores(){
-  var v=localStorage.getItem('decotara_vendedores');
-  if(v){try{_vendedores=JSON.parse(v);}catch(e){}}
+async function getCachedVendedores(force){
+  if(!force&&_vendCache&&(Date.now()-_vendCacheTs)<CACHE_TTL)return _vendCache;
+  _vendCache=await GET('/vendedores?select=id,nombre&order=nombre.asc');
+  _vendCacheTs=Date.now();
+  return _vendCache;
 }
+function invalidarCacheVendedores(){_vendCache=null;_vendCacheTs=0;}
 
-function saveVendedores(){
-  localStorage.setItem('decotara_vendedores',JSON.stringify(_vendedores));
+async function loadVendedores(force){
+  try{
+    _vendedoresRows=await getCachedVendedores(force);
+    _vendedores=_vendedoresRows.map(function(r){return r.nombre;});
+  }catch(e){
+    // Sin conexión: mantener lo que ya hubiera en memoria
+  }
 }
 
 function getVendedoresOpts(selected){
@@ -3514,8 +3524,8 @@ function getVendedoresOpts(selected){
   }).join('');
 }
 
-function fillVendSelects(){
-  loadVendedores();
+async function fillVendSelects(){
+  await loadVendedores();
   var ids=['cart_vend','v_vend','rpt_cli'];
   ids.forEach(function(id){
     var el=document.getElementById(id);
@@ -3529,8 +3539,8 @@ function fillVendSelects(){
   });
 }
 
-function renderVendedores(){
-  loadVendedores();
+async function renderVendedores(){
+  await loadVendedores();
   var list=document.getElementById('vend-list');
   if(!list)return;
   if(!_vendedores.length){
@@ -3548,26 +3558,32 @@ function renderVendedores(){
   }).join('');
 }
 
-function eliminarVendedor(i){
-  if(!confirm('¿Eliminar vendedor "'+_vendedores[i]+'"?'))return;
-  _vendedores.splice(i,1);
-  saveVendedores();
-  renderVendedores();
-  fillVendSelects();
-  toast('Vendedor eliminado');
+async function eliminarVendedor(i){
+  var row=_vendedoresRows[i];
+  if(!row)return;
+  if(!confirm('¿Eliminar vendedor "'+row.nombre+'"?'))return;
+  try{
+    await DEL('/vendedores?id=eq.'+row.id);
+    invalidarCacheVendedores();
+    await renderVendedores();
+    await fillVendSelects();
+    toast('Vendedor eliminado');
+  }catch(e){toast('Error: '+e.message);}
 }
 
-function agregarVendedor(){
+async function agregarVendedor(){
   var nombre=prompt('Nombre del nuevo vendedor:');
   if(!nombre)return;
   nombre=nombre.trim();
   if(!nombre){toast('Nombre inválido');return;}
   if(_vendedores.map(function(v){return v.toLowerCase();}).indexOf(nombre.toLowerCase())>=0){toast('Ya existe');return;}
-  _vendedores.push(nombre);
-  saveVendedores();
-  renderVendedores();
-  fillVendSelects();
-  toast('Vendedor añadido: '+nombre);
+  try{
+    await POST('/vendedores',{nombre:nombre});
+    invalidarCacheVendedores();
+    await renderVendedores();
+    await fillVendSelects();
+    toast('Vendedor añadido: '+nombre);
+  }catch(e){toast('Error: '+e.message);}
 }
 
 
@@ -3696,7 +3712,7 @@ function eliminarNumFactura(key){
   toast('Número eliminado');
 }
 
-function renderConfig(){
+async function renderConfig(){
   var cfg=getCfg();
 
   renderRefCounters();
@@ -3748,7 +3764,7 @@ function renderConfig(){
   renderCfgPagos(cfg.pagos);
 
   // Render categorías
-  renderCfgVends();
+  await renderCfgVends();
   renderCfgProvs(cfg.proveedores||[]);
   renderCfgEntregas(cfg.entregas||[]);
   document.getElementById('cfg_iva').value=cfg.iva||21;
@@ -3813,32 +3829,38 @@ function toggleCfgSec(id){
   hdr.classList.toggle('open',!isOpen);
 }
 
-function renderCfgVends(){
+async function renderCfgVends(){
   var el=document.getElementById('cfg_vends_list');
   if(!el)return;
-  loadVendedores();
+  await loadVendedores();
   el.innerHTML=_vendedores.map(function(v,i){
     return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--xlgray)">'      +'<div style="width:32px;height:32px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800">'+v.charAt(0).toUpperCase()+'</div>'      +'<span style="flex:1;font-weight:700">'+escHtml(v)+'</span>'      +'<button onclick="cfgDelVend('+i+')" style="background:#fee2e2;color:#c8372d;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Eliminar</button>'    +'</div>';
   }).join('')||'<div style="color:var(--gray);font-size:13px;padding:8px 0">No hay vendedores</div>';
 }
-function cfgAddVend(){
+async function cfgAddVend(){
   var nombre=document.getElementById('cfg_vend_new').value.trim();
   if(!nombre){toast('Escribe el nombre');return;}
   if(_vendedores.map(function(v){return v.toLowerCase();}).indexOf(nombre.toLowerCase())>=0){toast('Ya existe');return;}
-  _vendedores.push(nombre);
-  saveVendedores();
-  document.getElementById('cfg_vend_new').value='';
-  renderCfgVends();
-  fillVendSelects();
-  toast('Vendedor añadido ✓');
+  try{
+    await POST('/vendedores',{nombre:nombre});
+    invalidarCacheVendedores();
+    document.getElementById('cfg_vend_new').value='';
+    await renderCfgVends();
+    await fillVendSelects();
+    toast('Vendedor añadido ✓');
+  }catch(e){toast('Error: '+e.message);}
 }
-function cfgDelVend(i){
-  if(!confirm('¿Eliminar vendedor "'+_vendedores[i]+'"?'))return;
-  _vendedores.splice(i,1);
-  saveVendedores();
-  renderCfgVends();
-  fillVendSelects();
-  toast('Eliminado');
+async function cfgDelVend(i){
+  var row=_vendedoresRows[i];
+  if(!row)return;
+  if(!confirm('¿Eliminar vendedor "'+row.nombre+'"?'))return;
+  try{
+    await DEL('/vendedores?id=eq.'+row.id);
+    invalidarCacheVendedores();
+    await renderCfgVends();
+    await fillVendSelects();
+    toast('Eliminado');
+  }catch(e){toast('Error: '+e.message);}
 }
 
 function renderCfgEntregas(entregas){
