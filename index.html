@@ -5159,7 +5159,7 @@ async function saveV(){
       // Guardar ventas + actualizar stock en paralelo
       var _allOps=vmLineas.map(function(l,li){
         var total=+(l.pvp*l.qty*(1-dto/100)).toFixed(2);
-        var notasFin=l.esOtro?(l.nombre+(notas?'\n'+notas:'')):notas;
+        var notasFin=notas; // nombre_articulo guarda el nombre; notas solo son observaciones
         // Calcular cantidades por origen
         var _qtyAlmLinea, _qtyTndLinea, _esTienda=l._esTienda||false;
         if(l._qtyAlmacen!==undefined||l._qtyTienda!==undefined){
