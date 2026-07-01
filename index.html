@@ -1850,12 +1850,12 @@ async function nextVentaId(){
 async function iniciarCambioArticulo(ventaId){
   toast('Cargando artículos...');
   try{
-    var rows=await GET('/ventas?select=*,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,telefono,email,dni),productos(nombre,categoria,ref_propia)&id=eq.'+ventaId);
+    var rows=await GET('/ventas?select=*,nombre_articulo,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,telefono,email,dni),productos(nombre,categoria,ref_propia)&id=eq.'+ventaId);
     if(!rows||!rows.length){toast('Venta no encontrada');return;}
     var v=rows[0];
     var ventas=[v];
     if(v.albaran_num){
-      var grupo=await GET('/ventas?select=*,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,telefono,email,dni),productos(nombre,categoria,ref_propia)&albaran_num=eq.'+encodeURIComponent(v.albaran_num));
+      var grupo=await GET('/ventas?select=*,nombre_articulo,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,telefono,email,dni),productos(nombre,categoria,ref_propia)&albaran_num=eq.'+encodeURIComponent(v.albaran_num));
       if(grupo.length>1)ventas=grupo;
     }
     window._rectVentas=ventas;
