@@ -1646,86 +1646,78 @@ function generarCajaPDF(){
 
   var filas=rows.map(function(v){
     return '<tr>'
-      +'<td><b style="color:#C8372D">'+v.id+'</b></td>'
-      +'<td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td>'
-      +'<td>'+(v.prod_nombre||getProdNombre(v))+'</td>'
-      +'<td>'+(v.vendedor||'—')+'</td>'
-      +'<td>'+(pagoIconos[v.forma_pago]||'')+' '+(v.forma_pago||'—')+'</td>'
-      +'<td class="right"><b>'+fe(v.total)+'</b></td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;color:#C8372D;font-weight:700;font-size:11px">'+(v.albaran_num||v.id)+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+(v.prod_nombre||getProdNombre(v))+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+(v.vendedor||'—')+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+(pagoIconos[v.forma_pago]||'')+' '+(v.forma_pago||'—')+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:right;font-weight:700;font-size:12px">'+fe(v.total)+'</td>'
       +'</tr>';
   }).join('');
 
   var pagoRows=Object.keys(porPago).map(function(p){
-    return '<tr><td>'+(pagoIconos[p]||'')+' <b>'+p+'</b></td><td class="center">'+porPago[p].n+'</td><td class="right"><b>'+fe(porPago[p].tot)+'</b></td></tr>';
+    return '<tr><td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+(pagoIconos[p]||'')+' <b>'+p+'</b></td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:center;font-size:12px">'+porPago[p].n+'</td>'
+      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:right;font-weight:700;font-size:12px">'+fe(porPago[p].tot)+'</td></tr>';
   }).join('');
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cierre de Caja '+fD(fecha)+'</title><style>'+CSS_ALBARAN+'</style></head><body>';
 
-  // Fecha
-  html+='<div class="doc-date">Fecha: '+fD(fecha)+'</div>';
+  // CABECERA — igual que albarán/factura/rectificativa/reportes
+  html+='<div class="top"><div><img class="logo-img" src="'+window._LOGO_B64+'"><div class="logo-name">'+cfg_.empresa_nombre+'</div></div>'
+    +'<div style="text-align:right"><div class="doc-title">CIERRE</div>'
+    +'<div class="doc-badge">CIERRE DE CAJA</div>'
+    +'<div class="doc-date">'+fD(fecha)+'</div></div></div>';
 
-  // Cabecera estilo factura
-  html+='<div class="hdr">'
-    +'<div class="hdr-left">'
-      +'<div class="doc-type">CIERRE</div>'
-      +'<div class="doc-badge">CIERRE DE CAJA · '+fD(fecha)+'</div>'
-    +'</div>'
-    +'<div class="hdr-right">'
-      +'<img class="logo-circle" src="'+window._LOGO_B64+'">'
-      +'<div class="brand-name">'+cfg_.empresa_nombre+'</div>'
-      +'<div class="brand-sub">'+cfg_.empresa_email+'</div>'
-    +'</div>'
-  +'</div>';
-  html+='<hr class="divider">';
+  // DATOS EMPRESA y RESUMEN
+  html+='<div class="info-grid"><div class="empresa-info">'
+    +'CIF: '+(cfg_.empresa_cif||'B21652037')+'<br>'
+    +(cfg_.empresa_dir?cfg_.empresa_dir+'<br>':'')
+    +(cfg_.empresa_tel?cfg_.empresa_tel+'<br>':'')
+    +cfg_.empresa_email+'</div>'
+    +'<table class="meta-table"><tr><td class="meta-hd">Nº de Ventas</td><td class="meta-hd">Ticket Medio</td></tr>'
+    +'<tr><td class="meta-val" style="font-weight:700;color:#C8372D">'+numVentas+'</td><td class="meta-val">'+fe(numVentas?total/numVentas:0)+'</td></tr>'
+    +'<tr><td class="meta-hd">Fecha</td><td class="meta-hd">Total del Día</td></tr>'
+    +'<tr><td class="meta-val">'+fD(fecha)+'</td><td class="meta-val" style="font-weight:700;color:#C8372D">'+fe(total)+'</td></tr></table></div>';
 
-  // Info grid: empresa | resumen | vendedor (3 columnas)
-  html+='<div class="info-grid" style="grid-template-columns:1fr 1fr 1fr">'
-    +'<div class="info-box">'
-      +'<div class="info-title"><div class="info-title-bar"></div>Datos de la Empresa</div>'
-      +'<div class="info-line"><b>Nombre:</b> '+cfg_.empresa_nombre+'</div>'
-      +'<div class="info-line"><b>CIF:</b> '+(cfg_.empresa_cif||'B21652037')+'</div>'
-      +(cfg_.empresa_dir?'<div class="info-line"><b>Dirección:</b> '+cfg_.empresa_dir+'</div>':'')
-      +(cfg_.empresa_tel?'<div class="info-line"><b>Teléfono:</b> '+cfg_.empresa_tel+'</div>':'')
-      +'<div class="info-line"><b>Mail:</b> '+cfg_.empresa_email+'</div>'
-    +'</div>'
-    +'<div class="info-box">'
-      +'<div class="info-title"><div class="info-title-bar"></div>Resumen del Día</div>'
-      +'<div class="info-line"><b>Fecha:</b> '+fD(fecha)+'</div>'
-      +'<div class="info-line"><b>Nº de ventas:</b> '+numVentas+'</div>'
-      +'<div class="info-line"><b>Ticket medio:</b> '+fe(numVentas?total/numVentas:0)+'</div>'
-    +'</div>'
-    +'<div class="info-box">'
-      +'<div class="info-title"><div class="info-title-bar"></div>Por Vendedor</div>'
-      +Object.keys(porVend).map(function(v){
-        return '<div class="info-line"><b>'+v+':</b> '+fe(porVend[v].tot)+' ('+porVend[v].n+' ventas)</div>';
-      }).join('')
-    +'</div>'
+  // POR VENDEDOR
+  html+='<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Por Vendedor</div>'
+    +Object.keys(porVend).map(function(v){
+      return '<div class="info-line"><b>'+v+':</b> '+fe(porVend[v].tot)+' ('+porVend[v].n+' ventas)</div>';
+    }).join('')
   +'</div>';
 
-  // Detalle ventas
-  html+='<div class="info-title" style="margin-bottom:10px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
-  html+='<table><thead><tr><th>Nº</th><th>Cliente</th><th>Producto</th><th>Vendedor</th><th>Pago</th><th class="right">Total</th></tr></thead><tbody>'+filas+'</tbody>'
-    +'<tfoot><tr class="tfoot-row"><td colspan="5">TOTAL</td><td class="right">'+fe(total)+'</td></tr></tfoot>'
-  +'</table>';
+  // DETALLE DE VENTAS
+  html+='<div class="info-title" style="margin:20px 0 10px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
+  html+='<table class="items" style="margin-bottom:16px"><thead><tr>'
+    +'<td class="th" style="width:14%">Albarán</td>'
+    +'<td class="th" style="width:22%">Cliente</td>'
+    +'<td class="th" style="width:26%">Producto</td>'
+    +'<td class="th" style="width:16%">Vendedor</td>'
+    +'<td class="th" style="width:12%">Pago</td>'
+    +'<td class="th" style="width:10%;text-align:right">Total</td>'
+    +'</tr></thead><tbody>'+filas+'</tbody></table>';
 
-  // Formas de pago
-  html+='<div class="info-title" style="margin-bottom:10px;margin-top:18px"><div class="info-title-bar"></div>Desglose por Forma de Pago</div>';
-  html+='<table><thead><tr><th>Forma de Pago</th><th class="center">Ventas</th><th class="right">Importe</th></tr></thead><tbody>'+pagoRows+'</tbody></table>';
+  // FORMAS DE PAGO
+  html+='<div class="info-title" style="margin:20px 0 10px"><div class="info-title-bar"></div>Desglose por Forma de Pago</div>';
+  html+='<table class="items" style="margin-bottom:16px"><thead><tr>'
+    +'<td class="th" style="width:50%">Forma de Pago</td>'
+    +'<td class="th" style="width:20%;text-align:center">Ventas</td>'
+    +'<td class="th" style="width:30%;text-align:right">Importe</td>'
+    +'</tr></thead><tbody>'+pagoRows+'</tbody></table>';
 
-  // Total
-  html+='<div class="totals-wrap"><table class="totals-table">'
-    +'<tr><td>TOTAL DEL DÍA</td><td>'+fe(total)+'</td></tr>'
-  +'</table></div>';
-
-  // Firma
-  html+='<div class="sig-wrap"><div class="sig-box"><div class="sig-line">Responsable de caja</div></div></div>';
-
-  // Pie
-  html+='<div class="footer">'
-    +cfg_.empresa_nombre
-    +(cfg_.empresa_dir?' &nbsp;·&nbsp; '+cfg_.empresa_dir:'')
-    +' &nbsp;·&nbsp; '+cfg_.empresa_email
+  // TOTAL DESTACADO
+  html+='<div style="display:flex;justify-content:flex-end;margin:14px 0 22px">'
+    +'<div style="min-width:250px"><div class="tot-final"><span>TOTAL DEL DÍA</span><span>'+fe(total)+'</span></div></div>'
   +'</div>';
+
+  // FIRMA
+  html+='<div style="display:flex;justify-content:flex-end;align-items:flex-end;margin-top:20px">'
+    +'<div class="sig-box"><div class="sig-line">Responsable de caja</div></div>'
+  +'</div>';
+
+  // PIE + RGPD (igual que el resto de documentos)
+  html+='<div style="margin-top:10px;font-size:9px;color:#999;border-top:1px solid #eee;padding-top:8px;line-height:1.5"><b>Protección de Datos:</b> En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD, sus datos personales serán tratados por '+cfg_.empresa_nombre+' (CIF: '+(cfg_.empresa_cif||'B21652037')+') con la finalidad de gestionar la relación comercial y cumplir con las obligaciones legales. Sus datos no serán cedidos a terceros salvo obligación legal. Puede ejercer sus derechos de acceso, rectificación, supresión, limitación, portabilidad y oposición escribiendo a '+cfg_.empresa_email+(cfg_.empresa_dir?', '+cfg_.empresa_dir:'')+'. Reclamaciones: www.aepd.es</div>';
   if(cfg_.pie_factura){
     html+='<div style="text-align:center;font-size:11px;color:#aaa;margin-top:6px">'+cfg_.pie_factura+'</div>';
   }
