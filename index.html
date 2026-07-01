@@ -5219,10 +5219,16 @@ async function saveV(){
       var cliPdf=cliRes.length?cliRes[0]:{nombre:'',apellidos:'',ciudad:'',codigo_postal:'',direccion:''};
       var ventasPdf=vmLineas.map(function(l){return {prod_nombre:l.esOtro?l.nombre:(l.nombre||''),prod_cat:l.esOtro?'':l.cat,pvp:l.pvp,cantidad:l.qty,total:+(l.pvp*l.qty*(1-dto/100)).toFixed(2),ref_propia:l.ref_propia||'',proveedor:l.proveedor||'',esOtro:l.esOtro||false};});
       // Guardar datos para generar albarán después
-      // notas para el albarán: solo observaciones reales, no nombres de artículos personalizados
+      // notas para albarán: filtrar nombres de artículos personalizados
       var notasAlbaran=notas||'';
-      // Si hay artículos esOtro, sus nombres van en prod_nombre ya — filtrar de notas
-      vmLineas.forEach(function(l){if(l.esOtro&&l.nombre&&notasAlbaran.indexOf(l.nombre)===0){notasAlbaran=notasAlbaran.replace(l.nombre,'').replace(/^[\n\s]+/,'').trim();}});
+      vmLineas.forEach(function(l){
+        if(l.esOtro&&l.nombre){
+          // Eliminar el nombre del artículo personalizado de notas (puede estar al inicio o en cualquier posición)
+          notasAlbaran=notasAlbaran.split('\n').filter(function(linea){
+            return linea.trim()!==l.nombre.trim();
+          }).join('\n').trim();
+        }
+      });
       window._lastAlbaranData={ventas:ventasPdf,cli:cliPdf,fecha:fecha,dto:dto,vend:vend,pago:pago,entrega:entrega,fechaE:fechaE||'',notas:notasAlbaran,num:numAlbaran};
     }
     closeM('vm');
