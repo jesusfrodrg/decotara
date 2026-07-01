@@ -2711,7 +2711,15 @@ async function toggleVMProduct(id,nom,cat,pvp){
     var _tVinc2=_almId2&&window._vmTiendaMap?window._vmTiendaMap[_almId2]:null;
     // Stock original de cada origen
     var _almOrig=_almId2?(stockCache[_almId2]||0):0;
-    var _tndOrig=_tVinc2?(_tVinc2.stock||0):0;
+    // Para tienda: buscar en vmProductos o _vmTiendaMap
+    var _tndOrig=0;
+    if(_tVinc2){_tndOrig=_tVinc2.stock||0;}
+    else if(l._tiendaId){
+      // Artículo solo-tienda: stock en vmProductos
+      var _ptnd=vmProductos.find(function(p){return p._tiendaId===l._tiendaId;});
+      if(_ptnd)_tndOrig=_ptnd.stock||0;
+      else{Object.values(window._vmTiendaMap||{}).forEach(function(t){if(t.id===l._tiendaId)_tndOrig=t.stock||0;});}
+    }
     // Inicializar contadores si no existen
     if(l._qtyAlmacen===undefined)l._qtyAlmacen=l._esTienda?0:l.qty;
     if(l._qtyTienda===undefined)l._qtyTienda=l._esTienda?l.qty:0;
