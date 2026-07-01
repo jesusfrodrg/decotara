@@ -2806,12 +2806,21 @@ function renderVMLineas(){
       +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
       +'<label style="font-size:9px;color:var(--gray);text-transform:uppercase;font-weight:700">Uds.</label>'
       +(function(){
-        // Calcular max = stock almacén + stock tienda para este artículo
-        var _almIdM=(l.id&&l.id.indexOf('TI_')===0)?null:(l._productoId||l.id);
-        var _almStkM=_almIdM?(stockCache[_almIdM]||0):0;
-        var _tndM=_almIdM&&window._vmTiendaMap?window._vmTiendaMap[_almIdM]:null;
-        var _tndStkM=_tndM?(_tndM.stock||0):(l._esTienda&&l._tiendaId?(function(){var s=0;Object.values(window._vmTiendaMap||{}).forEach(function(t){if(t.id===l._tiendaId)s=t.stock||0;});return s;})():0);
-        var _maxS=_almStkM+_tndStkM||99;
+        // Calcular max según tipo de artículo
+        var _maxS=99;
+        var _pInVM=vmProductos.find(function(p){return p.id===l.id||('TI_'+p._tiendaId)===l.id;});
+        if(l._esTienda&&l._tiendaId&&(!l._productoId)&&(!l.id||l.id.indexOf('TI_')===0)){
+          // Solo-tienda: buscar en vmProductos
+          if(_pInVM)_maxS=_pInVM.stock||1;
+          else{var s2=0;Object.values(window._vmTiendaMap||{}).forEach(function(t){if(t.id===l._tiendaId)s2=t.stock||0;});_maxS=s2||1;}
+        } else {
+          // Almacén o vinculado: sumar ambos
+          var _almIdM=(l.id&&l.id.indexOf('TI_')===0)?null:(l._productoId||l.id);
+          var _almStkM=_almIdM?(stockCache[_almIdM]||0):0;
+          var _tndM=_almIdM&&window._vmTiendaMap?window._vmTiendaMap[_almIdM]:null;
+          var _tndStkM=_tndM?(_tndM.stock||0):0;
+          _maxS=_almStkM+_tndStkM||99;
+        }
         return '<input type="number" min="1" max="'+_maxS+'" value="'+l.qty+'" style="width:48px;text-align:center" data-qi="'+i+'" data-max="'+_maxS+'" class="vm-qty-inp">';
       })()
       +'</div>'
