@@ -3120,7 +3120,9 @@ async function renderAgenda(){
       urlEnt='/ventas?select='+base+'&fecha_entrega=gte.'+hoyStr+'&estado=neq.Cancelada&entregado=eq.true&order=fecha_entrega.desc';
     }
     // Cargar pendientes y entregadas en paralelo
-    var urlTrans='/ventas?select='+base+'&entrega=eq.Transporte y Montaje&fecha_entrega=is.null&estado=neq.Cancelada&entregado=is.null';
+    // Cualquier venta pendiente sin fecha de entrega asignada debe aparecer igualmente en la agenda
+    // (antes solo se rescataban las de "Transporte y Montaje", dejando fuera p.ej. "Recogida por el Cliente" sin fecha)
+    var urlTrans='/ventas?select='+base+'&fecha_entrega=is.null&estado=neq.Cancelada&entregado=is.null';
     var [rows,rowsEnt,rowsTrans]=await Promise.all([GET(url),GET(urlEnt).catch(function(){return [];}),GET(urlTrans).catch(function(){return[];})]);
     var _rids=new Set(rows.map(function(r){return r.id;}));
     rowsTrans.forEach(function(r){if(!_rids.has(r.id))rows.push(r);});
