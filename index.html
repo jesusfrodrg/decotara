@@ -4853,11 +4853,6 @@ function descargarReportePDF(){
     }).join('')
   +'</div>';
 
-  // TOTAL DESTACADO
-  html+='<div style="display:flex;justify-content:flex-end;margin:14px 0 22px">'
-    +'<div style="min-width:250px"><div class="tot-final"><span>TOTAL DEL PERIODO</span><span>'+fe(tot)+'</span></div></div>'
-  +'</div>';
-
   // DETALLE DE VENTAS
   html+='<div class="info-title" style="margin:20px 0 10px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
   html+='<table class="items" style="margin-bottom:16px"><thead><tr>'
@@ -4870,6 +4865,11 @@ function descargarReportePDF(){
     +'<td class="th" style="width:11%;text-align:right">Total</td>'
     +'<td class="th" style="width:9%">Estado</td>'
     +'</tr></thead><tbody>'+filas+'</tbody></table>';
+
+  // TOTAL DESTACADO
+  html+='<div style="display:flex;justify-content:flex-end;margin:14px 0 22px">'
+    +'<div style="min-width:250px"><div class="tot-final"><span>TOTAL DEL PERIODO</span><span>'+fe(tot)+'</span></div></div>'
+  +'</div>';
 
   // PIE + RGPD (igual que el resto de documentos)
   html+='<div style="margin-top:10px;font-size:9px;color:#999;border-top:1px solid #eee;padding-top:8px;line-height:1.5"><b>Protección de Datos:</b> En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD, sus datos personales serán tratados por '+cfg_.empresa_nombre+' (CIF: '+(cfg_.empresa_cif||'B21652037')+') con la finalidad de gestionar la relación comercial y cumplir con las obligaciones legales. Sus datos no serán cedidos a terceros salvo obligación legal. Puede ejercer sus derechos de acceso, rectificación, supresión, limitación, portabilidad y oposición escribiendo a '+cfg_.empresa_email+(cfg_.empresa_dir?', '+cfg_.empresa_dir:'')+'. Reclamaciones: www.aepd.es</div>';
