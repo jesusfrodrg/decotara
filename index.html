@@ -5071,9 +5071,10 @@ async function openVM(id){
     if(t.producto_id)window._vmTiendaMap[t.producto_id]=t;
     else window._vmTiendaMap['TI_'+t.id]=t; // artículos solo de tienda
   });
-  // Artículos solo de tienda (sin vinculo con almacén) aparecen como productos independientes
-  var soloTienda=tienda.filter(function(t){return t.stock>0&&!t.producto_id;}).map(function(t){
-    return {id:'TI_'+t.id,nombre:t.nombre,categoria:t.categoria||'',pvp:t.pvp||0,stock:t.stock,proveedor:t.proveedor||'',ref_propia:t.ref_propia||'',_esTienda:true,_tiendaId:t.id,_productoId:null};
+  // Artículos solo de tienda (sin vinculo con almacén) aparecen como productos independientes,
+  // incluidos los que están sin stock (se muestran marcados "Sin stock", igual que los de almacén)
+  var soloTienda=tienda.filter(function(t){return !t.producto_id;}).map(function(t){
+    return {id:'TI_'+t.id,nombre:t.nombre,categoria:t.categoria||'',pvp:t.pvp||0,stock:t.stock||0,proveedor:t.proveedor||'',ref_propia:t.ref_propia||'',_esTienda:true,_tiendaId:t.id,_productoId:null};
   });
   vmProductos=pr.concat(soloTienda);
   pr.forEach(function(p){if(stockCache[p.id]===undefined)stockCache[p.id]=p.stock||0;});
