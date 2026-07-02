@@ -5000,6 +5000,7 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
     +'<div><div class="addr-hd">Entrega:</div><div class="addr-body">'
     +(entrega?'<b>'+entrega+'</b><br>':'')
     +(fechaEntrega?'Fecha: '+fD(fechaEntrega):'A concretar')
+    +(notas?'<br><br><b>Observaciones:</b><br>'+escHtml(notas):'')
     +'</div></div></div>';
 
   // TABLA ARTÍCULOS
@@ -5012,8 +5013,6 @@ function generarAlbaran(ventas,cli,fecha,dto,vendedor,pago,entrega,fechaEntrega,
     +'<td class="th" style="width:17%;text-align:right">Total</td>'
     +'</tr></thead><tbody>'+filas+emptyRows+'</tbody></table>';
 
-  // OBSERVACIONES
-  if(notas)html+='<div style="margin:10px 0;padding:8px 12px;background:#f9f9f9;border-left:3px solid #C8372D;border-radius:4px;font-size:11px;color:#555"><b>Observaciones:</b> '+escHtml(notas)+'</div>';
   // TOTALES
   html+='<div style="display:flex;justify-content:flex-end;margin:12px 0">'
     +'<div style="min-width:250px">'
