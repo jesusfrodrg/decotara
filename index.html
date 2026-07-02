@@ -1750,7 +1750,7 @@ function _agendaGrupoHTML(grupo,hoyStr,esEntregada){
   var cliNom=v0.clientes?v0.clientes.nombre+' '+v0.clientes.apellidos:'—';
   var ciudad=v0.clientes&&v0.clientes.ciudad?v0.clientes.ciudad:'';
   var dni=window._dniOk&&v0.clientes&&v0.clientes.dni?v0.clientes.dni:'';
-  var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?('ALB-'+m[1]):'ALB-'+v0.id;})();
+  var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?(pfxAlb()+'-'+m[1]):pfxAlb()+'-'+v0.id;})();
   var totalGrupo=grupo.reduce(function(s,v){return s+Number(v.total||0);},0);
   var multiProd=grupo.length>1;
   var expandId='agexp_'+albNum.replace(/[^a-z0-9]/gi,'_');
@@ -1837,24 +1837,30 @@ async function nextVentaId(){
   }
 }
 
+function pfxAlb(){return (getCfg().prefix_alb||'ALB');}
+function pfxFac(){return (getCfg().prefix_fac||'FAC');}
+function pfxRect(){return (getCfg().prefix_rect||'RECT');}
+
 async function nextAlbaranNum(){
   // Genera el siguiente numero de albaran verificando que no exista ya
   // (evita que 2 ventas guardadas casi a la vez colisionen en el mismo numero)
+  var pfx=pfxAlb();
   try{
     var rows=await GET('/ventas?select=albaran_num&albaran_num=not.is.null&order=created_at.desc&limit=50');
     var maxN=0;
+    var re=new RegExp('^'+pfx+'-0*(\\d+)$');
     rows.forEach(function(r){
-      var m=(r.albaran_num||'').match(/ALB-0*(\d+)/);
+      var m=(r.albaran_num||'').match(re);
       if(m){var v=parseInt(m[1]);if(v>maxN)maxN=v;}
     });
     for(var i=1;i<=15;i++){
-      var candidate='ALB-'+String(maxN+i).padStart(4,'0');
+      var candidate=pfx+'-'+String(maxN+i).padStart(4,'0');
       var chk=await GET('/ventas?select=id&albaran_num=eq.'+candidate+'&limit=1');
       if(!chk.length)return candidate;
     }
-    return 'ALB-T'+Date.now().toString().slice(-6);
+    return pfx+'-T'+Date.now().toString().slice(-6);
   }catch(e){
-    return 'ALB-T'+Date.now().toString().slice(-6);
+    return pfx+'-T'+Date.now().toString().slice(-6);
   }
 }
 
@@ -1917,9 +1923,10 @@ async function confirmarCambioArticulo(){
   var cli=v.clientes||{};
   // Número rectificativa
   var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
-  var allNums=Object.values(facturas).filter(function(n){return /^RECT-/.test(n);});
-  var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace('RECT-',''))||0;return num>max?num:max;},0);
-  var numRect='RECT-'+String(lastNum+1).padStart(4,'0');
+  var _pfxR=pfxRect();
+  var allNums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxR+'-').test(n);});
+  var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace(_pfxR+'-',''))||0;return num>max?num:max;},0);
+  var numRect=_pfxR+'-'+String(lastNum+1).padStart(4,'0');
   facturas['rect_'+ventaId+'_'+Date.now()]=numRect;
   localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
   var factOrig=facturas[v.albaran_num||v.id]||'—';
@@ -2388,9 +2395,10 @@ async function confirmarSubsanacion(){
   var cfg=getCfg();
   // Número rectificativa
   var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
-  var allNums=Object.values(facturas).filter(function(n){return /^RECT-/.test(n);});
-  var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace('RECT-',''))||0;return num>max?num:max;},0);
-  var numRect='RECT-'+String(lastNum+1).padStart(4,'0');
+  var _pfxR=pfxRect();
+  var allNums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxR+'-').test(n);});
+  var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace(_pfxR+'-',''))||0;return num>max?num:max;},0);
+  var numRect=_pfxR+'-'+String(lastNum+1).padStart(4,'0');
   facturas['rect_'+ventaId+'_'+Date.now()]=numRect;
   localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
   var factOrig=facturas[v.albaran_num||v.id]||'—';
@@ -2491,13 +2499,14 @@ async function confirmarRectificativa(){
   var v=ventas[0];
   var cli=v.clientes||{};
   var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
-  var allNums=Object.values(facturas).filter(function(n){return /^RECT-/.test(n);});
-  var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace('RECT-',''))||0;return num>max?num:max;},0);
-  var numRect='RECT-'+String(lastNum+1).padStart(4,'0');
+  var _pfxR=pfxRect();
+  var allNums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxR+'-').test(n);});
+  var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace(_pfxR+'-',''))||0;return num>max?num:max;},0);
+  var numRect=_pfxR+'-'+String(lastNum+1).padStart(4,'0');
   facturas['rect_'+ventaId+'_'+Date.now()]=numRect;
   localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
 
-  var factOrig=facturas[v.albaran_num||v.id]||(v.albaran_num?'ALB-'+v.albaran_num:null)||'—';
+  var factOrig=facturas[v.albaran_num||v.id]||v.albaran_num||'—';
   // Intentar obtener número de factura real
   try{
     var factRows=await GET('/ventas?select=albaran_num&id=eq.'+(v.albaran_num||v.id));
@@ -2599,14 +2608,15 @@ async function generarFacturaLegal(ventaId){
       numFact=facturas[factKey];
     } else {
       // Generate new sequential number
-      var allNums=Object.values(facturas).filter(function(n){return /^FAC-/.test(n);});
+      var _pfxF=pfxFac();
+      var allNums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxF+'-').test(n);});
       var lastNum=allNums.reduce(function(max,n){
-        var num=parseInt(n.replace('FAC-',''))||0;
+        var num=parseInt(n.replace(_pfxF+'-',''))||0;
         return num>max?num:max;
       },0);
       var startNum=parseInt(cfg.fact_inicio)||1;
       var nextNum=Math.max(lastNum+1,startNum);
-      numFact='FAC-'+String(nextNum).padStart(4,'0');
+      numFact=_pfxF+'-'+String(nextNum).padStart(4,'0');
       facturas[factKey]=numFact;
       saveFacturas(facturas);
     }
@@ -3288,7 +3298,7 @@ async function renderDash(){
     var dashRows=dashOrden.slice(0,7).map(function(key){
       var g=dashGrupos[key];var v0=g[0];
       var tot=g.reduce(function(s,v){return s+Number(v.total||0);},0);
-      var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?('ALB-'+m[1]):'ALB-'+v0.id;})();
+      var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?(pfxAlb()+'-'+m[1]):pfxAlb()+'-'+v0.id;})();
       var prods=g.map(function(v){return getProdNombre(v);}).join(', ');
       return '<tr>'+
         '<td><b style="color:var(--blue)">'+albNum+'</b>'+(g.length>1?'<div style="font-size:9px;color:var(--gray)">'+g.length+' arts</div>':'')+'</td>'+
@@ -3351,7 +3361,7 @@ async function renderVentas(pagina){
       var numArts=grupo.reduce(function(s,v){return s+(v.cantidad||1);},0);
       var productosNombres=grupo.map(function(v){return (getProdNombre(v))+(v.cantidad>1?' x'+v.cantidad:'');}).join(', ');
       var primeraId=v0.id;
-      var albNum=v0.albaran_num||('ALB-'+primeraId);
+      var albNum=v0.albaran_num||(pfxAlb()+'-'+primeraId);
       var expandId='exp_'+key.replace(/[^a-z0-9]/gi,'_');
       // Fila expandible con artículos del grupo
       var expandRow='<tr id="'+expandId+'" style="display:none"><td colspan="8" style="padding:0;background:#f8f9ff;border-bottom:2px solid var(--blue)">'+
@@ -3723,7 +3733,8 @@ async function renderConfig(){
   var facCount=Object.keys(facturas).length;
   var facInfo=document.getElementById('cfg_facturas_info');
   if(facInfo){
-    var nums=Object.values(facturas).filter(function(n){return /^FAC-/.test(n);});
+    var _pfxFI=cfg.prefix_fac||'FAC';
+    var nums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxFI+'-').test(n);});
     var lastNum=nums.length?nums.sort().pop():'—';
     facInfo.textContent=facCount+' facturas emitidas · Última: '+lastNum;
   }
@@ -5557,7 +5568,7 @@ document.addEventListener('DOMContentLoaded',function(){
       if(!v){toast('Recarga la página de ventas');return;}
       var cli2={nombre:(v.clientes?v.clientes.nombre:''),apellidos:(v.clientes?v.clientes.apellidos:''),dni:(v.clientes?v.clientes.dni:''),ciudad:(v.clientes?v.clientes.ciudad:''),codigo_postal:(v.clientes?v.clientes.codigo_postal:''),direccion:(v.clientes?v.clientes.direccion:''),telefono:(v.clientes?v.clientes.telefono:''),email:(v.clientes?v.clientes.email:'')};
       var vent=[{prod_nombre:getProdNombre(v,'Producto'),prod_cat:getProdCat(v),cantidad:v.cantidad,pvp:v.pvp,total:v.total,ref_propia:v.ref_propia||''}];
-      generarAlbaran(vent,cli2,v.fecha,v.descuento||0,v.vendedor||'',v.forma_pago||'Efectivo',v.entrega||'Recogida por el Cliente',v.fecha_entrega||'',v.notas||'','ALB-'+id);
+      generarAlbaran(vent,cli2,v.fecha,v.descuento||0,v.vendedor||'',v.forma_pago||'Efectivo',v.entrega||'Recogida por el Cliente',v.fecha_entrega||'',v.notas||'',pfxAlb()+'-'+id);
       return;
     }
     if(a==='vergrupo'){
@@ -5582,7 +5593,7 @@ document.addEventListener('DOMContentLoaded',function(){
       var dto=v0.descuento||0;
       var totalGrupo=grupo.reduce(function(s,v){return s+Number(v.total||0);},0);
       // Recalculate each item total without discount for subtotal
-      var albNum=grupo[0].albaran_num||(function(){var m=(grupo[0].id||'').match(/VEN-(\d+)/);return m?('ALB-'+m[1]):'ALB-'+grupo[0].id;})();
+      var albNum=grupo[0].albaran_num||(function(){var m=(grupo[0].id||'').match(/VEN-(\d+)/);return m?(pfxAlb()+'-'+m[1]):pfxAlb()+'-'+grupo[0].id;})();
       generarAlbaran(vent,cli2,v0.fecha,dto,v0.vendedor||'',v0.forma_pago||'Efectivo',v0.entrega||'Recogida por el Cliente',v0.fecha_entrega||'',v0.notas||'',albNum);
       return;
     }
@@ -5626,7 +5637,7 @@ document.addEventListener('DOMContentLoaded',function(){
       (async function(){
         try{
           var vv;
-          if(albKey&&albKey!==('ALB-'+id)){
+          if(albKey&&albKey!==(pfxAlb()+'-'+id)){
             // Group albaran: fetch all ventas with same albaran_num
             vv=await GET('/ventas?select=*,nombre_articulo,albaran_num,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,telefono,email,dni),productos(nombre,categoria,ref_propia)&albaran_num=eq.'+encodeURIComponent(albKey));
           }
@@ -5637,7 +5648,7 @@ document.addEventListener('DOMContentLoaded',function(){
           var v0=vv[0];
           var cli2={nombre:(v0.clientes?v0.clientes.nombre:''),apellidos:(v0.clientes?v0.clientes.apellidos:''),dni:(v0.clientes?v0.clientes.dni:''),ciudad:(v0.clientes?v0.clientes.ciudad:''),codigo_postal:(v0.clientes?v0.clientes.codigo_postal:''),direccion:(v0.clientes?v0.clientes.direccion:''),telefono:(v0.clientes?v0.clientes.telefono:''),email:(v0.clientes?v0.clientes.email:'')};
           var vent=vv.map(function(v){return {prod_nombre:getProdNombre(v,v.nombre_articulo||'Artículo'),prod_cat:getProdCat(v),cantidad:v.cantidad,pvp:v.pvp,total:v.total,ref_propia:v.ref_propia||''};});
-          var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?('ALB-'+m[1]):'ALB-'+v0.id;})();
+          var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?(pfxAlb()+'-'+m[1]):pfxAlb()+'-'+v0.id;})();
           generarAlbaran(vent,cli2,v0.fecha,v0.descuento||0,v0.vendedor||'',v0.forma_pago||'Efectivo',v0.entrega||'Recogida por el Cliente',v0.fecha_entrega||'',v0.notas||'',albNum);
         }catch(e){toast('Error: '+e.message);}
       })();
