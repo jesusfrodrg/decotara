@@ -2604,7 +2604,9 @@ async function generarFacturaLegal(ventaId){
         var num=parseInt(n.replace('FAC-',''))||0;
         return num>max?num:max;
       },0);
-      numFact='FAC-'+String(lastNum+1).padStart(4,'0');
+      var startNum=parseInt(cfg.fact_inicio)||1;
+      var nextNum=Math.max(lastNum+1,startNum);
+      numFact='FAC-'+String(nextNum).padStart(4,'0');
       facturas[factKey]=numFact;
       saveFacturas(facturas);
     }
