@@ -629,11 +629,10 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <div class="kpi"><div class="kpi-accent"></div><div class="kpi-icon">💰</div><div class="kl">Ventas totales</div><div class="kv" id="k1">—</div><div class="ks">completadas</div></div>
       <div class="kpi green"><div class="kpi-accent"></div><div class="kpi-icon">✅</div><div class="kl">Nº ventas</div><div class="kv" id="k2">—</div><div class="ks">completadas</div></div>
       <div class="kpi blue"><div class="kpi-accent"></div><div class="kpi-icon">📊</div><div class="kl">Ticket medio</div><div class="kv" id="k3">—</div><div class="ks">por venta</div></div>
-      <div class="kpi amber"><div class="kpi-accent"></div><div class="kpi-icon">⏳</div><div class="kl">Pendientes</div><div class="kv" id="k4">—</div><div class="ks">por cerrar</div></div>
     </div>
     <div class="panel"><div class="ph"><span class="pt">📈 Ventas por categoría</span></div><div style="padding:14px 16px" id="cchart"><div class="ldr"><span class="spin"></span></div></div></div>
     <div class="panel"><div class="ph"><span class="pt">🏆 Top 5 productos</span></div><div style="padding:8px 16px" id="ctop5"><div class="ldr"><span class="spin"></span></div></div></div>
-    <div class="panel"><div class="ph"><span class="pt">🧾 Últimas ventas</span></div><div class="pb"><table><thead><tr><th>N</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th></tr></thead><tbody id="dtbody"><tr><td colspan="6" class="ldr"><span class="spin"></span></td></tr></tbody></table></div></div>
+    <div class="panel"><div class="ph"><span class="pt">🧾 Últimas ventas</span></div><div class="pb"><table><thead><tr><th>N</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th></tr></thead><tbody id="dtbody"><tr><td colspan="5" class="ldr"><span class="spin"></span></td></tr></tbody></table></div></div>
   </div>
 
   <!-- VENTAS -->
@@ -642,11 +641,10 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <div class="ph"><span class="pt">🧾 Ventas</span><button class="btn bp" id="btnNV">+ Nueva</button></div>
       <div class="sr">
         <div class="sw"><span class="si">🔍</span><input type="text" placeholder="Buscar por cliente, producto, DNI..." id="vsearch"></div>
-        <select id="vfest" style="width:112px"><option value="">Todos</option><option>Completada</option><option>Pendiente</option><option>Cancelada</option></select>
         <select id="vfcat" style="width:112px"><option value="">Categoría</option></select>
       </div>
       <div id="ventas-pag"></div>
-      <div class="pb"><table><thead><tr><th>Albarán</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th><th>Compra</th><th></th></tr></thead><tbody id="vtbody"><tr><td colspan="7" class="ldr"><span class="spin"></span></td></tr></tbody></table></div>
+      <div class="pb"><table><thead><tr><th>Albarán</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Compra</th><th></th></tr></thead><tbody id="vtbody"><tr><td colspan="7" class="ldr"><span class="spin"></span></td></tr></tbody></table></div>
     </div>
   </div>
 
@@ -766,7 +764,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
             <button class="btn bg" style="font-size:12px;padding:6px 10px" id="rptDescargar">⬇ CSV</button>
           </div>
         </div>
-        <div class="pb"><table><thead><tr><th>N</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Cant.</th><th>Vendedor</th><th>Total</th><th>Estado</th></tr></thead><tbody id="rpt-body"></tbody></table></div>
+        <div class="pb"><table><thead><tr><th>N</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Cant.</th><th>Vendedor</th><th>Total</th></tr></thead><tbody id="rpt-body"></tbody></table></div>
         <div style="padding:14px 16px;border-top:1px solid var(--xlgray);display:flex;justify-content:space-between;align-items:center;background:var(--xlgray)">
           <span style="font-size:10px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.8px">Total periodo</span>
           <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--red)" id="rpt-total">0 EUR</span>
@@ -1015,7 +1013,6 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <div class="fi"><label>Entrega</label><select id="v_entrega"><option value="Recogida por el Cliente">🚶 Recogida por el Cliente</option><option value="Transporte y Montaje">🚚 Transporte y Montaje</option></select></div>
     <div class="fi"><label>Fecha entrega</label><input type="date" id="v_fecha_entrega" placeholder="A concretar"></div>
     <div class="fi full"><label>Observaciones</label><textarea id="v_not" placeholder="Observaciones..."></textarea></div>
-    <div class="fi"><label>Estado</label><select id="v_est"><option>Completada</option><option>Pendiente</option><option>Cancelada</option></select></div>
     <!-- Campos legacy ocultos para compatibilidad edición venta individual -->
     <input type="hidden" id="v_prod"><input type="hidden" id="v_cant" value="1"><input type="hidden" id="v_pvp">
   </div>
@@ -1224,13 +1221,6 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
         </div>
         <div class="cfg-sec-body" id="cfg-ventas-def" style="display:none">
           <div class="fg" style="padding:14px 0 4px">
-            <div class="fi"><label>Estado por defecto</label>
-              <select id="cfg_def_estado">
-                <option value="Completada">Completada</option>
-                <option value="Pendiente">Pendiente</option>
-                <option value="Entregada">Entregada</option>
-              </select>
-            </div>
             <div class="fi"><label>Forma de pago por defecto</label>
               <select id="cfg_def_pago"></select>
             </div>
@@ -3279,7 +3269,6 @@ async function renderDash(){
     document.getElementById('k1').textContent=fe(tot);
     document.getElementById('k2').textContent=num;
     document.getElementById('k3').textContent=fe(num?tot/num:0);
-    document.getElementById('k4').textContent=all.filter(function(v){return v.estado==='Pendiente';}).length;
     var cats=['Sofa','Canape','Colchon'],fills=['#1A5FA8','#C8372D','#1E8A4C'];
     var ct=cats.map(function(c){return comp.filter(function(v){return v.productos&&v.productos.categoria===c;}).reduce(function(s,v){return s+Number(v.total||0);},0);});
     var mx=Math.max.apply(null,ct.concat([1]));
@@ -3306,15 +3295,14 @@ async function renderDash(){
         '<td>'+(v0.clientes?v0.clientes.nombre+' '+v0.clientes.apellidos:'—')+'</td>'+
         '<td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+prods+'">'+prods+'</td>'+
         '<td class="price">'+fe(tot)+'</td>'+
-        '<td>'+eb(v0.estado)+'</td>'+
       '</tr>';
     }).join('');
-    document.getElementById('dtbody').innerHTML=dashRows||EM(6,'🧾','Sin ventas aún');
+    document.getElementById('dtbody').innerHTML=dashRows||EM(5,'🧾','Sin ventas aún');
   }catch(e){
     var errHtml='<div style="color:#C8372D;font-size:12px;padding:12px;text-align:center">⚠️ '+e.message+'</div>';
     var cc=document.getElementById('cchart');if(cc)cc.innerHTML=errHtml;
     var ct5=document.getElementById('ctop5');if(ct5)ct5.innerHTML=errHtml;
-    var db=document.getElementById('dtbody');if(db)db.innerHTML='<tr><td colspan="6" style="color:#C8372D;text-align:center;padding:12px;font-size:12px">⚠️ '+e.message+'</td></tr>';
+    var db=document.getElementById('dtbody');if(db)db.innerHTML='<tr><td colspan="5" style="color:#C8372D;text-align:center;padding:12px;font-size:12px">⚠️ '+e.message+'</td></tr>';
     console.error('renderDash:',e);
   }
 }
@@ -3324,13 +3312,11 @@ var _ventasPorPagina=30;
 async function renderVentas(pagina){
   if(pagina)_ventasPagina=pagina;
   var q=(document.getElementById('vsearch').value||'').toLowerCase();
-  var est=document.getElementById('vfest').value;
   var vcat=document.getElementById('vfcat')?document.getElementById('vfcat').value:'';
   try{
     var dniField=window._dniOk?',dni':'';
     var offset=(_ventasPagina-1)*_ventasPorPagina;
     var url='/ventas?select=*,albaran_num,clientes(nombre,apellidos,ciudad,codigo_postal,direccion,telefono,email'+dniField+'),productos(nombre,categoria,ref_propia)&order=created_at.desc';
-    if(est)url+='&estado=eq.'+encodeURIComponent(est);
     if(q&&q.length>=2){
       if(/^\d+$/.test(q)){url+='&id=eq.'+q;}
       // Búsqueda: traer más para filtrar client-side
@@ -3364,7 +3350,7 @@ async function renderVentas(pagina){
       var albNum=v0.albaran_num||(pfxAlb()+'-'+primeraId);
       var expandId='exp_'+key.replace(/[^a-z0-9]/gi,'_');
       // Fila expandible con artículos del grupo
-      var expandRow='<tr id="'+expandId+'" style="display:none"><td colspan="8" style="padding:0;background:#f8f9ff;border-bottom:2px solid var(--blue)">'+
+      var expandRow='<tr id="'+expandId+'" style="display:none"><td colspan="7" style="padding:0;background:#f8f9ff;border-bottom:2px solid var(--blue)">'+
         '<div style="padding:10px 14px">'+
         '<div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📦 Artículos de la compra · '+albNum+'</div>'+
         '<table style="width:100%;border-collapse:collapse;font-size:12px">'+
@@ -3396,7 +3382,6 @@ async function renderVentas(pagina){
         '</td>'+
         '<td><div style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+productosNombres+'">'+productosNombres+'</div></td>'+
         '<td class="price">'+fe(totalCompra)+'</td>'+
-        '<td>'+eb(v0.estado)+'</td>'+
         '<td>'+(grupo.length>1?'<span style="background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px">'+grupo.length+' prods</span>':'<span style="font-size:10px;color:var(--gray)">'+numArts+' ud.</span>')+'</td>'+
         '<td><div style="display:flex;gap:3px">'+
           '<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff;width:30px;height:30px;padding:0" title="Ver artículos de la compra" data-action="vergrupo" data-expand="'+expandId+'">👁</button>'+
@@ -3787,7 +3772,6 @@ async function renderConfig(){
   document.getElementById('cfg_prefix_fac').value=cfg.prefix_fac||'FAC';
   document.getElementById('cfg_prefix_alb').value=cfg.prefix_alb||'ALB';
   document.getElementById('cfg_prefix_rect').value=cfg.prefix_rect||'RECT';
-  document.getElementById('cfg_def_estado').value=cfg.def_estado||'Completada';
   document.getElementById('cfg_app_nombre').value=cfg.app_nombre||'DECOTARA OUTLET';
   document.getElementById('cfg_bienvenida').value=cfg.bienvenida||'';
   // Rellenar selects de pago y entrega defaults
@@ -4050,7 +4034,6 @@ function saveConfig(){
   cfg.prefix_fac=document.getElementById('cfg_prefix_fac').value.trim().toUpperCase()||'FAC';
   cfg.prefix_alb=document.getElementById('cfg_prefix_alb').value.trim().toUpperCase()||'ALB';
   cfg.prefix_rect=document.getElementById('cfg_prefix_rect').value.trim().toUpperCase()||'RECT';
-  cfg.def_estado=document.getElementById('cfg_def_estado').value||'Completada';
   cfg.def_pago=document.getElementById('cfg_def_pago').value||'';
   cfg.def_entrega=document.getElementById('cfg_def_entrega').value||'';
   cfg.app_nombre=document.getElementById('cfg_app_nombre').value.trim()||'DECOTARA OUTLET';
@@ -4816,7 +4799,7 @@ async function generarReporte(tipo,desdeParam,hastaParam){
     rptData=await GET(url);
     var tot=rptData.reduce(function(s,v){return s+Number(v.total||0);},0);
     document.getElementById('rpt-total').textContent=fe(tot);
-    document.getElementById('rpt-body').innerHTML=rptData.length?rptData.map(function(v){return '<tr><td><b>'+v.id+'</b></td><td>'+fD(v.fecha)+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(getProdNombre(v))+'</td><td>'+v.cantidad+'</td><td><b>'+(v.vendedor||'—')+'</b></td><td class="price">'+fe(v.total)+'</td><td>'+eb(v.estado)+'</td></tr>';}).join(''):EM(8,'📋','Sin ventas en este periodo');
+    document.getElementById('rpt-body').innerHTML=rptData.length?rptData.map(function(v){return '<tr><td><b>'+v.id+'</b></td><td>'+fD(v.fecha)+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(getProdNombre(v))+'</td><td>'+v.cantidad+'</td><td><b>'+(v.vendedor||'—')+'</b></td><td class="price">'+fe(v.total)+'</td></tr>';}).join(''):EM(7,'📋','Sin ventas en este periodo');
     document.getElementById('rpt-preview').scrollIntoView({behavior:'smooth'});
   }catch(e){toast('Error: '+e.message);}
 }
@@ -4828,8 +4811,6 @@ function descargarReportePDF(){
   var tot=rptData.reduce(function(s,v){return s+Number(v.total||0);},0);
   var numVentas=rptData.length;
   var ticketMedio=numVentas?tot/numVentas:0;
-  var nComp=rptData.filter(function(v){return v.estado==='Completada';}).length;
-  var nPend=rptData.filter(function(v){return v.estado==='Pendiente';}).length;
   var fechaStr=new Date().toLocaleDateString('es-ES');
 
   var porVend={};
@@ -4841,8 +4822,6 @@ function descargarReportePDF(){
   });
 
   var filas=rptData.map(function(v){
-    var estado=v.estado||'Completada';
-    var estColor=estado==='Completada'?'#15803d':estado==='Pendiente'?'#92400e':'#991b1b';
     var albNum=v.albaran_num||'—';
     return '<tr>'
       +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;color:#C8372D;font-weight:700;font-size:11px">'+albNum+'</td>'
@@ -4852,7 +4831,6 @@ function descargarReportePDF(){
       +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:center;font-size:12px">'+v.cantidad+'</td>'
       +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:12px">'+(v.vendedor||'—')+'</td>'
       +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;text-align:right;font-weight:700;font-size:12px">'+fe(v.total)+'</td>'
-      +'<td style="padding:6px 10px;border-bottom:1px solid #e8e8e8;font-size:11px;color:'+estColor+';font-weight:700">'+estado+'</td>'
       +'</tr>';
   }).join('');
 
@@ -4871,9 +4849,7 @@ function descargarReportePDF(){
     +(cfg_.empresa_tel?cfg_.empresa_tel+'<br>':'')
     +cfg_.empresa_email+'</div>'
     +'<table class="meta-table"><tr><td class="meta-hd">Total Ventas</td><td class="meta-hd">Ticket Medio</td></tr>'
-    +'<tr><td class="meta-val" style="font-weight:700;color:#C8372D">'+numVentas+'</td><td class="meta-val">'+fe(ticketMedio)+'</td></tr>'
-    +'<tr><td class="meta-hd">Completadas</td><td class="meta-hd">Pendientes</td></tr>'
-    +'<tr><td class="meta-val">'+nComp+' ('+Math.round(nComp/numVentas*100)+'%)</td><td class="meta-val">'+nPend+'</td></tr></table></div>';
+    +'<tr><td class="meta-val" style="font-weight:700;color:#C8372D">'+numVentas+'</td><td class="meta-val">'+fe(ticketMedio)+'</td></tr></table></div>';
 
   // DESGLOSE POR VENDEDOR
   html+='<div class="info-box"><div class="info-title"><div class="info-title-bar"></div>Desglose por Vendedor</div>'
@@ -4885,14 +4861,13 @@ function descargarReportePDF(){
   // DETALLE DE VENTAS
   html+='<div class="info-title" style="margin:20px 0 10px"><div class="info-title-bar"></div>Detalle de Ventas</div>';
   html+='<table class="items" style="margin-bottom:16px"><thead><tr>'
-    +'<td class="th" style="width:11%">Albarán</td>'
-    +'<td class="th" style="width:10%">Fecha</td>'
-    +'<td class="th" style="width:17%">Cliente</td>'
-    +'<td class="th" style="width:21%">Producto</td>'
-    +'<td class="th" style="width:6%;text-align:center">Cant.</td>'
-    +'<td class="th" style="width:12%">Vendedor</td>'
-    +'<td class="th" style="width:11%;text-align:right">Total</td>'
-    +'<td class="th" style="width:9%">Estado</td>'
+    +'<td class="th" style="width:12%">Albarán</td>'
+    +'<td class="th" style="width:11%">Fecha</td>'
+    +'<td class="th" style="width:19%">Cliente</td>'
+    +'<td class="th" style="width:23%">Producto</td>'
+    +'<td class="th" style="width:7%;text-align:center">Cant.</td>'
+    +'<td class="th" style="width:13%">Vendedor</td>'
+    +'<td class="th" style="width:15%;text-align:right">Total</td>'
     +'</tr></thead><tbody>'+filas+'</tbody></table>';
 
   // TOTAL DESTACADO
@@ -4914,8 +4889,8 @@ function descargarReportePDF(){
 
 function descargarCSV(){
   if(!rptData.length){toast('No hay datos para descargar');return;}
-  var rows=[['ID','Fecha','Cliente','Producto','Cantidad','PVP','Descuento','Total','Vendedor','Estado','Observaciones']];
-  rptData.forEach(function(v){rows.push([v.id,v.fecha,(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:''),(getProdNombre(v,'')),v.cantidad,v.pvp,v.descuento,v.total,(v.vendedor||''),v.estado,v.notas||'']);});
+  var rows=[['ID','Fecha','Cliente','Producto','Cantidad','PVP','Descuento','Total','Vendedor','Observaciones']];
+  rptData.forEach(function(v){rows.push([v.id,v.fecha,(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:''),(getProdNombre(v,'')),v.cantidad,v.pvp,v.descuento,v.total,(v.vendedor||''),v.notas||'']);});
   var csv=rows.map(function(r){return r.map(function(c){return '"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
   var url=URL.createObjectURL(blob);
@@ -4937,7 +4912,7 @@ async function generarReporteVendedor(vendedor,desdeParam,hastaParam){
     var tot=rptData.reduce(function(s,v){return s+Number(v.total||0);},0);
     var numVentas=rptData.filter(function(v){return v.estado==='Completada';}).length;
     document.getElementById('rpt-total').textContent=fe(tot);
-    document.getElementById('rpt-body').innerHTML=rptData.length?rptData.map(function(v){return '<tr><td><b>'+v.id+'</b></td><td>'+fD(v.fecha)+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(getProdNombre(v))+'</td><td>'+v.cantidad+'</td><td><b style="color:var(--red)">'+vendedor+'</b></td><td class="price">'+fe(v.total)+'</td><td>'+eb(v.estado)+'</td></tr>';}).join(''):EM(8,'🏷️','Sin ventas en este periodo');
+    document.getElementById('rpt-body').innerHTML=rptData.length?rptData.map(function(v){return '<tr><td><b>'+v.id+'</b></td><td>'+fD(v.fecha)+'</td><td>'+(v.clientes?v.clientes.nombre+' '+v.clientes.apellidos:'—')+'</td><td>'+(getProdNombre(v))+'</td><td>'+v.cantidad+'</td><td><b style="color:var(--red)">'+vendedor+'</b></td><td class="price">'+fe(v.total)+'</td></tr>';}).join(''):EM(7,'🏷️','Sin ventas en este periodo');
     document.getElementById('rpt-preview').scrollIntoView({behavior:'smooth'});
   }catch(e){toast('Error: '+e.message);}
 }
@@ -5109,7 +5084,6 @@ async function openVM(id){
         document.getElementById('v_cli').value=v.cliente_id||'';
         document.getElementById('v_fecha').value=v.fecha||'';
         document.getElementById('v_dto').value=v.descuento||0;
-        document.getElementById('v_est').value=v.estado||'Completada';
         document.getElementById('v_not').value=v.notas||'';
         document.getElementById('v_vend').value=v.vendedor||'';
         if(document.getElementById('v_vend_display'))document.getElementById('v_vend_display').textContent=v.vendedor||'—';
@@ -5129,7 +5103,6 @@ async function openVM(id){
     document.getElementById('v_fecha').value=new Date().toISOString().split('T')[0];
     document.getElementById('v_dto').value=0;
     var _dcfg=getCfg();
-    document.getElementById('v_est').value=_dcfg.def_estado||'Completada';
     document.getElementById('v_not').value='';
     document.getElementById('v_entrega').value=_dcfg.def_entrega||'Recogida por el Cliente';
     document.getElementById('v_fecha_entrega').value='';
@@ -5149,7 +5122,7 @@ async function saveV(){
   var cId=document.getElementById('v_cli').value;
   var fecha=document.getElementById('v_fecha').value;
   var dto=parseFloat(document.getElementById('v_dto').value)||0;
-  var est=document.getElementById('v_est').value;
+  var est='Completada';
   var notas=document.getElementById('v_not').value;
   var vend=document.getElementById('v_vend').value;
   var pago=document.getElementById('v_pago').value;
@@ -5523,7 +5496,6 @@ document.addEventListener('DOMContentLoaded',function(){
   document.addEventListener('input',function(e){if(e.target.id==='rect_buscar')renderRectificativas();if(e.target.id==='tienda_buscar')renderStockTienda();});
   document.addEventListener('click',function(e){if(e.target.id==='btnNPtienda')abrirFormTienda();});
   document.addEventListener('change',function(e){if(e.target.id==='rect_mes')renderRectificativas();});
-  document.getElementById('vfest').addEventListener('change',function(){_ventasPagina=1;renderVentas();});
   // Rellenar categorías en filtro de ventas
   (function(){
     var cats=getCfg().categorias||['Sofa','Canape','Colchon','Sillon','Comedor','Dormitorio','Auxiliar','Otros'];
