@@ -1530,7 +1530,7 @@ function cartAddItem(prod){
   cartUpdate();updateStockBtn(prod.id);toast('Añadido: '+prod.nombre+' (quedan '+(disponible-1)+')',1800);
 }
 
-var curPage='dashboard',veditId=null,ceditId=null,peditId=null,agFiltro='proximas';
+var curPage='dashboard',veditId=null,veditAlbaranNum=null,ceditId=null,peditId=null,agFiltro='proximas';
 try{var _initCfg=JSON.parse(localStorage.getItem('decotara_config')||'{}');if(_initCfg.app_nombre)document.title=_initCfg.app_nombre;}catch(e){}
 localStorage.removeItem('decotara_ref_counter'); // Siempre usar Supabase como fuente de verdad
 var rptData=[];var rptTitleStr='';
@@ -2850,12 +2850,14 @@ function renderVMLineas(){
           // Solo-tienda: buscar en vmProductos
           if(_pInVM)_maxS=_pInVM.stock||1;
           else{var s2=0;Object.values(window._vmTiendaMap||{}).forEach(function(t){if(t.id===l._tiendaId)s2=t.stock||0;});_maxS=s2||1;}
+          if(l._ventaId)_maxS+=(l._qtyTienda||0); // editando: sumar lo que esta línea ya tenía reservado
         } else {
           // Almacén o vinculado: sumar ambos
           var _almIdM=(l.id&&l.id.indexOf('TI_')===0)?null:(l._productoId||l.id);
           var _almStkM=_almIdM?(stockCache[_almIdM]||0):0;
           var _tndM=_almIdM&&window._vmTiendaMap?window._vmTiendaMap[_almIdM]:null;
           var _tndStkM=_tndM?(_tndM.stock||0):0;
+          if(l._ventaId){_almStkM+=(l._qtyAlmacen||0);_tndStkM+=(l._qtyTienda||0);} // editando: sumar lo ya reservado
           _maxS=_almStkM+_tndStkM||99;
         }
         return '<input type="number" min="1" max="'+_maxS+'" value="'+l.qty+'" style="width:48px;text-align:center" data-qi="'+i+'" data-max="'+_maxS+'" class="vm-qty-inp">';
@@ -5055,6 +5057,8 @@ async function devolverStock(prodId,cantidad){
 
 async function openVM(id){
   veditId=id||null;
+  veditAlbaranNum=null;
+  window._veditOriginal=null;
   vmLineas=[];
   window._vmTiendaMap={};
   // Generar tabs de categoría dinámicamente desde configuración
@@ -5091,11 +5095,16 @@ async function openVM(id){
   renderVMCatalog();
   renderVMLineas();
   if(id){
-    // Load existing venta data
+    // Load existing venta data — traer TODAS las líneas del mismo albarán, no solo la clicada
     try{
-      var rows=await GET('/ventas?select=*,clientes(nombre,apellidos),productos(nombre,categoria)&id=eq.'+id);
-      if(rows.length){
-        var v=rows[0];
+      var rows0=await GET('/ventas?select=*,clientes(nombre,apellidos),productos(nombre,categoria)&id=eq.'+id);
+      if(rows0.length){
+        var v=rows0[0];
+        var groupRows=[v];
+        if(v.albaran_num){
+          groupRows=await GET('/ventas?select=*,clientes(nombre,apellidos),productos(nombre,categoria)&albaran_num=eq.'+encodeURIComponent(v.albaran_num)+'&order=created_at.asc');
+          if(!groupRows.length)groupRows=[v];
+        }
         document.getElementById('v_cli').value=v.cliente_id||'';
         document.getElementById('v_fecha').value=v.fecha||'';
         document.getElementById('v_dto').value=v.descuento||0;
@@ -5105,11 +5114,19 @@ async function openVM(id){
         document.getElementById('v_pago').value=v.forma_pago||'Efectivo';
         document.getElementById('v_entrega').value=v.entrega||'Recogida por el Cliente';
         document.getElementById('v_fecha_entrega').value=v.fecha_entrega||'';
-        // Load line
-        var esOtro=!v.producto_id;
-        var nombre=esOtro?getProdNombre(v):(v.productos?v.productos.nombre:'');
-        var cat=esOtro?'Otros':(v.productos?v.productos.categoria:'');
-        vmLineas=[{id:v.producto_id,nombre:nombre,cat:cat,pvp:v.pvp,qty:v.cantidad,esOtro:esOtro}];
+        veditAlbaranNum=v.albaran_num||null;
+        window._veditOriginal=groupRows;
+        vmLineas=groupRows.map(function(gv){
+          var esOtro=!gv.producto_id;
+          var nombre=esOtro?getProdNombre(gv,gv.nombre_articulo||'Artículo'):(gv.productos?gv.productos.nombre:'');
+          var cat=esOtro?'Otros':(gv.productos?gv.productos.categoria:'');
+          return {
+            _ventaId:gv.id,id:gv.producto_id,nombre:nombre,cat:cat,pvp:gv.pvp,qty:gv.cantidad,esOtro:esOtro,
+            ref_propia:gv.ref_propia||'',proveedor:gv.proveedor||'',
+            _qtyAlmacen:gv.qty_almacen||0,_qtyTienda:gv.qty_tienda||0,
+            _tiendaId:gv.tienda_id||null,_esTienda:gv.stock_origen==='tienda'
+          };
+        });
         renderVMLineas();
       }
     }catch(e){console.error('openVM load error:',e);}
@@ -5150,12 +5167,95 @@ async function saveV(){
   var btn=document.getElementById('btnSV');btn.disabled=true;btn.textContent='Guardando...';
   try{
     if(veditId){
-      // Edición: actualizar la venta existente con la primera línea
-      var l=vmLineas[0];
-      var total=+(l.pvp*l.qty*(1-dto/100)).toFixed(2);
-      var notasFin=notas; // nombre va en nombre_articulo, no en notas
-      await PATCH('/ventas?id=eq.'+veditId,{cliente_id:cId,fecha:fecha,producto_id:l.esOtro?null:l.id,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null});
-      toast('Venta actualizada ✓');
+      // Edición: reconciliar TODAS las líneas del albarán (añadidas, eliminadas y modificadas)
+      var originalRows=window._veditOriginal||[];
+      var currentIds=vmLineas.filter(function(l){return l._ventaId;}).map(function(l){return l._ventaId;});
+      var notasFin=notas;
+      var _ops=[];
+
+      // 1) Líneas eliminadas durante la edición: restaurar su stock y borrar la fila
+      originalRows.forEach(function(o){
+        if(currentIds.indexOf(o.id)!==-1)return;
+        var qA=o.qty_almacen||0,qT=o.qty_tienda||0;
+        if(qA>0&&o.producto_id){
+          stockCache[o.producto_id]=(stockCache[o.producto_id]||0)+qA;
+          _ops.push(PATCH('/productos?id=eq.'+o.producto_id,{stock:stockCache[o.producto_id]}));
+        }
+        if(qT>0&&o.tienda_id){
+          var _tMapD=window._vmTiendaMap||{};
+          var _tItemD=Object.values(_tMapD).find(function(t){return t.id===o.tienda_id;});
+          var _newTSD=(_tItemD?_tItemD.stock:0)+qT;
+          if(_tItemD)_tItemD.stock=_newTSD;
+          _ops.push(PATCH('/stock_tienda?id=eq.'+o.tienda_id,{stock:_newTSD}));
+        }
+        _ops.push(DEL('/ventas?id=eq.'+o.id));
+      });
+
+      // 2) Líneas que ya existían: actualizar cantidad/precio, ajustando el stock por la diferencia
+      vmLineas.forEach(function(l){
+        if(!l._ventaId)return;
+        var total=+(l.pvp*l.qty*(1-dto/100)).toFixed(2);
+        var origen=l._esTienda?'tienda':'almacen';
+        var newQA=origen==='almacen'?l.qty:0;
+        var newQT=origen==='tienda'?l.qty:0;
+        var oldQA=l._qtyAlmacen||0,oldQT=l._qtyTienda||0;
+        var deltaA=newQA-oldQA,deltaT=newQT-oldQT;
+        var almId=l._productoId||(l.id&&l.id.indexOf('TI_')!==0?l.id:null);
+        if(deltaA!==0&&almId){
+          stockCache[almId]=Math.max(0,(stockCache[almId]||0)-deltaA);
+          _ops.push(PATCH('/productos?id=eq.'+almId,{stock:stockCache[almId]}));
+        }
+        if(deltaT!==0&&l._tiendaId){
+          var _tMapE=window._vmTiendaMap||{};
+          var _tItemE=Object.values(_tMapE).find(function(t){return t.id===l._tiendaId;});
+          var _newTSE=Math.max(0,(_tItemE?_tItemE.stock:0)-deltaT);
+          if(_tItemE)_tItemE.stock=_newTSE;
+          _ops.push(PATCH('/stock_tienda?id=eq.'+l._tiendaId,{stock:_newTSE}));
+        }
+        _ops.push(PATCH('/ventas?id=eq.'+l._ventaId,{cliente_id:cId,fecha:fecha,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null,qty_almacen:newQA,qty_tienda:newQT,stock_origen:origen,tienda_id:l._tiendaId||null}));
+      });
+
+      // 3) Líneas nuevas añadidas durante la edición: crear con el mismo número de albarán
+      var nuevasLineas=vmLineas.filter(function(l){return !l._ventaId;});
+      if(nuevasLineas.length){
+        var _baseIdE=await nextVentaId();
+        var _baseNumE=parseInt((_baseIdE||'VEN-0000').replace('VEN-',''))||0;
+        nuevasLineas.forEach(function(l,li){
+          var newId='VEN-'+String(_baseNumE+li).padStart(4,'0');
+          var total=+(l.pvp*l.qty*(1-dto/100)).toFixed(2);
+          var _qtyAlmLinea,_qtyTndLinea,_esTiendaL=l._esTienda||false;
+          if(l._qtyAlmacen!==undefined||l._qtyTienda!==undefined){
+            _qtyAlmLinea=l._qtyAlmacen||0;_qtyTndLinea=l._qtyTienda||0;
+          } else {
+            _qtyAlmLinea=_esTiendaL?0:l.qty;_qtyTndLinea=_esTiendaL?l.qty:0;
+          }
+          var pId2=null;
+          if(!l.esOtro){
+            var _rawId=l.id||'';
+            if(_rawId.indexOf('TI_')===0){pId2=l._productoId||null;}
+            else{pId2=_rawId||null;}
+            if(pId2&&pId2.indexOf('TI_')===0)pId2=null;
+          }
+          if(_qtyTndLinea>0&&l._tiendaId){
+            var _tMapN=window._vmTiendaMap||{};
+            var _tItemN=Object.values(_tMapN).find(function(t){return t.id===l._tiendaId;})||{stock:0};
+            var _nsTndN=Math.max(0,(_tItemN.stock||0)-_qtyTndLinea);
+            if(_tItemN)_tItemN.stock=_nsTndN;
+            _ops.push(PATCH('/stock_tienda?id=eq.'+l._tiendaId,{stock:_nsTndN}));
+          }
+          if(_qtyAlmLinea>0&&pId2){
+            stockCache[pId2]=Math.max(0,(stockCache[pId2]||0)-_qtyAlmLinea);
+            _ops.push(PATCH('/productos?id=eq.'+pId2,{stock:stockCache[pId2]}));
+          }
+          var _origenBD=(_qtyTndLinea>0&&_qtyAlmLinea===0)?'tienda':'almacen';
+          var _tiendaIdBD=_qtyTndLinea>0?l._tiendaId:null;
+          _ops.push(POST('/ventas',{id:newId,cliente_id:cId,fecha:fecha,producto_id:pId2,nombre_articulo:l.nombre||null,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:veditAlbaranNum,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null,stock_origen:_origenBD,tienda_id:_tiendaIdBD||null,qty_almacen:_qtyAlmLinea,qty_tienda:_qtyTndLinea}));
+        });
+      }
+
+      await Promise.all(_ops);
+      await loadStockCache();
+      toast('Venta actualizada ✓ ('+vmLineas.length+' artículo'+(vmLineas.length!==1?'s':'')+')');
     } else {
       // Nueva venta: crear una entrada por línea con el mismo albaran_num
       // Generar un único número de albarán para toda la compra (verificado, sin colisiones)
