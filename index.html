@@ -1133,7 +1133,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
                 <option value="no">No — precio final (solo albarán)</option>
               </select>
             </div>
-            <div class="fi"><label>Nº factura inicial</label><input type="number" id="cfg_fact_inicio" min="1" placeholder="1"></div>
+            <div class="fi"><label>Nº factura inicial</label><input type="text" inputmode="numeric" id="cfg_fact_inicio" placeholder="1" title="Escribe el número tal cual quieres que empiece, p.ej. 1, 01 o 0001. El formato que escribas (con o sin ceros) se mantendrá en las siguientes facturas."></div>
             <div class="fi"><label>Stock mínimo alerta</label><input type="number" id="cfg_stock_min" min="0" placeholder="3"></div>
             <div class="fi"><label>Prefijo factura</label><input type="text" id="cfg_prefix_fac" placeholder="FAC" maxlength="6"></div>
             <div class="fi"><label>Prefijo albarán</label><input type="text" id="cfg_prefix_alb" placeholder="ALB" maxlength="6"></div>
@@ -1830,6 +1830,8 @@ async function nextVentaId(){
 function pfxAlb(){return (getCfg().prefix_alb||'ALB');}
 function pfxFac(){return (getCfg().prefix_fac||'FAC');}
 function pfxRect(){return (getCfg().prefix_rect||'RECT');}
+function facStartNum(){return parseInt(getCfg().fact_inicio)||1;}
+function facWidth(){return String(getCfg().fact_inicio||'1').length;}
 
 // ══════ NUMERACIÓN DE FACTURAS/RECTIFICATIVAS (Supabase, compartido entre dispositivos) ══════
 async function getDocNumero(key){
@@ -1839,7 +1841,8 @@ async function getDocNumero(key){
   }catch(e){return null;}
 }
 
-async function getOrCreateDocNumero(key,prefix,startNum){
+async function getOrCreateDocNumero(key,prefix,startNum,width){
+  width=width||4;
   var existing=await getDocNumero(key);
   if(existing)return existing;
   var maxN=0;
@@ -1853,7 +1856,7 @@ async function getOrCreateDocNumero(key,prefix,startNum){
   }catch(e){}
   var first=Math.max(maxN+1,startNum||1);
   for(var i=0;i<20;i++){
-    var candidate=prefix+'-'+String(first+i).padStart(4,'0');
+    var candidate=prefix+'-'+String(first+i).padStart(width,'0');
     try{
       await POST('/documentos_fiscales',{id:key,numero:candidate});
       return candidate;
@@ -1959,7 +1962,7 @@ async function confirmarCambioArticulo(){
   var cli=v.clientes||{};
   // Número rectificativa — comparte la MISMA secuencia numerica que las facturas (mismo prefijo, mismo contador), en Supabase
   var factOrig=(await getDocNumero(v.albaran_num||v.id))||v.albaran_num||'—';
-  var numRect=await getOrCreateDocNumero('rect_'+ventaId+'_'+Date.now(),pfxFac(),parseInt(cfg.fact_inicio)||1);
+  var numRect=await getOrCreateDocNumero('rect_'+ventaId+'_'+Date.now(),pfxFac(),facStartNum(),facWidth());
   var fechaStr=fD(v.fecha);
 
   var filas=seleccionadas.map(function(x){
@@ -2424,7 +2427,7 @@ async function confirmarSubsanacion(){
   var cfg=getCfg();
   // Número rectificativa — comparte la MISMA secuencia numerica que las facturas (mismo prefijo, mismo contador), en Supabase
   var factOrig=(await getDocNumero(v.albaran_num||v.id))||v.albaran_num||'—';
-  var numRect=await getOrCreateDocNumero('rect_'+ventaId+'_'+Date.now(),pfxFac(),parseInt(cfg.fact_inicio)||1);
+  var numRect=await getOrCreateDocNumero('rect_'+ventaId+'_'+Date.now(),pfxFac(),facStartNum(),facWidth());
 
   // Artículos de la venta original (sin cambio de importe)
   var totalVenta=ventas.reduce(function(s,x){return s+Number(x.total||0);},0);
@@ -2521,7 +2524,7 @@ async function confirmarRectificativa(){
   var cli=v.clientes||{};
   // Número rectificativa — comparte la MISMA secuencia numerica que las facturas (mismo prefijo, mismo contador), en Supabase
   var factOrig=(await getDocNumero(v.albaran_num||v.id))||v.albaran_num||'—';
-  var numRect=await getOrCreateDocNumero('rect_'+ventaId+'_'+Date.now(),pfxFac(),parseInt(cfg.fact_inicio)||1);
+  var numRect=await getOrCreateDocNumero('rect_'+ventaId+'_'+Date.now(),pfxFac(),facStartNum(),facWidth());
   var fechaStr=fD(v.fecha);
   var totalRect=seleccionadas.reduce(function(s,x){return s+x._totEdit;},0);
 
@@ -2605,7 +2608,7 @@ async function generarFacturaLegal(ventaId){
     // ── Número de factura propio (Supabase, compartido entre dispositivos) ──
     // Usar albaran_num o ventaId como key para reutilizar el mismo número si se reimprime
     var factKey=v.albaran_num||v.id;
-    var numFact=await getOrCreateDocNumero(factKey,pfxFac(),parseInt(cfg.fact_inicio)||1);
+    var numFact=await getOrCreateDocNumero(factKey,pfxFac(),facStartNum(),facWidth());
     var fecha=fD(v.fecha);
     var filas=ventas.map(function(x){
       var nom=x.prod_nombre||getProdNombre(x,'—');
@@ -3602,7 +3605,7 @@ var _CFG_DEFAULTS = {
   proveedores: [{label:'Casa Viva',prefix:'DCV'},{label:'Kave Home',prefix:'DKH'},{label:'Bizzotto',prefix:'DBIZ'},{label:'Tamdis',prefix:'DTAM'},{label:'Distrigal',prefix:'DDIS'},{label:'Otro',prefix:'DOTR'}],
   entregas: ['Recogida por el Cliente','Transporte y Montaje'],
   iva: 21,
-  fact_inicio: 1,
+  fact_inicio: '1',
   stock_min: 3,
   mostrar_iva: 'si',
   prefix_fac: 'FAC',
@@ -4049,7 +4052,7 @@ function saveConfig(){
   cfg.app_nombre=document.getElementById('cfg_app_nombre').value.trim()||'DECOTARA OUTLET';
   cfg.bienvenida=document.getElementById('cfg_bienvenida').value.trim()||'';
   document.title=cfg.app_nombre;
-  cfg.fact_inicio=parseInt(document.getElementById('cfg_fact_inicio').value)||1;
+  cfg.fact_inicio=document.getElementById('cfg_fact_inicio').value.trim().replace(/[^0-9]/g,'')||'1';
   cfg.stock_min=parseInt(document.getElementById('cfg_stock_min').value)||3;
   cfg.color=document.getElementById('cfg_color').value;
   if(window._cfgLogoTemp){
