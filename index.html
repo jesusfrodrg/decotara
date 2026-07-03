@@ -3204,6 +3204,7 @@ function showConnError(msg){
 
 async function initApp(){
   await fillVendSelects();
+  await loadCfgFromServer();
   applyConfigOnLoad();
   var cajafecha=document.getElementById('caja_fecha');
   if(cajafecha)cajafecha.value=new Date().toISOString().split('T')[0];
@@ -3618,18 +3619,41 @@ var _CFG_DEFAULTS = {
   bienvenida: 'Bienvenido al sistema de gestión'
 };
 
-function getCfg(){
+var _cfgCache = Object.assign({},_CFG_DEFAULTS);
+
+async function loadCfgFromServer(){
   try{
-    var s=localStorage.getItem(_CFG_KEY);
-    if(s) return Object.assign({},_CFG_DEFAULTS,JSON.parse(s));
-  }catch(e){}
-  return Object.assign({},_CFG_DEFAULTS);
+    var rows=await GET('/app_config?select=data&id=eq.main');
+    if(rows.length&&rows[0].data){
+      _cfgCache=Object.assign({},_CFG_DEFAULTS,rows[0].data);
+      try{localStorage.setItem(_CFG_KEY,JSON.stringify(_cfgCache));}catch(e){}
+    }
+  }catch(e){
+    // Sin conexión: usar la última copia local conocida como respaldo
+    try{
+      var s=localStorage.getItem(_CFG_KEY);
+      if(s)_cfgCache=Object.assign({},_CFG_DEFAULTS,JSON.parse(s));
+    }catch(e2){}
+  }
+  applyCfgColor(_cfgCache.color);
+  if(_cfgCache.logo)window._LOGO_B64=_cfgCache.logo;
+  if(_cfgCache.app_nombre)document.title=_cfgCache.app_nombre;
 }
 
-function saveCfg(cfg){
-  localStorage.setItem(_CFG_KEY,JSON.stringify(cfg));
+function getCfg(){
+  return Object.assign({},_CFG_DEFAULTS,_cfgCache);
+}
+
+async function saveCfg(cfg){
+  _cfgCache=Object.assign({},_CFG_DEFAULTS,cfg);
   applyCfgColor(cfg.color);
   if(cfg.logo) window._LOGO_B64=cfg.logo;
+  try{localStorage.setItem(_CFG_KEY,JSON.stringify(_cfgCache));}catch(e){}
+  try{
+    await PATCH('/app_config?id=eq.main',{data:_cfgCache});
+  }catch(e){
+    toast('⚠️ No se pudo sincronizar la configuración con el servidor');
+  }
 }
 
 function applyCfgColor(color){
@@ -3710,6 +3734,7 @@ function eliminarNumFactura(key){
 }
 
 async function renderConfig(){
+  await loadCfgFromServer();
   var cfg=getCfg();
 
   renderRefCounters();
