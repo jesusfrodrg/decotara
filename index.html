@@ -1847,7 +1847,9 @@ async function getOrCreateDocNumero(key,prefix,startNum,width){
   if(existing)return existing;
   var maxN=0;
   try{
-    var rows=await GET('/documentos_fiscales?select=numero&order=created_at.desc&limit=100');
+    // Solo mirar documentos del año en curso: el contador se reinicia solo cada 1 de enero
+    var anioInicio=new Date().getFullYear()+'-01-01';
+    var rows=await GET('/documentos_fiscales?select=numero&created_at=gte.'+anioInicio+'&order=created_at.desc&limit=200');
     var re=new RegExp('^'+prefix+'-0*(\\d+)$');
     rows.forEach(function(r){
       var m=(r.numero||'').match(re);
@@ -1861,7 +1863,7 @@ async function getOrCreateDocNumero(key,prefix,startNum,width){
       await POST('/documentos_fiscales',{id:key,numero:candidate});
       return candidate;
     }catch(e){
-      // numero o id ya existían (colisión con otro dispositivo guardando a la vez) — probar siguiente
+      // numero o id ya existían (colisión con otro dispositivo guardando a la vez, o con un año anterior) — probar siguiente
     }
   }
   return prefix+'-T'+Date.now().toString().slice(-6);
