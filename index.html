@@ -2286,9 +2286,16 @@ async function renderRectificativas(){
         '<td><button class="btn btn-sm" style="background:#C8372D;color:#fff;font-size:11px" data-rectid="'+r.id+'" onclick="var rd=window._rectData&&window._rectData[this.dataset.rectid];if(rd)regenerarRectificativa(rd)">📄 PDF</button></td>'+
         '</tr>';
       if(arts.length){
-        html+='<tr><td colspan="7" style="padding:0 12px 10px;background:#fffbf7"><div style="font-size:11px;color:#666;display:flex;gap:8px;flex-wrap:wrap">';
-        arts.forEach(function(a){html+='<span style="background:#fff7ed;border:1px solid #fed7aa;border-radius:4px;padding:2px 8px">'+escHtml(a.nombre||'')+(a.cantidad>1?' x'+a.cantidad:'')+' — '+fe(-Math.abs(Number(a.total||0)))+'</span>';});
-        html+='</div></td></tr>';
+        html+='<tr><td colspan="7" style="padding:6px 12px 12px;background:#fffbf7">'
+          +'<div style="font-size:10px;color:#c2872f;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">Artículos rectificados</div>'
+          +'<div style="border:1px solid #fed7aa;border-radius:8px;overflow:hidden;background:#fff">'
+          +arts.map(function(a,ai){
+            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 12px;font-size:12px;'+(ai<arts.length-1?'border-bottom:1px solid #fbe3c8;':'')+'">'
+              +'<span>'+escHtml(a.nombre||'')+(a.cantidad>1?' <span style="color:#aaa;font-weight:700">×'+a.cantidad+'</span>':'')+'</span>'
+              +'<span style="font-weight:700;color:#C8372D;white-space:nowrap">'+fe(-Math.abs(Number(a.total||0)))+'</span>'
+            +'</div>';
+          }).join('')
+          +'</div></td></tr>';
       }
     });
     html+='</tbody></table>';
