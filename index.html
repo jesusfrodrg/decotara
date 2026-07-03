@@ -1831,6 +1831,52 @@ function pfxAlb(){return (getCfg().prefix_alb||'ALB');}
 function pfxFac(){return (getCfg().prefix_fac||'FAC');}
 function pfxRect(){return (getCfg().prefix_rect||'RECT');}
 
+// ══════ NUMERACIÓN DE FACTURAS/RECTIFICATIVAS (Supabase, compartido entre dispositivos) ══════
+async function getDocNumero(key){
+  try{
+    var rows=await GET('/documentos_fiscales?select=numero&id=eq.'+encodeURIComponent(key)+'&limit=1');
+    return rows.length?rows[0].numero:null;
+  }catch(e){return null;}
+}
+
+async function getOrCreateDocNumero(key,prefix,startNum){
+  var existing=await getDocNumero(key);
+  if(existing)return existing;
+  var maxN=0;
+  try{
+    var rows=await GET('/documentos_fiscales?select=numero&order=created_at.desc&limit=100');
+    var re=new RegExp('^'+prefix+'-0*(\\d+)$');
+    rows.forEach(function(r){
+      var m=(r.numero||'').match(re);
+      if(m){var v=parseInt(m[1]);if(v>maxN)maxN=v;}
+    });
+  }catch(e){}
+  var first=Math.max(maxN+1,startNum||1);
+  for(var i=0;i<20;i++){
+    var candidate=prefix+'-'+String(first+i).padStart(4,'0');
+    try{
+      await POST('/documentos_fiscales',{id:key,numero:candidate});
+      return candidate;
+    }catch(e){
+      // numero o id ya existían (colisión con otro dispositivo guardando a la vez) — probar siguiente
+    }
+  }
+  return prefix+'-T'+Date.now().toString().slice(-6);
+}
+
+async function listDocsFiscales(){
+  try{return await GET('/documentos_fiscales?select=id,numero&order=numero.desc');}catch(e){return [];}
+}
+
+async function eliminarNumFactura(key){
+  if(!confirm('¿Eliminar este número de factura? La próxima vez que se genere la factura de esta venta se asignará un nuevo número.'))return;
+  try{
+    await DEL('/documentos_fiscales?id=eq.'+encodeURIComponent(key));
+    await verFacturasEmitidas();
+    toast('Número eliminado');
+  }catch(e){toast('Error: '+e.message);}
+}
+
 async function nextAlbaranNum(){
   // Genera el siguiente numero de albaran verificando que no exista ya
   // (evita que 2 ventas guardadas casi a la vez colisionen en el mismo numero)
@@ -1911,17 +1957,9 @@ async function confirmarCambioArticulo(){
   var cfg=getCfg();
   var v=ventas[0];
   var cli=v.clientes||{};
-  // Número rectificativa
-  var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
-  // La rectificativa comparte la MISMA secuencia numerica que las facturas (mismo prefijo, mismo contador)
-  var _pfxR=pfxFac();
-  var allNums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxR+'-').test(n);});
-  var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace(_pfxR+'-',''))||0;return num>max?num:max;},0);
-  var numRect=_pfxR+'-'+String(lastNum+1).padStart(4,'0');
-  facturas['rect_'+ventaId+'_'+Date.now()]=numRect;
-  localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
-  var factOrig=facturas[v.albaran_num||v.id]||'—';
-  if(factOrig==='—'&&v.albaran_num)factOrig=v.albaran_num;
+  // Número rectificativa — comparte la MISMA secuencia numerica que las facturas (mismo prefijo, mismo contador), en Supabase
+  var factOrig=(await getDocNumero(v.albaran_num||v.id))||v.albaran_num||'—';
+  var numRect=await getOrCreateDocNumero('rect_'+ventaId+'_'+Date.now(),pfxFac(),parseInt(cfg.fact_inicio)||1);
   var fechaStr=fD(v.fecha);
 
   var filas=seleccionadas.map(function(x){
@@ -2384,18 +2422,9 @@ async function confirmarSubsanacion(){
 
   document.getElementById('rectM').style.display='none';
   var cfg=getCfg();
-  // Número rectificativa
-  var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
-  // La rectificativa comparte la MISMA secuencia numerica que las facturas (mismo prefijo, mismo contador)
-  var _pfxR=pfxFac();
-  var allNums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxR+'-').test(n);});
-  var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace(_pfxR+'-',''))||0;return num>max?num:max;},0);
-  var numRect=_pfxR+'-'+String(lastNum+1).padStart(4,'0');
-  facturas['rect_'+ventaId+'_'+Date.now()]=numRect;
-  localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
-  var factOrig=facturas[v.albaran_num||v.id]||'—';
-  // Si no está en localStorage, usar el albaran_num directamente como referencia
-  if(factOrig==='—'&&v.albaran_num)factOrig=v.albaran_num;
+  // Número rectificativa — comparte la MISMA secuencia numerica que las facturas (mismo prefijo, mismo contador), en Supabase
+  var factOrig=(await getDocNumero(v.albaran_num||v.id))||v.albaran_num||'—';
+  var numRect=await getOrCreateDocNumero('rect_'+ventaId+'_'+Date.now(),pfxFac(),parseInt(cfg.fact_inicio)||1);
 
   // Artículos de la venta original (sin cambio de importe)
   var totalVenta=ventas.reduce(function(s,x){return s+Number(x.total||0);},0);
@@ -2490,24 +2519,9 @@ async function confirmarRectificativa(){
   var cfg=getCfg();
   var v=ventas[0];
   var cli=v.clientes||{};
-  var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
-  // La rectificativa comparte la MISMA secuencia numerica que las facturas (mismo prefijo, mismo contador)
-  var _pfxR=pfxFac();
-  var allNums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxR+'-').test(n);});
-  var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace(_pfxR+'-',''))||0;return num>max?num:max;},0);
-  var numRect=_pfxR+'-'+String(lastNum+1).padStart(4,'0');
-  facturas['rect_'+ventaId+'_'+Date.now()]=numRect;
-  localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
-
-  var factOrig=facturas[v.albaran_num||v.id]||v.albaran_num||'—';
-  // Intentar obtener número de factura real
-  try{
-    var factRows=await GET('/ventas?select=albaran_num&id=eq.'+(v.albaran_num||v.id));
-    if(factRows.length&&factRows[0].albaran_num){
-      var fk=facturas[factRows[0].albaran_num];
-      if(fk)factOrig=fk;
-    }
-  }catch(e){}
+  // Número rectificativa — comparte la MISMA secuencia numerica que las facturas (mismo prefijo, mismo contador), en Supabase
+  var factOrig=(await getDocNumero(v.albaran_num||v.id))||v.albaran_num||'—';
+  var numRect=await getOrCreateDocNumero('rect_'+ventaId+'_'+Date.now(),pfxFac(),parseInt(cfg.fact_inicio)||1);
   var fechaStr=fD(v.fecha);
   var totalRect=seleccionadas.reduce(function(s,x){return s+x._totEdit;},0);
 
@@ -2588,31 +2602,10 @@ async function generarFacturaLegal(ventaId){
     var dto=Number(v.descuento||0);
     var descuentoVal=subtotal*(dto/100);
     var total=ventas.reduce(function(s,x){return s+Number(x.total||0);},0);
-    // ── Número de factura propio ──
-    var _FAC_KEY='decotara_facturas';
-    function getFacturas(){try{var s=localStorage.getItem(_FAC_KEY);if(s)return JSON.parse(s);}catch(e){}return {};}
-    function saveFacturas(f){localStorage.setItem(_FAC_KEY,JSON.stringify(f));}
-    // Use albaran_num or ventaId as key to reuse same factura number if reprinted
+    // ── Número de factura propio (Supabase, compartido entre dispositivos) ──
+    // Usar albaran_num o ventaId como key para reutilizar el mismo número si se reimprime
     var factKey=v.albaran_num||v.id;
-    var facturas=getFacturas();
-    var numFact;
-    if(facturas[factKey]){
-      // Already has a factura number — reuse it
-      numFact=facturas[factKey];
-    } else {
-      // Generate new sequential number
-      var _pfxF=pfxFac();
-      var allNums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxF+'-').test(n);});
-      var lastNum=allNums.reduce(function(max,n){
-        var num=parseInt(n.replace(_pfxF+'-',''))||0;
-        return num>max?num:max;
-      },0);
-      var startNum=parseInt(cfg.fact_inicio)||1;
-      var nextNum=Math.max(lastNum+1,startNum);
-      numFact=_pfxF+'-'+String(nextNum).padStart(4,'0');
-      facturas[factKey]=numFact;
-      saveFacturas(facturas);
-    }
+    var numFact=await getOrCreateDocNumero(factKey,pfxFac(),parseInt(cfg.fact_inicio)||1);
     var fecha=fD(v.fecha);
     var filas=ventas.map(function(x){
       var nom=x.prod_nombre||getProdNombre(x,'—');
@@ -3709,31 +3702,22 @@ function resetRefCounters(){
   toast('✅ Contadores reiniciados');
 }
 
-function verFacturasEmitidas(){
+async function verFacturasEmitidas(){
   var list=document.getElementById('cfg_facturas_list');
   if(!list)return;
-  var facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');
-  var entries=Object.entries(facturas).sort(function(a,b){return b[1].localeCompare(a[1]);});
-  if(!entries.length){list.innerHTML='<div style="padding:12px;color:var(--gray);font-size:13px">No hay facturas emitidas aún</div>';}
-  else{
-    list.innerHTML=entries.map(function(e){
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--xlgray);font-size:12px">'
-        +'<span style="font-weight:700;color:var(--red)">'+e[1]+'</span>'
-        +'<span style="color:var(--gray)">'+e[0]+'</span>'
-        +'<button data-fackey="'+e[0]+'" onclick="eliminarNumFactura(this.dataset.fackey)" style="background:#fee2e2;color:var(--red);border:none;padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer">✕</button>'
-      +'</div>';
-    }).join('');
-  }
-  list.style.display=list.style.display==='none'?'block':'none';
-}
-
-function eliminarNumFactura(key){
-  if(!confirm('¿Eliminar este número de factura? La próxima vez que se genere la factura de esta venta se asignará un nuevo número.'))return;
-  var facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');
-  delete facturas[key];
-  localStorage.setItem('decotara_facturas',JSON.stringify(facturas));
-  verFacturasEmitidas();
-  toast('Número eliminado');
+  var wasHidden=list.style.display==='none'||!list.style.display;
+  if(!wasHidden){list.style.display='none';return;}
+  list.innerHTML='<div style="padding:12px;color:var(--gray);font-size:13px">Cargando...</div>';
+  list.style.display='block';
+  var docs=await listDocsFiscales();
+  if(!docs.length){list.innerHTML='<div style="padding:12px;color:var(--gray);font-size:13px">No hay facturas emitidas aún</div>';return;}
+  list.innerHTML=docs.map(function(d){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--xlgray);font-size:12px">'
+      +'<span style="font-weight:700;color:var(--red)">'+d.numero+'</span>'
+      +'<span style="color:var(--gray)">'+d.id+'</span>'
+      +'<button data-fackey="'+d.id+'" onclick="eliminarNumFactura(this.dataset.fackey)" style="background:#fee2e2;color:var(--red);border:none;padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer">✕</button>'
+    +'</div>';
+  }).join('');
 }
 
 async function renderConfig(){
@@ -3742,14 +3726,12 @@ async function renderConfig(){
 
   renderRefCounters();
   // Factura count
-  var facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');
-  var facCount=Object.keys(facturas).length;
+  var docsFiscales=await listDocsFiscales();
+  var facCount=docsFiscales.length;
   var facInfo=document.getElementById('cfg_facturas_info');
   if(facInfo){
-    var _pfxFI=cfg.prefix_fac||'FAC';
-    var nums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxFI+'-').test(n);});
-    var lastNum=nums.length?nums.sort().pop():'—';
-    facInfo.textContent=facCount+' facturas emitidas · Última: '+lastNum;
+    var lastNum=docsFiscales.length?docsFiscales[0].numero:'—';
+    facInfo.textContent=facCount+' facturas/rectificativas emitidas · Última: '+lastNum;
   }
 
   // Fill empresa fields
@@ -5706,7 +5688,7 @@ document.addEventListener('DOMContentLoaded',function(){
             // Si no quedan ventas, resetear contadores de factura y referencias
             var ventasRestantes=await GET('/ventas?select=id&limit=1');
             if(!ventasRestantes.length){
-              localStorage.removeItem('decotara_facturas');
+              try{await DEL('/documentos_fiscales?id=neq.NINGUNA');}catch(e){}
               localStorage.removeItem('decotara_ref_counter');
               // Borrar también todas las rectificativas
               try{await DEL('/rectificativas?id=neq.NINGUNA');}catch(e){}
