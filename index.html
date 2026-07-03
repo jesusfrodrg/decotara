@@ -1913,7 +1913,8 @@ async function confirmarCambioArticulo(){
   var cli=v.clientes||{};
   // Número rectificativa
   var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
-  var _pfxR=pfxRect();
+  // La rectificativa comparte la MISMA secuencia numerica que las facturas (mismo prefijo, mismo contador)
+  var _pfxR=pfxFac();
   var allNums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxR+'-').test(n);});
   var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace(_pfxR+'-',''))||0;return num>max?num:max;},0);
   var numRect=_pfxR+'-'+String(lastNum+1).padStart(4,'0');
@@ -2385,7 +2386,8 @@ async function confirmarSubsanacion(){
   var cfg=getCfg();
   // Número rectificativa
   var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
-  var _pfxR=pfxRect();
+  // La rectificativa comparte la MISMA secuencia numerica que las facturas (mismo prefijo, mismo contador)
+  var _pfxR=pfxFac();
   var allNums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxR+'-').test(n);});
   var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace(_pfxR+'-',''))||0;return num>max?num:max;},0);
   var numRect=_pfxR+'-'+String(lastNum+1).padStart(4,'0');
@@ -2489,7 +2491,8 @@ async function confirmarRectificativa(){
   var v=ventas[0];
   var cli=v.clientes||{};
   var facturas={};try{facturas=JSON.parse(localStorage.getItem('decotara_facturas')||'{}');}catch(e){}
-  var _pfxR=pfxRect();
+  // La rectificativa comparte la MISMA secuencia numerica que las facturas (mismo prefijo, mismo contador)
+  var _pfxR=pfxFac();
   var allNums=Object.values(facturas).filter(function(n){return new RegExp('^'+_pfxR+'-').test(n);});
   var lastNum=allNums.reduce(function(max,n){var num=parseInt(n.replace(_pfxR+'-',''))||0;return num>max?num:max;},0);
   var numRect=_pfxR+'-'+String(lastNum+1).padStart(4,'0');
