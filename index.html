@@ -5485,15 +5485,21 @@ async function autoGenRef(){
   if(!prov||refInput.value)return; // Don't overwrite existing ref
   var pfx=_PROV_PREFIX[prov];
   if(!pfx)return;
-  // Count existing products from this proveedor to get next number
   try{
-    var existing=await GET('/productos?select=ref_propia&proveedor=eq.'+encodeURIComponent(prov)+'&ref_propia=not.is.null&order=ref_propia.desc&limit=1');
-    var lastNum=0;
-    if(existing&&existing.length&&existing[0].ref_propia){
-      var m=existing[0].ref_propia.match(/(\d+)$/);
-      if(m)lastNum=parseInt(m[1])||0;
+    var existing=await GET('/productos?select=ref_propia&proveedor=eq.'+encodeURIComponent(prov)+'&ref_propia=not.is.null&limit=200');
+    var existingSet={};
+    var maxNum=0;
+    existing.forEach(function(r){
+      if(!r.ref_propia)return;
+      existingSet[r.ref_propia]=true;
+      var m=r.ref_propia.match(/(\d+)$/);
+      if(m){var v=parseInt(m[1]);if(v>maxNum)maxNum=v;}
+    });
+    var candidate=pfx+'-'+String(maxNum+1).padStart(3,'0');
+    for(var i=1;existingSet[candidate]&&i<=100;i++){
+      candidate=pfx+'-'+String(maxNum+1+i).padStart(3,'0');
     }
-    refInput.value=pfx+'-'+String(lastNum+1).padStart(3,'0');
+    refInput.value=candidate;
   }catch(e){
     // Fallback: use timestamp
     refInput.value=pfx+'-'+String(Date.now()).slice(-4);
@@ -5503,6 +5509,17 @@ async function saveP(){
   var nombre=document.getElementById('p_nom').value.trim(),cat=document.getElementById('p_cat').value,pvp=parseFloat(document.getElementById('p_pvp').value)||0;
   if(!nombre||!pvp){toast('Nombre y PVP requeridos');return;}
   var payload={nombre:nombre,categoria:cat,descripcion:document.getElementById('p_des').value,pvp:pvp,coste:parseFloat(document.getElementById('p_cos').value)||0,stock:parseInt(document.getElementById('p_sto').value)||0,ref_propia:document.getElementById('p_ref').value.trim(),proveedor:document.getElementById('p_prov').value,ref_proveedor:document.getElementById('p_ref_prov').value.trim()};
+  // Comprobar que la referencia no esté ya usada por el mismo proveedor
+  if(payload.ref_propia&&payload.proveedor){
+    try{
+      var dupCheck=await GET('/productos?select=id&proveedor=eq.'+encodeURIComponent(payload.proveedor)+'&ref_propia=eq.'+encodeURIComponent(payload.ref_propia));
+      var dupOther=dupCheck.filter(function(r){return r.id!==peditId;});
+      if(dupOther.length){
+        toast('⚠️ Esa referencia ya existe para '+payload.proveedor+' — cámbiala');
+        return;
+      }
+    }catch(e){}
+  }
   var btn=document.getElementById('btnSP');btn.disabled=true;btn.textContent='Guardando...';
   try{
     if(peditId){await PATCH('/productos?id=eq.'+peditId,payload);toast('Producto actualizado ✓');invalidarCacheProductos();}
