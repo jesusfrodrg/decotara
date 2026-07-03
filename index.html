@@ -3593,6 +3593,7 @@ var _CFG_KEY = 'decotara_config';
 
 var _CFG_DEFAULTS = {
   empresa_nombre: 'DECOTARA OUTLET',
+  empresa_cif: 'B21652037',
   empresa_dir: 'Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza',
   empresa_email: 'DECOTARAOUTLET@gmail.com',
   empresa_tel: '',
@@ -3743,6 +3744,7 @@ async function renderConfig(){
 
   // Fill empresa fields
   document.getElementById('cfg_empresa_nombre').value=cfg.empresa_nombre||'';
+  document.getElementById('cfg_empresa_cif').value=cfg.empresa_cif||'';
   document.getElementById('cfg_empresa_dir').value=cfg.empresa_dir||'';
   document.getElementById('cfg_empresa_email').value=cfg.empresa_email||'';
   document.getElementById('cfg_empresa_tel').value=cfg.empresa_tel||'';
@@ -4039,6 +4041,7 @@ function cfgDelCat(i){
 function saveConfig(){
   var cfg=getCfg();
   cfg.empresa_nombre=document.getElementById('cfg_empresa_nombre').value.trim()||cfg.empresa_nombre;
+  cfg.empresa_cif=document.getElementById('cfg_empresa_cif').value.trim()||cfg.empresa_cif;
   cfg.empresa_dir=document.getElementById('cfg_empresa_dir').value.trim()||cfg.empresa_dir;
   cfg.empresa_email=document.getElementById('cfg_empresa_email').value.trim()||cfg.empresa_email;
   cfg.empresa_tel=document.getElementById('cfg_empresa_tel').value.trim();
