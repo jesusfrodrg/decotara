@@ -1087,6 +1087,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
             <div class="fi"><label>CIF</label><input type="text" id="cfg_empresa_cif" placeholder="B00000000"></div>
             <div class="fi"><label>Email</label><input type="email" id="cfg_empresa_email" placeholder="email@empresa.com"></div>
             <div class="fi"><label>Teléfono</label><input type="text" id="cfg_empresa_tel" placeholder="+34 000 000 000"></div>
+            <div class="fi full"><label>IBAN (para transferencias)</label><input type="text" id="cfg_empresa_iban" placeholder="ES00 0000 0000 0000 0000 0000"></div>
             <div class="fi full"><label>Texto pie de factura</label><input type="text" id="cfg_pie_factura" placeholder="Gracias por su compra..."></div>
             <div class="fi"><label>Contraseña admin</label><input type="password" id="cfg_password" placeholder="Nueva contraseña..."></div>
           </div>
@@ -2632,7 +2633,7 @@ async function generarFacturaLegal(ventaId){
       +'<div class="addr-grid"><div><div class="addr-hd">Facturar a:</div><div class="addr-body">'+(cli.nombre?'<b>'+cli.nombre+' '+cli.apellidos+'</b><br>':'')+(cli.dni?'DNI/NIF: '+cli.dni+'<br>':'')+(cli.direccion?cli.direccion+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'<br>':'')+(cli.telefono?cli.telefono+'<br>':'')+(cli.email?cli.email:'')+'</div></div>'
       +'<div><div class="addr-hd">Dirección de entrega:</div><div class="addr-body">'+(cli.nombre?'<b>'+cli.nombre+' '+cli.apellidos+'</b><br>':'')+(cli.direccion?cli.direccion+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'<br>':'')+(v.entrega?'<b>Entrega:</b> '+v.entrega+(v.fecha_entrega?' — '+fD(v.fecha_entrega):''):'')+'</div></div></div>'
       +'<table class="items"><thead><tr><td class="th" style="width:12%">Referencia</td><td class="th" style="width:43%">Descripción</td><td class="th" style="width:12%;text-align:center">Cantidad</td><td class="th" style="width:16%;text-align:right">Precio Unit.</td><td class="th" style="width:17%;text-align:right">Monto</td></tr></thead><tbody>'+filas+emptyRows+'</tbody></table>'
-      +'<div class="bottom"><div></div><div>'      +(dto>0?'<div class="tot-row"><span>Descuento ('+dto+'%)</span><span>- '+fe(descuentoVal)+'</span></div>':'')      +'<div class="tot-row"><span>Base imponible</span><span>'+fe(total/(1+(getCfg().iva||21)/100))+'</span></div>'      +'<div class="tot-row"><span>IVA ('+(getCfg().iva||21)+'%)</span><span>'+fe(total-total/(1+(getCfg().iva||21)/100))+'</span></div>'      +'<div class="tot-final"><span>TOTAL</span><span>'+fe(total)+'</span></div>'      +'</div></div>'
+      +'<div class="bottom"><div>'+(cfg.empresa_iban?'<div style="font-size:11px;color:#444"><b>Forma de pago:</b> Transferencia bancaria<br><b>IBAN:</b> '+escHtml(cfg.empresa_iban)+'</div>':'')+'</div><div>'      +(dto>0?'<div class="tot-row"><span>Descuento ('+dto+'%)</span><span>- '+fe(descuentoVal)+'</span></div>':'')      +'<div class="tot-row"><span>Base imponible</span><span>'+fe(total/(1+(getCfg().iva||21)/100))+'</span></div>'      +'<div class="tot-row"><span>IVA ('+(getCfg().iva||21)+'%)</span><span>'+fe(total-total/(1+(getCfg().iva||21)/100))+'</span></div>'      +'<div class="tot-final"><span>TOTAL</span><span>'+fe(total)+'</span></div>'      +'</div></div>'
       +'<div style="margin-top:12px;font-size:9px;color:#999;border-top:1px solid #eee;padding-top:8px;line-height:1.5">'      +'<b>Protección de Datos:</b> En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD, le informamos que sus datos personales serán tratados por '+cfg.empresa_nombre+' con CIF '+((cfg.empresa_cif||'B21652037'))+', con la finalidad de gestionar la relación comercial y cumplir con las obligaciones legales de facturación. Sus datos no serán cedidos a terceros salvo obligación legal. Puede ejercer sus derechos de acceso, rectificación, supresión, limitación, portabilidad y oposición escribiendo a '+cfg.empresa_email+(cfg.empresa_dir?', '+cfg.empresa_dir:'')+'. Para más información, contacte con nosotros.'    +'</div>'
       +'<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button></center>'
       +'</body></html>';
@@ -3594,6 +3595,7 @@ var _CFG_KEY = 'decotara_config';
 var _CFG_DEFAULTS = {
   empresa_nombre: 'DECOTARA OUTLET',
   empresa_cif: 'B21652037',
+  empresa_iban: '',
   empresa_dir: 'Polígono Río Huerva, Av. del Rosario, Nave 1A, 50410 Cuarte de Huerva, Zaragoza',
   empresa_email: 'DECOTARAOUTLET@gmail.com',
   empresa_tel: '',
@@ -3745,6 +3747,7 @@ async function renderConfig(){
   // Fill empresa fields
   document.getElementById('cfg_empresa_nombre').value=cfg.empresa_nombre||'';
   document.getElementById('cfg_empresa_cif').value=cfg.empresa_cif||'';
+  document.getElementById('cfg_empresa_iban').value=cfg.empresa_iban||'';
   document.getElementById('cfg_empresa_dir').value=cfg.empresa_dir||'';
   document.getElementById('cfg_empresa_email').value=cfg.empresa_email||'';
   document.getElementById('cfg_empresa_tel').value=cfg.empresa_tel||'';
@@ -4042,6 +4045,7 @@ function saveConfig(){
   var cfg=getCfg();
   cfg.empresa_nombre=document.getElementById('cfg_empresa_nombre').value.trim()||cfg.empresa_nombre;
   cfg.empresa_cif=document.getElementById('cfg_empresa_cif').value.trim()||cfg.empresa_cif;
+  cfg.empresa_iban=document.getElementById('cfg_empresa_iban').value.trim();
   cfg.empresa_dir=document.getElementById('cfg_empresa_dir').value.trim()||cfg.empresa_dir;
   cfg.empresa_email=document.getElementById('cfg_empresa_email').value.trim()||cfg.empresa_email;
   cfg.empresa_tel=document.getElementById('cfg_empresa_tel').value.trim();
