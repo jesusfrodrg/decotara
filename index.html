@@ -5507,11 +5507,28 @@ async function saveP(){
   try{
     if(peditId){await PATCH('/productos?id=eq.'+peditId,payload);toast('Producto actualizado ✓');invalidarCacheProductos();}
     else{
-      var pfx={Sofa:'SOF-',Canape:'CAN-',Colchon:'COL-',Otros:'OTR-'}[cat]||'PRO-';
-      var ex=await GET('/productos?select=id&categoria=eq.'+encodeURIComponent(cat)+'&order=id.desc&limit=1');
-      var nv=ex.length?parseInt(ex[0].id.replace(pfx,''))||0:0;
-      payload.id=pfx+String(nv+1).padStart(3,'0');
-      await POST('/productos',payload);toast('Creado: '+payload.id+' ✓');
+      var pfxMap={Sofa:'SOF',Canape:'CAN',Colchon:'COL',Sillon:'SIL',Comedor:'COM',Dormitorio:'DOR',Auxiliar:'AUX',Otros:'OTR'};
+      var pfx=(pfxMap[cat]||cat.replace(/[^a-zA-Z]/g,'').substring(0,3).toUpperCase()||'PRO')+'-';
+      var maxN=0;
+      try{
+        var ex=await GET('/productos?select=id&id=like.'+encodeURIComponent(pfx)+'*&order=id.desc&limit=50');
+        var re=new RegExp('^'+pfx+'0*(\\d+)$');
+        ex.forEach(function(r){var m=(r.id||'').match(re);if(m){var v=parseInt(m[1]);if(v>maxN)maxN=v;}});
+      }catch(e){}
+      var creado=false;
+      for(var i=1;i<=20;i++){
+        payload.id=pfx+String(maxN+i).padStart(3,'0');
+        try{
+          await POST('/productos',payload);
+          creado=true;
+          break;
+        }catch(e){
+          if(!/duplicate key|already exists|23505/i.test(e.message||''))throw e;
+          // ID ya existía (colisión con otro dispositivo o categoría con mismo prefijo) — probar el siguiente
+        }
+      }
+      if(!creado)throw new Error('No se pudo generar un ID único para el producto, inténtalo de nuevo');
+      toast('Creado: '+payload.id+' ✓');
     }
     await loadStockCache();
     closeM('pm');if(curPage==='catalogo')renderCatalogo();else renderProductos();
