@@ -12,15 +12,36 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { to, subject, text, filename, pdfBase64 } = req.body || {};
+    const { to, subject, text, html, filename, pdfBase64 } = req.body || {};
 
-    if (!to || !pdfBase64) {
-      return res.status(400).json({ error: 'Faltan datos: to y pdfBase64 son obligatorios' });
+    if (!to || (!html && !pdfBase64)) {
+      return res.status(400).json({ error: 'Faltan datos: to y (html o pdfBase64) son obligatorios' });
     }
 
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
       return res.status(500).json({ error: 'RESEND_API_KEY no configurada en el servidor' });
+    }
+
+    const payload = {
+      from: 'Decotara Outlet <onboarding@resend.dev>',
+      to: [to],
+      subject: subject || 'Documento de Decotara Outlet',
+    };
+
+    if (html) {
+      payload.html = html;
+    } else {
+      payload.text = text || 'Adjunto encontrara el documento solicitado.';
+    }
+
+    if (pdfBase64) {
+      payload.attachments = [
+        {
+          filename: filename || 'documento.pdf',
+          content: pdfBase64,
+        },
+      ];
     }
 
     const resendRes = await fetch('https://api.resend.com/emails', {
@@ -29,18 +50,7 @@ module.exports = async function handler(req, res) {
         Authorization: 'Bearer ' + apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: 'Decotara Outlet <onboarding@resend.dev>',
-        to: [to],
-        subject: subject || 'Documento de Decotara Outlet',
-        text: text || 'Adjunto encontrara el documento solicitado.',
-        attachments: [
-          {
-            filename: filename || 'documento.pdf',
-            content: pdfBase64,
-          },
-        ],
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await resendRes.json();
@@ -54,5 +64,3 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: err.message || 'Error desconocido' });
   }
 };
-
-// redeploy trigger
