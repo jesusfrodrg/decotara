@@ -1,9 +1,0 @@
-{
-  "name": "decotara-api",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "puppeteer-core": "^24.0.0",
-    "@sparticuz/chromium": "^131.0.0"
-  }
-}
