@@ -92,3 +92,5 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: err.message || 'Error desconocido' });
   }
 };
+
+// trigger redeploy con PDFSHIFT_API_KEY
