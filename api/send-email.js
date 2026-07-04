@@ -1,3 +1,37 @@
+const puppeteer = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
+
+let cachedBrowser = null;
+
+async function getBrowser() {
+  if (cachedBrowser && cachedBrowser.isConnected()) {
+    return cachedBrowser;
+  }
+  cachedBrowser = await puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
+  });
+  return cachedBrowser;
+}
+
+async function htmlToPdfBase64(html) {
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+  try {
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 8000 });
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' },
+    });
+    return Buffer.from(pdfBuffer).toString('base64');
+  } finally {
+    await page.close();
+  }
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -12,10 +46,10 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { to, subject, text, html, filename, pdfBase64 } = req.body || {};
+    const { to, subject, text, html, filename } = req.body || {};
 
-    if (!to || (!html && !pdfBase64)) {
-      return res.status(400).json({ error: 'Faltan datos: to y (html o pdfBase64) son obligatorios' });
+    if (!to || !html) {
+      return res.status(400).json({ error: 'Faltan datos: to y html son obligatorios' });
     }
 
     const apiKey = process.env.RESEND_API_KEY;
@@ -23,26 +57,25 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ error: 'RESEND_API_KEY no configurada en el servidor' });
     }
 
+    let pdfBase64;
+    try {
+      pdfBase64 = await htmlToPdfBase64(html);
+    } catch (pdfErr) {
+      return res.status(500).json({ error: 'Error generando el PDF en el servidor: ' + pdfErr.message });
+    }
+
     const payload = {
       from: 'Decotara Outlet <onboarding@resend.dev>',
       to: [to],
       subject: subject || 'Documento de Decotara Outlet',
-    };
-
-    if (html) {
-      payload.html = html;
-    } else {
-      payload.text = text || 'Adjunto encontrara el documento solicitado.';
-    }
-
-    if (pdfBase64) {
-      payload.attachments = [
+      text: text || 'Adjunto encontrara el documento solicitado en PDF.',
+      attachments: [
         {
           filename: filename || 'documento.pdf',
           content: pdfBase64,
         },
-      ];
-    }
+      ],
+    };
 
     const resendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -63,4 +96,8 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Error desconocido' });
   }
+};
+
+module.exports.config = {
+  maxDuration: 30,
 };
