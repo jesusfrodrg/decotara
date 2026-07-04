@@ -1,35 +1,30 @@
-const puppeteer = require('puppeteer-core');
-const chromium = require('@sparticuz/chromium');
-
-let cachedBrowser = null;
-
-async function getBrowser() {
-  if (cachedBrowser && cachedBrowser.isConnected()) {
-    return cachedBrowser;
-  }
-  cachedBrowser = await puppeteer.launch({
-    args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath(),
-    headless: chromium.headless,
-  });
-  return cachedBrowser;
-}
-
 async function htmlToPdfBase64(html) {
-  const browser = await getBrowser();
-  const page = await browser.newPage();
-  try {
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 8000 });
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' },
-    });
-    return Buffer.from(pdfBuffer).toString('base64');
-  } finally {
-    await page.close();
+  const apiKey = process.env.PDFSHIFT_API_KEY;
+  if (!apiKey) {
+    throw new Error('PDFSHIFT_API_KEY no configurada en el servidor');
   }
+
+  const pdfRes = await fetch('https://api.pdfshift.io/v3/convert/pdf', {
+    method: 'POST',
+    headers: {
+      'X-API-Key': apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      source: html,
+      landscape: false,
+      use_print: false,
+      format: 'A4',
+    }),
+  });
+
+  if (!pdfRes.ok) {
+    const errText = await pdfRes.text();
+    throw new Error('PDFShift error (' + pdfRes.status + '): ' + errText);
+  }
+
+  const arrayBuffer = await pdfRes.arrayBuffer();
+  return Buffer.from(arrayBuffer).toString('base64');
 }
 
 module.exports = async function handler(req, res) {
@@ -61,7 +56,7 @@ module.exports = async function handler(req, res) {
     try {
       pdfBase64 = await htmlToPdfBase64(html);
     } catch (pdfErr) {
-      return res.status(500).json({ error: 'Error generando el PDF en el servidor: ' + pdfErr.message });
+      return res.status(500).json({ error: 'Error generando el PDF: ' + pdfErr.message });
     }
 
     const payload = {
@@ -96,8 +91,4 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Error desconocido' });
   }
-};
-
-module.exports.config = {
-  maxDuration: 30,
 };
