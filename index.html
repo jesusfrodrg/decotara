@@ -625,6 +625,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 
   <!-- DASHBOARD -->
   <div class="page" id="page-dashboard">
+    <div id="dash-bienvenida" style="display:none"></div>
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-accent"></div><div class="kpi-icon">💰</div><div class="kl">Ventas totales</div><div class="kv" id="k1">—</div><div class="ks">completadas</div></div>
       <div class="kpi green"><div class="kpi-accent"></div><div class="kpi-icon">✅</div><div class="kl">Nº ventas</div><div class="kv" id="k2">—</div><div class="ks">completadas</div></div>
@@ -2642,7 +2643,7 @@ async function generarFacturaLegal(ventaId){
       +'<div class="addr-grid"><div><div class="addr-hd">Facturar a:</div><div class="addr-body">'+(cli.nombre?'<b>'+cli.nombre+' '+cli.apellidos+'</b><br>':'')+(cli.dni?'DNI/NIF: '+cli.dni+'<br>':'')+(cli.direccion?cli.direccion+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'<br>':'')+(cli.telefono?cli.telefono+'<br>':'')+(cli.email?cli.email:'')+'</div></div>'
       +'<div><div class="addr-hd">Dirección de entrega:</div><div class="addr-body">'+(cli.nombre?'<b>'+cli.nombre+' '+cli.apellidos+'</b><br>':'')+(cli.direccion?cli.direccion+(cli.codigo_postal?' '+cli.codigo_postal:'')+(cli.ciudad?', '+cli.ciudad:'')+'<br>':'')+(v.entrega?'<b>Entrega:</b> '+v.entrega+(v.fecha_entrega?' — '+fD(v.fecha_entrega):''):'')+'</div></div></div>'
       +'<table class="items"><thead><tr><td class="th" style="width:12%">Referencia</td><td class="th" style="width:43%">Descripción</td><td class="th" style="width:12%;text-align:center">Cantidad</td><td class="th" style="width:16%;text-align:right">Precio Unit.</td><td class="th" style="width:17%;text-align:right">Monto</td></tr></thead><tbody>'+filas+emptyRows+'</tbody></table>'
-      +'<div class="bottom"><div>'+(cfg.empresa_iban?'<div style="font-size:11px;color:#444"><b>Forma de pago:</b> Transferencia bancaria<br><b>IBAN:</b> '+escHtml(cfg.empresa_iban)+'</div>':'')+'</div><div>'      +(dto>0?'<div class="tot-row"><span>Descuento ('+dto+'%)</span><span>- '+fe(descuentoVal)+'</span></div>':'')      +'<div class="tot-row"><span>Base imponible</span><span>'+fe(total/(1+(getCfg().iva||21)/100))+'</span></div>'      +'<div class="tot-row"><span>IVA ('+(getCfg().iva||21)+'%)</span><span>'+fe(total-total/(1+(getCfg().iva||21)/100))+'</span></div>'      +'<div class="tot-final"><span>TOTAL</span><span>'+fe(total)+'</span></div>'      +'</div></div>'
+      +'<div class="bottom"><div>'+(cfg.empresa_iban?'<div style="font-size:11px;color:#444"><b>Forma de pago:</b> Transferencia bancaria<br><b>IBAN:</b> '+escHtml(cfg.empresa_iban)+'</div>':'')+'</div><div>'      +(dto>0?'<div class="tot-row"><span>Descuento ('+dto+'%)</span><span>- '+fe(descuentoVal)+'</span></div>':'')      +(cfg.mostrar_iva!=='no'?'<div class="tot-row"><span>Base imponible</span><span>'+fe(total/(1+(getCfg().iva||21)/100))+'</span></div>'      +'<div class="tot-row"><span>IVA ('+(getCfg().iva||21)+'%)</span><span>'+fe(total-total/(1+(getCfg().iva||21)/100))+'</span></div>':'')      +'<div class="tot-final"><span>TOTAL</span><span>'+fe(total)+'</span></div>'      +'</div></div>'
       +'<div style="margin-top:12px;font-size:9px;color:#999;border-top:1px solid #eee;padding-top:8px;line-height:1.5">'      +'<b>Protección de Datos:</b> En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD, le informamos que sus datos personales serán tratados por '+cfg.empresa_nombre+' con CIF '+((cfg.empresa_cif||'B21652037'))+', con la finalidad de gestionar la relación comercial y cumplir con las obligaciones legales de facturación. Sus datos no serán cedidos a terceros salvo obligación legal. Puede ejercer sus derechos de acceso, rectificación, supresión, limitación, portabilidad y oposición escribiendo a '+cfg.empresa_email+(cfg.empresa_dir?', '+cfg.empresa_dir:'')+'. Para más información, contacte con nosotros.'    +'</div>'
       +'<br><center class="no-print"><button onclick="window.print()" style="background:#C8372D;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Imprimir / Guardar como PDF</button> '+' <button onclick="enviarPorCorreoDirecto(&quot;'+(("Documento de Decotara Outlet: "+"Factura_"+numFact))+'&quot;,&quot;'+(("Factura_"+numFact+".pdf"))+'&quot;,&quot;Factura&quot;)" style="background:#4285F4;color:#fff;border:none;padding:11px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700;margin-left:8px">✉️ Enviar por correo</button>'+'</center>'
       +'</body></html>';
@@ -3672,6 +3673,17 @@ async function saveCfg(cfg){
 }
 
 function applyCfgColor(color){
+  var w=document.getElementById('dash-bienvenida');
+  if(w){
+    var msg=(getCfg().bienvenida||'').trim();
+    if(msg){
+      w.style.display='block';
+      w.style.cssText='display:block;background:var(--red-soft,#FEECEA);border:1px solid var(--red);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--dark,#1E2028)';
+      w.textContent=msg;
+    } else {
+      w.style.display='none';
+    }
+  }
   if(!color)return;
   var root=document.documentElement;
   var dark=shadeColor(color,-15);
