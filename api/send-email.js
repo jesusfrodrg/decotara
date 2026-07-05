@@ -62,6 +62,7 @@ module.exports = async function handler(req, res) {
     const payload = {
       from: 'Decotara Outlet <onboarding@resend.dev>',
       to: [to],
+      reply_to: 'DECOTARAOUTLET@gmail.com',
       subject: subject || 'Documento de Decotara Outlet',
       text: text || 'Adjunto encontrara el documento solicitado en PDF.',
       attachments: [
