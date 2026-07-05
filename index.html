@@ -1377,11 +1377,13 @@ async function loadStockCache(){
   try{
     var prods=await GET('/productos?select=id,nombre,categoria,stock');
     prods.forEach(function(p){stockCache[p.id]=p.stock||0;});
-    stockAlerts=prods.filter(function(p){return (p.stock||0)<=3;});
+    stockAlerts=prods.filter(function(p){return (p.stock||0)<=(getCfg().stock_min||3);});
     actualizarCampana();
   }catch(e){}
 }
 function actualizarCampana(){
+  var titleEl=document.querySelector('.sap-title');
+  if(titleEl)titleEl.textContent='⚠️ Stock bajo — artículos con '+(getCfg().stock_min||3)+' o menos unidades';
   var badge=document.getElementById('bellBadge');
   if(!badge)return;
   if(stockAlerts.length>0){
