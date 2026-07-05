@@ -2173,7 +2173,7 @@ async function abrirFormTienda(){try{
     document.getElementById('tf_prov').value='';
   // Llenar categorías
   var cats=getCfg().categorias||[];
-  document.getElementById('tf_cat').innerHTML='<option value="">Sin categoría</option>'+cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
+  document.getElementById('tf_cat').innerHTML=cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
   // Llenar productos almacén para vincular
   var prods=await GET('/productos?select=id,nombre,ref_propia&order=nombre.asc');
   document.getElementById('tf_prod_id').innerHTML='<option value="">— Sin vincular —</option>'+prods.map(function(p){return '<option value="'+p.id+'">'+escHtml(p.nombre)+(p.ref_propia?' ('+p.ref_propia+')':'')+'</option>';}).join('');
@@ -2200,7 +2200,7 @@ async function editarProductoTienda(id){
   }
   document.getElementById('tf_prov').value=provVal;
   var cats=getCfg().categorias||[];
-  document.getElementById('tf_cat').innerHTML='<option value="">Sin categoría</option>'+cats.map(function(c){return '<option value="'+c+'"'+(c===r.categoria?' selected':'')+'>'+c+'</option>';}).join('');
+  document.getElementById('tf_cat').innerHTML=cats.map(function(c){return '<option value="'+c+'"'+(c===r.categoria?' selected':'')+'>'+c+'</option>';}).join('');
   var prods=await GET('/productos?select=id,nombre,ref_propia&order=nombre.asc');
   document.getElementById('tf_prod_id').innerHTML='<option value="">— Sin vincular —</option>'+prods.map(function(p){return '<option value="'+p.id+'"'+(p.id===r.producto_id?' selected':'')+'>'+escHtml(p.nombre)+(p.ref_propia?' ('+p.ref_propia+')':'')+'</option>';}).join('');
   document.getElementById('tienda_form_panel').style.display='block';
@@ -2210,9 +2210,11 @@ async function editarProductoTienda(id){
 async function guardarProductoTienda(){
   var nombre=document.getElementById('tf_nombre').value.trim();
   if(!nombre){toast('Escribe el nombre');return;}
+  var catVal=document.getElementById('tf_cat').value;
+  if(!catVal){toast('⚠️ Elige una categoría (si no, el producto no aparecerá en ninguna pestaña)');return;}
   var payload={
     nombre:nombre,
-    categoria:document.getElementById('tf_cat').value||null,
+    categoria:catVal,
     stock:parseInt(document.getElementById('tf_stock').value)||0,
     pvp:parseFloat(document.getElementById('tf_pvp').value)||null,
     ref_propia:document.getElementById('tf_ref').value.trim()||null,
