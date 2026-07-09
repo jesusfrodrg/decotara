@@ -3069,7 +3069,7 @@ function renderOfertaLinkSelected(){
     +_ofertaLinksTemp.map(function(l){
       return '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 8px;font-size:12px;background:var(--blue-soft);border-radius:6px;margin-bottom:4px">'
         +'<span>'+escHtml(l.nombre)+'</span>'
-        +'<span style="display:flex;align-items:center;gap:4px">Cant: <input type="number" min="1" value="'+l.qty+'" style="width:44px;padding:2px 4px;font-size:11px" onchange="updateOfertaLinkQty(\''+l.id+'\',this.value)">'
+        +'<span style="display:flex;align-items:center;gap:4px">Cant: <input type="number" min="1" value="'+l.qty+'" style="width:44px;padding:2px 4px;font-size:11px" oninput="updateOfertaLinkQty(\''+l.id+'\',this.value)" onblur="updateOfertaLinkQty(\''+l.id+'\',this.value)">'
         +'<button type="button" class="btn btn-sm" style="font-size:11px;background:#f3f4f6" onclick="removeOfertaLink(\''+l.id+'\')">✕</button></span>'
         +'</div>';
     }).join('')):'';
