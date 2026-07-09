@@ -993,6 +993,15 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
             <button type="button" onclick="addVMOtros()" class="btn bp" style="flex:1;font-size:12px">✅ Añadir al pedido</button>
             <button type="button" onclick="addVMOtrosYOtro()" class="btn bs2" style="flex:1;font-size:12px">➕ Añadir y otro más</button>
           </div>
+          <div style="margin-top:10px;border-top:1px dashed var(--xlgray);padding-top:8px">
+            <button type="button" onclick="toggleOfertaLinkPicker()" class="btn bs2" style="font-size:11px;width:100%">🎁 ¿Es una oferta? Vincular artículos de stock a descontar</button>
+            <div id="oferta_link_picker" style="display:none;margin-top:8px">
+              <div style="font-size:10px;color:var(--gray);margin-bottom:6px">Selecciona los artículos reales que forman esta oferta — su stock se descontará automáticamente al guardar la venta.</div>
+              <input type="text" id="oferta_link_buscar" placeholder="Buscar artículo..." style="width:100%;padding:6px 8px;font-size:12px;border:1px solid var(--xlgray);border-radius:6px;margin-bottom:6px" oninput="renderOfertaLinkResults()">
+              <div id="oferta_link_results" style="max-height:140px;overflow-y:auto;border:1px solid var(--xlgray);border-radius:6px"></div>
+              <div id="oferta_link_selected" style="margin-top:8px"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -3018,6 +3027,59 @@ function toggleVMOtros(){
   }
 }
 
+var _ofertaLinksTemp=[];
+function toggleOfertaLinkPicker(){
+  var p=document.getElementById('oferta_link_picker');
+  if(!p)return;
+  var show=p.style.display==='none';
+  p.style.display=show?'block':'none';
+  if(show)renderOfertaLinkResults();
+}
+function renderOfertaLinkResults(){
+  var box=document.getElementById('oferta_link_results');
+  if(!box)return;
+  var q=(document.getElementById('oferta_link_buscar').value||'').toLowerCase();
+  var list=(vmProductos||[]).filter(function(p){
+    if(_ofertaLinksTemp.some(function(l){return l.id===p.id;}))return false;
+    if(!q)return true;
+    return (p.nombre||'').toLowerCase().indexOf(q)>-1;
+  }).slice(0,25);
+  box.innerHTML=list.length?list.map(function(p){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;font-size:12px;border-bottom:1px solid var(--xlgray)">'
+      +'<span>'+escHtml(p.nombre)+' <span style="color:var(--gray);font-size:10px">(stock: '+(p.stock||0)+')</span></span>'
+      +'<button type="button" class="btn btn-sm bs2" style="font-size:11px" onclick="addOfertaLink(\''+p.id+'\')">+ Añadir</button>'
+      +'</div>';
+  }).join(''):'<div style="padding:8px;font-size:12px;color:var(--gray);text-align:center">Sin resultados</div>';
+}
+function addOfertaLink(pid){
+  var p=(vmProductos||[]).find(function(x){return x.id===pid;});
+  if(!p)return;
+  _ofertaLinksTemp.push({id:p.id,nombre:p.nombre,qty:1,_esTienda:p._esTienda||false,_tiendaId:p._tiendaId||null});
+  renderOfertaLinkResults();
+  renderOfertaLinkSelected();
+}
+function removeOfertaLink(pid){
+  _ofertaLinksTemp=_ofertaLinksTemp.filter(function(l){return l.id!==pid;});
+  renderOfertaLinkResults();
+  renderOfertaLinkSelected();
+}
+function updateOfertaLinkQty(pid,val){
+  var l=_ofertaLinksTemp.find(function(x){return x.id===pid;});
+  if(l)l.qty=Math.max(1,parseInt(val)||1);
+}
+function renderOfertaLinkSelected(){
+  var box=document.getElementById('oferta_link_selected');
+  if(!box)return;
+  box.innerHTML=_ofertaLinksTemp.length?('<div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:4px">Artículos vinculados a descontar:</div>'
+    +_ofertaLinksTemp.map(function(l){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 8px;font-size:12px;background:var(--blue-soft);border-radius:6px;margin-bottom:4px">'
+        +'<span>'+escHtml(l.nombre)+'</span>'
+        +'<span style="display:flex;align-items:center;gap:4px">Cant: <input type="number" min="1" value="'+l.qty+'" style="width:44px;padding:2px 4px;font-size:11px" onchange="updateOfertaLinkQty(\''+l.id+'\',this.value)">'
+        +'<button type="button" class="btn btn-sm" style="font-size:11px;background:#f3f4f6" onclick="removeOfertaLink(\''+l.id+'\')">✕</button></span>'
+        +'</div>';
+    }).join('')):'';
+}
+
 function _addVMOtrosCore(){
   // Returns true if added OK, false if validation failed
   var nom=(document.getElementById('vm_otros_nombre').value||'').trim();
@@ -3027,7 +3089,11 @@ function _addVMOtrosCore(){
   var qty=Math.max(1,parseInt(document.getElementById('vm_otros_qty').value)||1);
   if(!nom){toast('Escribe el nombre del artículo');return false;}
   if(!pvp){toast('Indica el precio');return false;}
-  vmLineas.push({id:'__otros__'+Date.now(),nombre:nom,cat:'',pvp:pvp,qty:qty,esOtro:true,ref_propia:otrosRef||'',proveedor:otrosProv||''});
+  vmLineas.push({id:'__otros__'+Date.now(),nombre:nom,cat:'',pvp:pvp,qty:qty,esOtro:true,ref_propia:otrosRef||'',proveedor:otrosProv||'',_ofertaLinks:_ofertaLinksTemp.length?_ofertaLinksTemp.slice():undefined});
+  _ofertaLinksTemp=[];
+  var _olp=document.getElementById('oferta_link_picker');if(_olp)_olp.style.display='none';
+  var _ols=document.getElementById('oferta_link_selected');if(_ols)_ols.innerHTML='';
+  var _olb=document.getElementById('oferta_link_buscar');if(_olb)_olb.value='';
   document.getElementById('vm_otros_nombre').value='';
   document.getElementById('vm_otros_pvp').value='';
   document.getElementById('vm_otros_qty').value=1;
@@ -5345,6 +5411,21 @@ async function saveV(){
         if(_qtyAlmLinea>0&&pId2){
           stockCache[pId2]=Math.max(0,(stockCache[pId2]||0)-_qtyAlmLinea);
           _stockOps.push(PATCH('/productos?id=eq.'+pId2,{stock:stockCache[pId2]}));
+        }
+        // Descontar stock de artículos vinculados a una oferta (venta de artículo personalizado)
+        if(l._ofertaLinks&&l._ofertaLinks.length){
+          l._ofertaLinks.forEach(function(link){
+            if(link._esTienda&&link._tiendaId){
+              var _tMapOf=window._vmTiendaMap||{};
+              var _tItemOf=Object.values(_tMapOf).find(function(t){return t.id===link._tiendaId;})||{stock:0};
+              var _nsOf=Math.max(0,(_tItemOf.stock||0)-link.qty);
+              if(_tItemOf)_tItemOf.stock=_nsOf;
+              _stockOps.push(PATCH('/stock_tienda?id=eq.'+link._tiendaId,{stock:_nsOf}));
+            } else {
+              stockCache[link.id]=Math.max(0,(stockCache[link.id]||0)-link.qty);
+              _stockOps.push(PATCH('/productos?id=eq.'+link.id,{stock:stockCache[link.id]}));
+            }
+          });
         }
         // Determinar stock_origen para BD
         var _origenBD=(_qtyTndLinea>0&&_qtyAlmLinea===0)?'tienda':'almacen';
