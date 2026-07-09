@@ -5292,6 +5292,21 @@ async function saveV(){
           if(_tItemD)_tItemD.stock=_newTSD;
           _ops.push(PATCH('/stock_tienda?id=eq.'+o.tienda_id,{stock:_newTSD}));
         }
+        if(o.oferta_links&&o.oferta_links.length){
+          o.oferta_links.forEach(function(link){
+            if(!link.qty)return;
+            if(link._esTienda&&link._tiendaId){
+              _ops.push(
+                GET('/stock_tienda?select=id,stock&id=eq.'+link._tiendaId).then(function(tRows){
+                  if(tRows.length)return PATCH('/stock_tienda?id=eq.'+tRows[0].id,{stock:tRows[0].stock+link.qty});
+                })
+              );
+            } else if(link.id){
+              stockCache[link.id]=(stockCache[link.id]||0)+link.qty;
+              _ops.push(PATCH('/productos?id=eq.'+link.id,{stock:stockCache[link.id]}));
+            }
+          });
+        }
         _ops.push(DEL('/ventas?id=eq.'+o.id));
       });
 
@@ -5351,9 +5366,23 @@ async function saveV(){
             stockCache[pId2]=Math.max(0,(stockCache[pId2]||0)-_qtyAlmLinea);
             _ops.push(PATCH('/productos?id=eq.'+pId2,{stock:stockCache[pId2]}));
           }
+          if(l._ofertaLinks&&l._ofertaLinks.length){
+            l._ofertaLinks.forEach(function(link){
+              if(link._esTienda&&link._tiendaId){
+                var _tMapOfE=window._vmTiendaMap||{};
+                var _tItemOfE=Object.values(_tMapOfE).find(function(t){return t.id===link._tiendaId;})||{stock:0};
+                var _nsOfE=Math.max(0,(_tItemOfE.stock||0)-link.qty);
+                if(_tItemOfE)_tItemOfE.stock=_nsOfE;
+                _ops.push(PATCH('/stock_tienda?id=eq.'+link._tiendaId,{stock:_nsOfE}));
+              } else {
+                stockCache[link.id]=Math.max(0,(stockCache[link.id]||0)-link.qty);
+                _ops.push(PATCH('/productos?id=eq.'+link.id,{stock:stockCache[link.id]}));
+              }
+            });
+          }
           var _origenBD=(_qtyTndLinea>0&&_qtyAlmLinea===0)?'tienda':'almacen';
           var _tiendaIdBD=_qtyTndLinea>0?l._tiendaId:null;
-          _ops.push(POST('/ventas',{id:newId,cliente_id:cId,fecha:fecha,producto_id:pId2,nombre_articulo:l.nombre||null,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:veditAlbaranNum,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null,stock_origen:_origenBD,tienda_id:_tiendaIdBD||null,qty_almacen:_qtyAlmLinea,qty_tienda:_qtyTndLinea}));
+          _ops.push(POST('/ventas',{id:newId,cliente_id:cId,fecha:fecha,producto_id:pId2,nombre_articulo:l.nombre||null,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:veditAlbaranNum,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null,stock_origen:_origenBD,tienda_id:_tiendaIdBD||null,qty_almacen:_qtyAlmLinea,qty_tienda:_qtyTndLinea,oferta_links:l._ofertaLinks||null}));
         });
       }
 
@@ -5426,7 +5455,7 @@ async function saveV(){
         // Determinar stock_origen para BD
         var _origenBD=(_qtyTndLinea>0&&_qtyAlmLinea===0)?'tienda':'almacen';
         var _tiendaIdBD=_qtyTndLinea>0?l._tiendaId:null;
-        return POST('/ventas',{id:_ids[li],cliente_id:cId,fecha:fecha,producto_id:pId2,nombre_articulo:l.nombre||null,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:numAlbaran,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null,stock_origen:_origenBD,tienda_id:_tiendaIdBD||null,qty_almacen:_qtyAlmLinea,qty_tienda:_qtyTndLinea});
+        return POST('/ventas',{id:_ids[li],cliente_id:cId,fecha:fecha,producto_id:pId2,nombre_articulo:l.nombre||null,cantidad:l.qty,pvp:l.pvp,descuento:dto,estado:est,notas:notasFin,total:total,vendedor:vend,forma_pago:pago,entrega:entrega,fecha_entrega:fechaE||null,albaran_num:numAlbaran,ref_propia:l.ref_propia||null,proveedor:l.proveedor||null,stock_origen:_origenBD,tienda_id:_tiendaIdBD||null,qty_almacen:_qtyAlmLinea,qty_tienda:_qtyTndLinea,oferta_links:l._ofertaLinks||null});
       });
       // Todo en paralelo: ventas + stock
       await Promise.all(_allOps.concat(_stockOps));
@@ -5904,17 +5933,31 @@ document.addEventListener('DOMContentLoaded',function(){
         (async function(){
           try{
             // Obtener TODAS las líneas del mismo albarán con qty por origen
-            var vv1=await GET('/ventas?select=producto_id,cantidad,stock_origen,tienda_id,albaran_num,qty_almacen,qty_tienda&id=eq.'+id);
+            var vv1=await GET('/ventas?select=producto_id,cantidad,stock_origen,tienda_id,albaran_num,qty_almacen,qty_tienda,oferta_links&id=eq.'+id);
             var albNum=vv1.length?vv1[0].albaran_num:null;
             var todasLineas=vv1;
             if(albNum){
-              todasLineas=await GET('/ventas?select=producto_id,cantidad,stock_origen,tienda_id,albaran_num,qty_almacen,qty_tienda&albaran_num=eq.'+encodeURIComponent(albNum));
+              todasLineas=await GET('/ventas?select=producto_id,cantidad,stock_origen,tienda_id,albaran_num,qty_almacen,qty_tienda,oferta_links&albaran_num=eq.'+encodeURIComponent(albNum));
             }
             // Preguntar si quiere restablecer stock
             var restablecer=todasLineas.length>0&&confirm('¿Desea restablecer el stock de '+(todasLineas.length>1?'todos los artículos':'este artículo')+'?');
             if(restablecer){
               var stockOps=[];
               todasLineas.forEach(function(vDel){
+                if(vDel.oferta_links&&vDel.oferta_links.length){
+                  vDel.oferta_links.forEach(function(link){
+                    if(!link.qty)return;
+                    if(link._esTienda&&link._tiendaId){
+                      stockOps.push(
+                        GET('/stock_tienda?select=id,stock&id=eq.'+link._tiendaId).then(function(tRows){
+                          if(tRows.length)return PATCH('/stock_tienda?id=eq.'+tRows[0].id,{stock:tRows[0].stock+link.qty});
+                        })
+                      );
+                    } else if(link.id){
+                      stockOps.push(devolverStock(link.id,link.qty));
+                    }
+                  });
+                }
                 if(!vDel.cantidad)return;
                 // Usar qty_almacen y qty_tienda si existen (ventas nuevas)
                 var qAlm=vDel.qty_almacen!=null?Number(vDel.qty_almacen):(vDel.stock_origen==='almacen'?Number(vDel.cantidad):0);
