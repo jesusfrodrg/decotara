@@ -3416,7 +3416,7 @@ async function renderVentas(pagina){
     var pagDiv=document.getElementById('ventas-pag');
     if(pagDiv){
       if(!q&&rows.length>0){
-        pagDiv.innerHTML='<div style="display:flex;align-items:center;gap:8px;justify-content:center;padding:10px 0">'          +(_ventasPagina>1?'<button class="btn bs2" onclick="renderVentas('+(_ventasPagina-1)+')" style="font-size:12px">← Anterior</button>':'')          +'<span style="font-size:12px;color:var(--gray)">Página '+_ventasPagina+' · '+rows.length+' registros</span>'          +(rows.length>=_ventasPorPagina?'<button class="btn bs2" onclick="renderVentas('+(_ventasPagina+1)+')" style="font-size:12px">Siguiente →</button>':'')          +'</div>';
+        pagDiv.innerHTML='<div style="display:flex;align-items:center;gap:8px;justify-content:center;padding:10px 0">'          +(_ventasPagina>1?'<button class="btn bs2" onclick="renderVentas('+(_ventasPagina-1)+')" style="font-size:12px">← Anterior</button>':'')          +'<span style="font-size:12px;color:var(--gray)">Página '+_ventasPagina+' · '+comprasOrder.length+' albaranes ('+rows.length+' artículos)</span>'          +(rows.length>=_ventasPorPagina?'<button class="btn bs2" onclick="renderVentas('+(_ventasPagina+1)+')" style="font-size:12px">Siguiente →</button>':'')          +'</div>';
       } else { pagDiv.innerHTML=''; }
     }
   }catch(e){toast('Error: '+e.message);}
