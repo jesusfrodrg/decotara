@@ -2869,10 +2869,11 @@ function renderVMLineas(){
   wrap.style.display='';
   cont.innerHTML=vmLineas.map(function(l,i){
     var refBadge=l.ref_propia?'<span style="background:#ede9fe;color:#5b21b6;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">'+escHtml(l.ref_propia)+'</span>':'';
+    var ofertaBadge=(l._ofertaLinks&&l._ofertaLinks.length)?('<div style="font-size:10px;color:var(--blue);font-weight:700;margin-top:3px">🎁 Descuenta stock de: '+l._ofertaLinks.map(function(ol){return escHtml(ol.nombre)+(ol.qty>1?' x'+ol.qty:'');}).join(', ')+'</div>'):'';
     var _provs=(getCfg().proveedores||[]);
     var provOpts='<option value="">Proveedor...</option>'+_provs.map(function(p){return '<option value="'+escHtml(p.label)+'"'+(p.label===l.proveedor?' selected':'')+'>'+escHtml(p.label)+'</option>';}).join('');
     return '<div class="vm-linea" style="flex-wrap:wrap;gap:4px">'
-      +'<div style="flex:1;min-width:0"><div class="vl-nom">'+escHtml(l.nombre)+refBadge+'</div>'
+      +'<div style="flex:1;min-width:0"><div class="vl-nom">'+escHtml(l.nombre)+refBadge+'</div>'+ofertaBadge
       +'<div style="display:flex;gap:6px;margin-top:4px;align-items:center">'
       +'<select data-li="'+i+'" class="vm-prov-sel" style="font-size:11px;padding:3px 6px;border:1.5px solid var(--lgray);border-radius:6px;max-width:130px">'+provOpts+'</select>'
       +'</div></div>'
