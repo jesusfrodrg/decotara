@@ -3061,6 +3061,7 @@ function updateOfertaLinkQty(pid,val){
   var l=_ofertaLinksTemp.find(function(x){return x.id===pid;});
   if(l)l.qty=Math.max(1,parseInt(val)||1);
 }
+var _lastAutoOfertaName='';
 function renderOfertaLinkSelected(){
   var box=document.getElementById('oferta_link_selected');
   if(!box)return;
@@ -3072,6 +3073,16 @@ function renderOfertaLinkSelected(){
         +'<button type="button" class="btn btn-sm" style="font-size:11px;background:#f3f4f6" onclick="removeOfertaLink(\''+l.id+'\')">✕</button></span>'
         +'</div>';
     }).join('')):'';
+  // Sugerir el nombre del artículo automáticamente, sin pisar un nombre que el usuario ya haya personalizado
+  var nombreInp=document.getElementById('vm_otros_nombre');
+  if(nombreInp){
+    var actual=nombreInp.value.trim();
+    if(!actual||actual===_lastAutoOfertaName){
+      var sugerido=_ofertaLinksTemp.length?('Oferta '+_ofertaLinksTemp.map(function(l){return l.nombre;}).join(', ')):'';
+      nombreInp.value=sugerido;
+      _lastAutoOfertaName=sugerido;
+    }
+  }
 }
 
 function _addVMOtrosCore(){
@@ -3086,6 +3097,7 @@ function _addVMOtrosCore(){
   vmLineas.push({id:'__otros__'+Date.now(),nombre:nom,cat:'',pvp:pvp,qty:qty,esOtro:true,ref_propia:otrosRef||'',proveedor:otrosProv||'',_ofertaLinks:_ofertaLinksTemp.length?_ofertaLinksTemp.slice():undefined});
   _ofertaLinksTemp=[];
   _ofertaLinkMode=false;
+  _lastAutoOfertaName='';
   var _oltb=document.getElementById('oferta_link_toggle_btn');
   if(_oltb){_oltb.textContent='🎁 ¿Es una oferta? Selecciona los artículos del catálogo de abajo';_oltb.style.background='';_oltb.style.color='';}
   var _ols=document.getElementById('oferta_link_selected');if(_ols)_ols.innerHTML='';
