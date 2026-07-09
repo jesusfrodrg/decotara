@@ -2245,6 +2245,17 @@ async function eliminarProductoTienda(id){
 }
 
 // ══════ RECTIFICATIVAS ══════
+async function eliminarRectificativa(id){
+  var rd=window._rectData&&window._rectData[id];
+  var numero=rd?rd.numero:id;
+  if(!confirm('¿Eliminar la rectificativa '+numero+'? Esto solo borra el registro de esta pantalla, no afecta al stock ni a la venta original. Esta acción no se puede deshacer.'))return;
+  try{
+    await DEL('/rectificativas?id=eq.'+id);
+    toast('Rectificativa eliminada');
+    renderRectificativas();
+  }catch(e){toast('Error: '+e.message);}
+}
+
 async function renderRectificativas(){
   var buscar=(document.getElementById('rect_buscar')?document.getElementById('rect_buscar').value||'':'').toLowerCase();
   var mesVal=document.getElementById('rect_mes')?document.getElementById('rect_mes').value:'';
@@ -2288,7 +2299,8 @@ async function renderRectificativas(){
         '<td><span style="color:var(--blue);font-size:11px">'+escHtml(r.factura_origen||'—')+'</span></td>'+
         '<td style="font-size:12px">'+escHtml(r.motivo||'')+'</td>'+
         '<td class="right" style="color:#C8372D;font-weight:700">'+fe(-Math.abs(Number(r.importe||0)))+'</td>'+
-        '<td><button class="btn btn-sm" style="background:#C8372D;color:#fff;font-size:11px" data-rectid="'+r.id+'" onclick="var rd=window._rectData&&window._rectData[this.dataset.rectid];if(rd)regenerarRectificativa(rd)">📄 PDF</button></td>'+
+        '<td><div style="display:flex;gap:4px"><button class="btn btn-sm" style="background:#C8372D;color:#fff;font-size:11px" data-rectid="'+r.id+'" onclick="var rd=window._rectData&&window._rectData[this.dataset.rectid];if(rd)regenerarRectificativa(rd)">📄 PDF</button>'
+        +'<button class="btn btn-sm" style="background:#f3f4f6;color:#333;font-size:11px" data-rectid="'+r.id+'" onclick="eliminarRectificativa(this.dataset.rectid)" title="Eliminar esta rectificativa">🗑️</button></div></td>'+
         '</tr>';
       if(arts.length){
         html+='<tr><td colspan="7" style="padding:6px 12px 12px;background:#fffbf7">'
