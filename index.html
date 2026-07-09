@@ -994,13 +994,8 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
             <button type="button" onclick="addVMOtrosYOtro()" class="btn bs2" style="flex:1;font-size:12px">➕ Añadir y otro más</button>
           </div>
           <div style="margin-top:10px;border-top:1px dashed var(--xlgray);padding-top:8px">
-            <button type="button" onclick="toggleOfertaLinkPicker()" class="btn bs2" style="font-size:11px;width:100%">🎁 ¿Es una oferta? Vincular artículos de stock a descontar</button>
-            <div id="oferta_link_picker" style="display:none;margin-top:8px">
-              <div style="font-size:10px;color:var(--gray);margin-bottom:6px">Selecciona los artículos reales que forman esta oferta — su stock se descontará automáticamente al guardar la venta.</div>
-              <input type="text" id="oferta_link_buscar" placeholder="Buscar artículo..." style="width:100%;padding:6px 8px;font-size:12px;border:1px solid var(--xlgray);border-radius:6px;margin-bottom:6px" oninput="renderOfertaLinkResults()">
-              <div id="oferta_link_results" style="max-height:140px;overflow-y:auto;border:1px solid var(--xlgray);border-radius:6px"></div>
-              <div id="oferta_link_selected" style="margin-top:8px"></div>
-            </div>
+            <button type="button" id="oferta_link_toggle_btn" onclick="toggleOfertaLinkPicker()" class="btn bs2" style="font-size:11px;width:100%">🎁 ¿Es una oferta? Selecciona los artículos del catálogo de abajo</button>
+            <div id="oferta_link_selected" style="margin-top:8px"></div>
           </div>
         </div>
       </div>
@@ -2693,7 +2688,7 @@ async function renderVMCatalog(){
   grid.removeEventListener('click', _vmCatalogClick);
   grid.addEventListener('click', _vmCatalogClick);
   grid.innerHTML=filtered.map(function(p){
-    var inOrder=vmLineas.find(function(l){return l.id===p.id;});
+    var inOrder=_ofertaLinkMode?_ofertaLinksTemp.some(function(l){return l.id===p.id;}):vmLineas.find(function(l){return l.id===p.id;});
     var stk=stockCache[p.id]!==undefined?stockCache[p.id]:(p.stock||0);
     // Sumar stock de tienda si tiene vínculo (para artículos de almacén)
     var tiendaVinc=window._vmTiendaMap&&window._vmTiendaMap[p.id];
@@ -2721,11 +2716,18 @@ async function renderVMCatalog(){
 }
 
 var _vmBusy=false;
+var _ofertaLinkMode=false;
 function _vmCatalogClick(e){
   if(_vmBusy)return;
   var card=e.target.closest('.vmc-clickable');
   if(!card)return;
   var d=card.dataset;
+  if(_ofertaLinkMode){
+    if(_ofertaLinksTemp.some(function(l){return l.id===d.pid;})){removeOfertaLink(d.pid);}
+    else{addOfertaLink(d.pid);}
+    renderVMCatalog();
+    return;
+  }
   _vmBusy=true;
   toggleVMProduct(d.pid,d.pnom,d.pcat,+d.ppvp).finally(function(){_vmBusy=false;});
 }
@@ -3029,38 +3031,29 @@ function toggleVMOtros(){
 
 var _ofertaLinksTemp=[];
 function toggleOfertaLinkPicker(){
-  var p=document.getElementById('oferta_link_picker');
-  if(!p)return;
-  var show=p.style.display==='none';
-  p.style.display=show?'block':'none';
-  if(show)renderOfertaLinkResults();
-}
-function renderOfertaLinkResults(){
-  var box=document.getElementById('oferta_link_results');
-  if(!box)return;
-  var q=(document.getElementById('oferta_link_buscar').value||'').toLowerCase();
-  var list=(vmProductos||[]).filter(function(p){
-    if(_ofertaLinksTemp.some(function(l){return l.id===p.id;}))return false;
-    if(!q)return true;
-    return (p.nombre||'').toLowerCase().indexOf(q)>-1;
-  }).slice(0,25);
-  box.innerHTML=list.length?list.map(function(p){
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;font-size:12px;border-bottom:1px solid var(--xlgray)">'
-      +'<span>'+escHtml(p.nombre)+' <span style="color:var(--gray);font-size:10px">(stock: '+(p.stock||0)+')</span></span>'
-      +'<button type="button" class="btn btn-sm bs2" style="font-size:11px" onclick="addOfertaLink(\''+p.id+'\')">+ Añadir</button>'
-      +'</div>';
-  }).join(''):'<div style="padding:8px;font-size:12px;color:var(--gray);text-align:center">Sin resultados</div>';
+  _ofertaLinkMode=!_ofertaLinkMode;
+  var btn=document.getElementById('oferta_link_toggle_btn');
+  if(btn){
+    if(_ofertaLinkMode){
+      btn.textContent='🎁 Modo oferta activo — toca artículos del catálogo, luego pulsa aquí para terminar';
+      btn.style.background='var(--blue)';
+      btn.style.color='#fff';
+    } else {
+      btn.textContent='🎁 ¿Es una oferta? Selecciona los artículos del catálogo de abajo';
+      btn.style.background='';
+      btn.style.color='';
+    }
+  }
+  renderVMCatalog();
 }
 function addOfertaLink(pid){
   var p=(vmProductos||[]).find(function(x){return x.id===pid;});
   if(!p)return;
   _ofertaLinksTemp.push({id:p.id,nombre:p.nombre,qty:1,_esTienda:p._esTienda||false,_tiendaId:p._tiendaId||null});
-  renderOfertaLinkResults();
   renderOfertaLinkSelected();
 }
 function removeOfertaLink(pid){
   _ofertaLinksTemp=_ofertaLinksTemp.filter(function(l){return l.id!==pid;});
-  renderOfertaLinkResults();
   renderOfertaLinkSelected();
 }
 function updateOfertaLinkQty(pid,val){
@@ -3091,9 +3084,11 @@ function _addVMOtrosCore(){
   if(!pvp){toast('Indica el precio');return false;}
   vmLineas.push({id:'__otros__'+Date.now(),nombre:nom,cat:'',pvp:pvp,qty:qty,esOtro:true,ref_propia:otrosRef||'',proveedor:otrosProv||'',_ofertaLinks:_ofertaLinksTemp.length?_ofertaLinksTemp.slice():undefined});
   _ofertaLinksTemp=[];
-  var _olp=document.getElementById('oferta_link_picker');if(_olp)_olp.style.display='none';
+  _ofertaLinkMode=false;
+  var _oltb=document.getElementById('oferta_link_toggle_btn');
+  if(_oltb){_oltb.textContent='🎁 ¿Es una oferta? Selecciona los artículos del catálogo de abajo';_oltb.style.background='';_oltb.style.color='';}
   var _ols=document.getElementById('oferta_link_selected');if(_ols)_ols.innerHTML='';
-  var _olb=document.getElementById('oferta_link_buscar');if(_olb)_olb.value='';
+  renderVMCatalog();
   document.getElementById('vm_otros_nombre').value='';
   document.getElementById('vm_otros_pvp').value='';
   document.getElementById('vm_otros_qty').value=1;
