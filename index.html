@@ -3450,7 +3450,7 @@ async function renderVentas(pagina){
       var numArts=grupo.reduce(function(s,v){return s+(v.cantidad||1);},0);
       var productosNombres=grupo.map(function(v){return (getProdNombre(v))+(v.cantidad>1?' x'+v.cantidad:'');}).join(', ');
       var primeraId=v0.id;
-      var albNum=v0.albaran_num||(pfxAlb()+'-'+primeraId);
+      var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?(pfxAlb()+'-'+m[1]):pfxAlb()+'-'+v0.id;})();
       var expandId='exp_'+key.replace(/[^a-z0-9]/gi,'_');
       // Fila expandible con artículos del grupo
       var expandRow='<tr id="'+expandId+'" style="display:none"><td colspan="7" style="padding:0;background:#f8f9ff;border-bottom:2px solid var(--blue)">'+
