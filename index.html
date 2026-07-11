@@ -2726,9 +2726,13 @@ function _vmCatalogClick(e){
   if(!card)return;
   var d=card.dataset;
   if(_ofertaLinkMode){
-    if(_ofertaLinksTemp.some(function(l){return l.id===d.pid;})){removeOfertaLink(d.pid);}
-    else{addOfertaLink(d.pid);}
-    renderVMCatalog();
+    if(_ofertaLinksTemp.some(function(l){return l.id===d.pid;})){
+      removeOfertaLink(d.pid);
+      renderVMCatalog();
+    } else {
+      _vmBusy=true;
+      addOfertaLink(d.pid).finally(function(){_vmBusy=false;renderVMCatalog();});
+    }
     return;
   }
   _vmBusy=true;
@@ -3070,11 +3074,28 @@ function toggleOfertaLinkPicker(){
   }
   renderVMCatalog();
 }
-function addOfertaLink(pid){
+async function addOfertaLink(pid){
   var p=(vmProductos||[]).find(function(x){return x.id===pid;});
   if(!p)return;
-  _ofertaLinksTemp.push({id:p.id,nombre:p.nombre,qty:1,_esTienda:p._esTienda||false,_tiendaId:p._tiendaId||null});
+  var esTienda=p._esTienda||false;
+  var tiendaId=p._tiendaId||null;
+  if(!esTienda){
+    var _tiendaVincOf=window._vmTiendaMap&&window._vmTiendaMap[pid];
+    if(_tiendaVincOf&&_tiendaVincOf.stock>0){
+      var stockAlmOf=stockCache[pid]||0;
+      if(stockAlmOf>0){
+        var origenOf=await preguntarOrigenStock(pid,1,stockAlmOf,_tiendaVincOf);
+        if(origenOf==='cancelar')return;
+        if(origenOf==='tienda'){esTienda=true;tiendaId=_tiendaVincOf.id;}
+      } else {
+        esTienda=true;
+        tiendaId=_tiendaVincOf.id;
+      }
+    }
+  }
+  _ofertaLinksTemp.push({id:p.id,nombre:p.nombre,qty:1,_esTienda:esTienda,_tiendaId:tiendaId});
   renderOfertaLinkSelected();
+  renderVMCatalog();
 }
 function removeOfertaLink(pid){
   _ofertaLinksTemp=_ofertaLinksTemp.filter(function(l){return l.id!==pid;});
