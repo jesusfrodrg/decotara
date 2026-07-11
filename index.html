@@ -3053,6 +3053,7 @@ function toggleVMOtros(){
     _lastAutoOfertaName='';
     var _ols0=document.getElementById('oferta_link_selected');if(_ols0)_ols0.innerHTML='';
     var _refRst0=document.getElementById('vm_otros_ref');if(_refRst0){_refRst0.readOnly=false;_refRst0.style.background='';_refRst0.style.color='';}
+    var _provRst0=document.getElementById('vm_otros_prov');if(_provRst0){_provRst0.disabled=false;_provRst0.style.background='';_provRst0.style.color='';}
     var _titRst=document.getElementById('vm_otros_titulo');if(_titRst)_titRst.textContent='✏️ Artículo personalizado';
     renderVMCatalog();
   }
@@ -3094,7 +3095,7 @@ async function addOfertaLink(pid){
       }
     }
   }
-  _ofertaLinksTemp.push({id:p.id,nombre:p.nombre,qty:1,_esTienda:esTienda,_tiendaId:tiendaId,ref_propia:p.ref_propia||''});
+  _ofertaLinksTemp.push({id:p.id,nombre:p.nombre,qty:1,_esTienda:esTienda,_tiendaId:tiendaId,ref_propia:p.ref_propia||'',proveedor:p.proveedor||''});
   renderOfertaLinkSelected();
   renderVMCatalog();
 }
@@ -3142,6 +3143,20 @@ function renderOfertaLinkSelected(){
       refInp.style.color='';
     }
   }
+  // Rellenar y bloquear el campo Proveedor con el del primer artículo vinculado
+  var provSel=document.getElementById('vm_otros_prov');
+  if(provSel){
+    if(_ofertaLinksTemp.length&&_ofertaLinksTemp[0].proveedor){
+      provSel.value=_ofertaLinksTemp[0].proveedor;
+      provSel.disabled=true;
+      provSel.style.background='#f3f4f6';
+      provSel.style.color='#666';
+    } else if(_ofertaLinksTemp.length===0){
+      provSel.disabled=false;
+      provSel.style.background='';
+      provSel.style.color='';
+    }
+  }
 }
 
 function _addVMOtrosCore(){
@@ -3163,6 +3178,7 @@ function _addVMOtrosCore(){
   document.getElementById('vm_otros_qty').value=1;
   if(document.getElementById('vm_otros_prov'))document.getElementById('vm_otros_prov').value='';
   if(document.getElementById('vm_otros_ref')){var _refRst=document.getElementById('vm_otros_ref');_refRst.value='';_refRst.readOnly=false;_refRst.style.background='';_refRst.style.color='';}
+  if(document.getElementById('vm_otros_prov')){var _provRst=document.getElementById('vm_otros_prov');_provRst.disabled=false;_provRst.style.background='';_provRst.style.color='';}
   renderVMLineas();
   return true;
 }
