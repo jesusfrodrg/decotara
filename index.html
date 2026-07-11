@@ -978,10 +978,13 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <!-- Grid catálogo productos -->
       <div id="vm_prod_grid"></div>
       <!-- Otros (artículo libre) -->
-      <div style="margin-top:8px">
-        <button type="button" onclick="toggleVMOtros()" class="btn bs2" style="font-size:12px;width:100%">➕ Añadir artículo personalizado</button>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button type="button" onclick="toggleVMOtros()" class="btn bs2" style="font-size:12px;flex:1">➕ Añadir artículo personalizado</button>
+        <button type="button" onclick="abrirVMOferta()" class="btn" style="font-size:12px;flex:1;background:var(--blue);color:#fff">🎁 Vender oferta</button>
+      </div>
+      <div style="margin-top:0">
         <div id="vm_otros_wrap" style="display:none;background:#f4f6ff;border:1.5px solid var(--blue);border-radius:10px;padding:10px;margin-top:6px">
-          <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px">✏️ Artículo personalizado</div>
+          <div id="vm_otros_titulo" style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px">✏️ Artículo personalizado</div>
           <div class="fg" style="gap:8px;grid-template-columns:1fr 1fr">
             <div class="fi full"><label style="font-size:11px">Nombre del artículo *</label><input type="text" id="vm_otros_nombre" placeholder="Ej: Sofá 3 plazas gris..."></div>
             <div class="fi"><label style="font-size:11px">Precio (€) *</label><input type="number" id="vm_otros_pvp" step="0.01" placeholder="0.00" min="0"></div>
@@ -3018,6 +3021,17 @@ function vmSetCat(btn, cat){
   renderVMCatalog();
 }
 
+function abrirVMOferta(){
+  var w=document.getElementById('vm_otros_wrap');
+  if(w.style.display==='none'){
+    toggleVMOtros();
+  }
+  var titulo=document.getElementById('vm_otros_titulo');
+  if(titulo)titulo.textContent='🎁 Oferta — pon un precio y toca los artículos del catálogo';
+  var grid=document.getElementById('vm_prod_grid');
+  if(grid)grid.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 function toggleVMOtros(){
   var w=document.getElementById('vm_otros_wrap');
   w.style.display=w.style.display==='none'?'':'none';
@@ -3034,6 +3048,7 @@ function toggleVMOtros(){
     _ofertaLinksTemp=[];
     _lastAutoOfertaName='';
     var _ols0=document.getElementById('oferta_link_selected');if(_ols0)_ols0.innerHTML='';
+    var _titRst=document.getElementById('vm_otros_titulo');if(_titRst)_titRst.textContent='✏️ Artículo personalizado';
     renderVMCatalog();
   }
 }
@@ -3120,6 +3135,7 @@ function addVMOtros(){
   if(_addVMOtrosCore()){
     document.getElementById('vm_otros_wrap').style.display='none';
     _ofertaLinkMode=false;
+    var _titRst2=document.getElementById('vm_otros_titulo');if(_titRst2)_titRst2.textContent='✏️ Artículo personalizado';
     renderVMCatalog();
   }
 }
