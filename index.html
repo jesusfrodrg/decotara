@@ -3052,6 +3052,7 @@ function toggleVMOtros(){
     _ofertaLinksTemp=[];
     _lastAutoOfertaName='';
     var _ols0=document.getElementById('oferta_link_selected');if(_ols0)_ols0.innerHTML='';
+    var _refRst0=document.getElementById('vm_otros_ref');if(_refRst0){_refRst0.readOnly=false;_refRst0.style.background='';_refRst0.style.color='';}
     var _titRst=document.getElementById('vm_otros_titulo');if(_titRst)_titRst.textContent='✏️ Artículo personalizado';
     renderVMCatalog();
   }
@@ -3127,6 +3128,20 @@ function renderOfertaLinkSelected(){
       _lastAutoOfertaName=sugerido;
     }
   }
+  // Rellenar y bloquear el campo Referencia con la del primer artículo vinculado
+  var refInp=document.getElementById('vm_otros_ref');
+  if(refInp){
+    if(_ofertaLinksTemp.length&&_ofertaLinksTemp[0].ref_propia){
+      refInp.value=_ofertaLinksTemp[0].ref_propia;
+      refInp.readOnly=true;
+      refInp.style.background='#f3f4f6';
+      refInp.style.color='#666';
+    } else if(_ofertaLinksTemp.length===0){
+      refInp.readOnly=false;
+      refInp.style.background='';
+      refInp.style.color='';
+    }
+  }
 }
 
 function _addVMOtrosCore(){
@@ -3147,7 +3162,7 @@ function _addVMOtrosCore(){
   document.getElementById('vm_otros_pvp').value='';
   document.getElementById('vm_otros_qty').value=1;
   if(document.getElementById('vm_otros_prov'))document.getElementById('vm_otros_prov').value='';
-  if(document.getElementById('vm_otros_ref'))document.getElementById('vm_otros_ref').value='';
+  if(document.getElementById('vm_otros_ref')){var _refRst=document.getElementById('vm_otros_ref');_refRst.value='';_refRst.readOnly=false;_refRst.style.background='';_refRst.style.color='';}
   renderVMLineas();
   return true;
 }
