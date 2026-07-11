@@ -994,7 +994,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
             <button type="button" onclick="addVMOtrosYOtro()" class="btn bs2" style="flex:1;font-size:12px">➕ Añadir y otro más</button>
           </div>
           <div style="margin-top:10px;border-top:1px dashed var(--xlgray);padding-top:8px">
-            <button type="button" id="oferta_link_toggle_btn" onclick="toggleOfertaLinkPicker()" class="btn bs2" style="font-size:11px;width:100%">🎁 ¿Es una oferta? Selecciona los artículos del catálogo de abajo</button>
+            <div id="oferta_link_toggle_btn" style="font-size:11px;width:100%;text-align:center;background:var(--blue-soft);color:var(--blue);padding:8px;border-radius:8px;font-weight:600">🎁 Si es una oferta, toca los artículos del catálogo de abajo para vincular su stock (opcional)</div>
             <div id="oferta_link_selected" style="margin-top:8px"></div>
           </div>
         </div>
@@ -3027,6 +3027,14 @@ function toggleVMOtros(){
       var cats=getCfg().proveedores||[];
       sel.innerHTML='<option value="">Sin proveedor</option>'+cats.map(function(p){return '<option value="'+p.label+'">'+p.label+'</option>';}).join('');
     }
+    _ofertaLinkMode=true;
+    renderVMCatalog();
+  } else {
+    _ofertaLinkMode=false;
+    _ofertaLinksTemp=[];
+    _lastAutoOfertaName='';
+    var _ols0=document.getElementById('oferta_link_selected');if(_ols0)_ols0.innerHTML='';
+    renderVMCatalog();
   }
 }
 
@@ -3096,10 +3104,7 @@ function _addVMOtrosCore(){
   if(!pvp){toast('Indica el precio');return false;}
   vmLineas.push({id:'__otros__'+Date.now(),nombre:nom,cat:'',pvp:pvp,qty:qty,esOtro:true,ref_propia:otrosRef||'',proveedor:otrosProv||'',_ofertaLinks:_ofertaLinksTemp.length?_ofertaLinksTemp.slice():undefined});
   _ofertaLinksTemp=[];
-  _ofertaLinkMode=false;
   _lastAutoOfertaName='';
-  var _oltb=document.getElementById('oferta_link_toggle_btn');
-  if(_oltb){_oltb.textContent='🎁 ¿Es una oferta? Selecciona los artículos del catálogo de abajo';_oltb.style.background='';_oltb.style.color='';}
   var _ols=document.getElementById('oferta_link_selected');if(_ols)_ols.innerHTML='';
   renderVMCatalog();
   document.getElementById('vm_otros_nombre').value='';
@@ -3114,6 +3119,8 @@ function _addVMOtrosCore(){
 function addVMOtros(){
   if(_addVMOtrosCore()){
     document.getElementById('vm_otros_wrap').style.display='none';
+    _ofertaLinkMode=false;
+    renderVMCatalog();
   }
 }
 
