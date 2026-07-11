@@ -60,7 +60,7 @@ module.exports = async function handler(req, res) {
     }
 
     const payload = {
-      from: 'Decotara Outlet <onboarding@resend.dev>',
+      from: 'Decotara Outlet <facturas@decotaraoutlet.online>',
       to: [to],
       reply_to: 'DECOTARAOUTLET@gmail.com',
       subject: subject || 'Documento de Decotara Outlet',
