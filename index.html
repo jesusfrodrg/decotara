@@ -2876,7 +2876,7 @@ function renderVMLineas(){
   wrap.style.display='';
   cont.innerHTML=vmLineas.map(function(l,i){
     var refBadge=l.ref_propia?'<span style="background:#ede9fe;color:#5b21b6;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">'+escHtml(l.ref_propia)+'</span>':'';
-    var ofertaBadge=(l._ofertaLinks&&l._ofertaLinks.length)?('<div style="font-size:10px;color:var(--blue);font-weight:700;margin-top:3px">🎁 Descuenta stock de: '+l._ofertaLinks.map(function(ol){return escHtml(ol.nombre)+(ol.qty>1?' x'+ol.qty:'');}).join(', ')+'</div>'):'';
+    var ofertaBadge=(l._ofertaLinks&&l._ofertaLinks.length)?('<div style="font-size:10px;color:var(--blue);font-weight:700;margin-top:3px">🎁 Descuenta stock de: '+l._ofertaLinks.map(function(ol){return escHtml(ol.nombre)+(ol.ref_propia?' ('+escHtml(ol.ref_propia)+')':'')+(ol.qty>1?' x'+ol.qty:'');}).join(', ')+'</div>'):'';
     var _provs=(getCfg().proveedores||[]);
     var provOpts='<option value="">Proveedor...</option>'+_provs.map(function(p){return '<option value="'+escHtml(p.label)+'"'+(p.label===l.proveedor?' selected':'')+'>'+escHtml(p.label)+'</option>';}).join('');
     return '<div class="vm-linea" style="flex-wrap:wrap;gap:4px">'
@@ -3093,7 +3093,7 @@ async function addOfertaLink(pid){
       }
     }
   }
-  _ofertaLinksTemp.push({id:p.id,nombre:p.nombre,qty:1,_esTienda:esTienda,_tiendaId:tiendaId});
+  _ofertaLinksTemp.push({id:p.id,nombre:p.nombre,qty:1,_esTienda:esTienda,_tiendaId:tiendaId,ref_propia:p.ref_propia||''});
   renderOfertaLinkSelected();
   renderVMCatalog();
 }
@@ -3112,7 +3112,7 @@ function renderOfertaLinkSelected(){
   box.innerHTML=_ofertaLinksTemp.length?('<div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:4px">Artículos vinculados a descontar:</div>'
     +_ofertaLinksTemp.map(function(l){
       return '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 8px;font-size:12px;background:var(--blue-soft);border-radius:6px;margin-bottom:4px">'
-        +'<span>'+escHtml(l.nombre)+'</span>'
+        +'<span>'+escHtml(l.nombre)+(l.ref_propia?' <span style="background:#ede9fe;color:#5b21b6;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700">'+escHtml(l.ref_propia)+'</span>':'')+'</span>'
         +'<span style="display:flex;align-items:center;gap:4px">Cant: <input type="number" min="1" value="'+l.qty+'" style="width:44px;padding:2px 4px;font-size:11px" oninput="updateOfertaLinkQty(\''+l.id+'\',this.value)" onblur="updateOfertaLinkQty(\''+l.id+'\',this.value)">'
         +'<button type="button" class="btn btn-sm" style="font-size:11px;background:#f3f4f6" onclick="removeOfertaLink(\''+l.id+'\')">✕</button></span>'
         +'</div>';
