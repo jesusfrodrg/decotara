@@ -642,7 +642,6 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
       <div class="ph"><span class="pt">🧾 Ventas</span><button class="btn bp" id="btnNV">+ Nueva</button></div>
       <div class="sr">
         <div class="sw"><span class="si">🔍</span><input type="text" placeholder="Buscar por cliente, producto, DNI..." id="vsearch"></div>
-        <select id="vfcat" style="width:112px"><option value="">Categoría</option></select>
       </div>
       <div id="ventas-pag"></div>
       <div class="pb"><table><thead><tr><th>Albarán</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Compra</th><th></th></tr></thead><tbody id="vtbody"><tr><td colspan="7" class="ldr"><span class="spin"></span></td></tr></tbody></table></div>
@@ -5880,13 +5879,6 @@ document.addEventListener('DOMContentLoaded',function(){
   document.addEventListener('input',function(e){if(e.target.id==='rect_buscar')renderRectificativas();if(e.target.id==='tienda_buscar')renderStockTienda();});
   document.addEventListener('click',function(e){if(e.target.id==='btnNPtienda')abrirFormTienda();});
   document.addEventListener('change',function(e){if(e.target.id==='rect_mes')renderRectificativas();});
-  // Rellenar categorías en filtro de ventas
-  (function(){
-    var cats=getCfg().categorias||['Sofa','Canape','Colchon','Sillon','Comedor','Dormitorio','Auxiliar','Otros'];
-    var sel=document.getElementById('vfcat');
-    if(sel)sel.innerHTML='<option value="">Categoría</option>'+cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
-  })();
-  document.getElementById('vfcat').addEventListener('change',function(){_ventasPagina=1;renderVentas();});
   document.getElementById('catsearch').addEventListener('input',renderCatalogo);
   document.getElementById('tienda_buscar').addEventListener('input',renderStockTienda);
   document.getElementById('catfilt').addEventListener('change',renderCatalogo);
