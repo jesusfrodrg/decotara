@@ -319,17 +319,6 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   .pb table{width:100%;}
 }
 
-/* TABLA DE VENTAS: en pantallas estrechas se convierte en tarjetas, sin scroll horizontal */
-@media(max-width:640px){
-  .pb-cards{overflow-x:visible;}
-  #ventas-tabla{min-width:0;width:100%;}
-  #ventas-tabla>thead{position:absolute;left:-9999px;top:-9999px;}
-  #vtbody>tr:not(.no-card-tr){display:block;border:1px solid var(--xlgray,#eee);border-radius:10px;margin-bottom:10px;padding:8px 10px;background:#fff}
-  #vtbody>tr:not(.no-card-tr)>td{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 2px;border-bottom:1px solid #f3f3f3;text-align:right;}
-  #vtbody>tr:not(.no-card-tr)>td:last-child{border-bottom:none;}
-  #vtbody>tr:not(.no-card-tr)>td[data-label]:before{content:attr(data-label);font-weight:700;color:var(--gray,#888);font-size:11px;text-align:left;flex:0 0 auto;text-transform:uppercase;letter-spacing:.3px;}
-}
-
 /* FORMULARIOS: 2 cols en móvil, 3 en desktop, 4 en pantallas anchas */
 .fg{grid-template-columns:1fr 1fr;}
 @media(min-width:640px){
@@ -670,7 +659,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
         <div class="sw"><span class="si">🔍</span><input type="text" placeholder="Buscar por cliente, producto, DNI..." id="vsearch"></div>
       </div>
       <div id="ventas-pag"></div>
-      <div class="pb pb-cards"><table id="ventas-tabla"><thead><tr><th>Albarán</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Compra</th><th></th></tr></thead><tbody id="vtbody"><tr><td colspan="7" class="ldr"><span class="spin"></span></td></tr></tbody></table></div>
+      <div class="pb"><table><thead><tr><th>Albarán</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Compra</th><th></th></tr></thead><tbody id="vtbody"><tr><td colspan="7" class="ldr"><span class="spin"></span></td></tr></tbody></table></div>
     </div>
   </div>
 
