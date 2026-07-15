@@ -287,30 +287,45 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 
 .bnav{padding-bottom:env(safe-area-inset-bottom,0px);left:0;right:0;width:100%;}
 
-/* CONTENIDO: ocupa todo el ancho en móvil, centrado en desktop */
+/* CONTENIDO: ocupa todo el ancho en móvil, mucho más ancho en desktop */
 .content{
   padding:14px 16px;
   width:100%;
   max-width:1024px;
   margin:0 auto;
 }
+@media(min-width:1100px){
+  .content{max-width:1400px;padding:20px 32px;}
+}
+@media(min-width:1500px){
+  .content{max-width:1600px;}
+}
 
-/* KPI GRID: 2 columnas en móvil, 4 en tablet/desktop */
+/* KPI GRID: 2 columnas en móvil, 4 en tablet/desktop, 6 en pantallas anchas */
 .kpi-grid{
   grid-template-columns:repeat(2,1fr);
 }
 @media(min-width:640px){
   .kpi-grid{grid-template-columns:repeat(4,1fr);gap:16px;}
 }
+@media(min-width:1100px){
+  .kpi-grid{grid-template-columns:repeat(6,1fr);}
+}
 
-/* TABLAS: scroll horizontal en móvil */
+/* TABLAS: scroll horizontal en móvil, sin restringir el ancho en desktop */
 .pb{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .pb table{min-width:480px;}
+@media(min-width:1100px){
+  .pb table{width:100%;}
+}
 
-/* FORMULARIOS: 2 cols en móvil, 3 en desktop */
+/* FORMULARIOS: 2 cols en móvil, 3 en desktop, 4 en pantallas anchas */
 .fg{grid-template-columns:1fr 1fr;}
 @media(min-width:640px){
   .fg{grid-template-columns:repeat(3,1fr);}
+}
+@media(min-width:1100px){
+  .fg{grid-template-columns:repeat(4,1fr);}
 }
 
 /* MODALES: bottom sheet en móvil, centrado en desktop */
