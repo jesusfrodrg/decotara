@@ -688,6 +688,20 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     </div>
   </div>
 
+  <div class="page" id="page-facturas-emitidas">
+    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">Facturas Emitidas</div></div>
+    <div class="panel" style="padding:14px 16px">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <input type="text" id="fe_buscar" placeholder="🔍 Buscar por cliente, número..." style="flex:1;min-width:160px">
+        <select id="fe_mes" style="padding:8px 10px;border:1.5px solid var(--lgray);border-radius:8px;font-size:13px">
+          <option value="">Todos los meses</option>
+        </select>
+      </div>
+      <div id="fe_resumen" style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap"></div>
+      <div id="fe_tabla" style="overflow-x:auto"></div>
+    </div>
+  </div>
+
   <div class="page" id="page-stock-tienda">
     <div class="ph"><span class="pt">🏪 Stock Tienda</span><button class="btn bp" id="btnNPtienda">+ Añadir</button></div>
     <div style="padding:0 0 8px">
@@ -840,6 +854,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <button class="bn" data-page="reportes" style="min-height:60px;background:var(--white)"><span class="bi">📈</span>Reportes</button>
     <button class="bn" data-page="stock-tienda" style="min-height:60px;background:var(--white)"><span class="bi">🏪</span>Stock Tienda</button>
     <button class="bn" data-page="rectificativas" style="min-height:60px;background:var(--white)"><span class="bi">↩️</span>Rectificativas</button>
+    <button class="bn" data-page="facturas-emitidas" style="min-height:60px;background:var(--white)"><span class="bi">🧾</span>Facturas</button>
     <button class="bn" data-page="config" style="min-height:60px;background:var(--white)"><span class="bi">⚙️</span>Configuración</button>
   </div>
 </div>
@@ -1572,6 +1587,7 @@ function navTo(page){
   else if(page==='caja')renderCaja();
   else if(page==='agenda')renderAgenda();
   else if(page==='rectificativas')renderRectificativas();
+  else if(page==='facturas-emitidas')renderFacturasEmitidas();
   else if(page==='stock-tienda')renderStockTienda();
   else if(page==='config'){if(!checkCfgPass()){document.getElementById('page-config').classList.remove('active');var prev=document.querySelector('.bn.active');if(prev)prev.classList.remove('active');document.querySelector('.bn[data-page="dashboard"]').classList.add('active');document.getElementById('page-dashboard').classList.add('active');curPage='dashboard';return;}renderConfig();}
 }
@@ -2324,6 +2340,71 @@ async function renderRectificativas(){
     html+='</tbody></table>';
     tabla.innerHTML=html;
   }catch(e){tabla.innerHTML='<div style="color:var(--red);padding:16px">Error: '+e.message+'</div>';}
+}
+
+async function renderFacturasEmitidas(){
+  var buscar=(document.getElementById('fe_buscar')?document.getElementById('fe_buscar').value||'':'').toLowerCase();
+  var mesVal=document.getElementById('fe_mes')?document.getElementById('fe_mes').value:'';
+  var tabla=document.getElementById('fe_tabla');
+  if(!tabla)return;
+  tabla.innerHTML='<div class="ldr"><span class="spin"></span></div>';
+  try{
+    var docs=await GET('/documentos_fiscales?select=*&order=created_at.desc&limit=300');
+    docs=docs.filter(function(d){return (d.id||'').indexOf('rect_')!==0;});
+    var enriched=await Promise.all(docs.map(async function(d){
+      try{
+        var vrows=await GET('/ventas?select=id,albaran_num,fecha,total,vendedor,clientes(nombre,apellidos)&or=(albaran_num.eq.'+encodeURIComponent(d.id)+',id.eq.'+encodeURIComponent(d.id)+')&order=created_at.asc');
+        if(vrows.length){
+          var totalGrupo=vrows.reduce(function(s,v){return s+Number(v.total||0);},0);
+          var v0=vrows[0];
+          var cli=v0.clientes||{};
+          return {numero:d.numero,fecha_doc:d.created_at?d.created_at.slice(0,10):'',fecha_venta:v0.fecha,cliente:(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:''),total:totalGrupo,ventaKey:d.id,vendedor:v0.vendedor||''};
+        }
+      }catch(e){}
+      return {numero:d.numero,fecha_doc:d.created_at?d.created_at.slice(0,10):'',fecha_venta:'',cliente:'(venta no encontrada)',total:0,ventaKey:d.id,vendedor:''};
+    }));
+    var sel=document.getElementById('fe_mes');
+    if(sel&&sel.options.length<=1){
+      var meses={};
+      enriched.forEach(function(r){var m=r.fecha_doc?r.fecha_doc.slice(0,7):'';if(m)meses[m]=true;});
+      Object.keys(meses).sort().reverse().forEach(function(m){
+        var d=new Date(m+'-01T12:00');
+        var label=d.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+        sel.innerHTML+='<option value="'+m+'">'+label.charAt(0).toUpperCase()+label.slice(1)+'</option>';
+      });
+    }
+    var rows=enriched;
+    if(buscar)rows=rows.filter(function(r){return (r.cliente||'').toLowerCase().indexOf(buscar)>-1||(r.numero||'').toLowerCase().indexOf(buscar)>-1;});
+    if(mesVal)rows=rows.filter(function(r){return r.fecha_doc&&r.fecha_doc.indexOf(mesVal)===0;});
+    var totalImporte=rows.reduce(function(s,r){return s+Number(r.total||0);},0);
+    document.getElementById('fe_resumen').innerHTML=
+      '<div style="background:#f4f6ff;border:1.5px solid var(--blue);border-radius:8px;padding:10px 14px;font-size:13px"><b style="color:var(--blue)">'+rows.length+'</b> facturas</div>'+
+      '<div style="background:#f4f6ff;border:1.5px solid var(--blue);border-radius:8px;padding:10px 14px;font-size:13px">Total facturado: <b style="color:var(--blue)">'+fe(totalImporte)+'</b></div>';
+    if(!rows.length){tabla.innerHTML='<div style="text-align:center;color:var(--gray);padding:32px;font-size:14px">No hay facturas emitidas aún</div>';return;}
+    var html='<table><thead><tr>'+
+      '<th>Número</th><th>Fecha</th><th>Cliente</th><th>Vendedor</th><th class="right">Importe</th><th></th>'+
+      '</tr></thead><tbody>';
+    rows.forEach(function(r){
+      html+='<tr>'+
+        '<td><b style="color:var(--blue)">'+escHtml(r.numero||'')+'</b></td>'+
+        '<td>'+(r.fecha_venta?fD(r.fecha_venta):(r.fecha_doc?fD(r.fecha_doc):'—'))+'</td>'+
+        '<td>'+escHtml(r.cliente||'—')+'</td>'+
+        '<td style="font-size:12px">'+escHtml(r.vendedor||'—')+'</td>'+
+        '<td class="right" style="font-weight:700">'+fe(r.total)+'</td>'+
+        '<td><button class="btn btn-sm" style="background:#7c3aed;color:#fff;font-size:11px" data-vkey="'+escHtml(r.ventaKey)+'" onclick="verFacturaDesdeKey(this.dataset.vkey)">📄 Ver</button></td>'+
+        '</tr>';
+    });
+    html+='</tbody></table>';
+    tabla.innerHTML=html;
+  }catch(e){tabla.innerHTML='<div style="color:var(--red);padding:16px">Error: '+e.message+'</div>';}
+}
+
+async function verFacturaDesdeKey(key){
+  try{
+    var vrows=await GET('/ventas?select=id&or=(albaran_num.eq.'+encodeURIComponent(key)+',id.eq.'+encodeURIComponent(key)+')&limit=1');
+    if(vrows.length){generarFacturaLegal(vrows[0].id);}
+    else{toast('No se encontró la venta asociada a esta factura');}
+  }catch(e){toast('Error: '+e.message);}
 }
 
 function regenerarRectificativa(r){
@@ -5883,9 +5964,9 @@ document.addEventListener('DOMContentLoaded',function(){
   ['v_cant','v_pvp'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('input',calcT);});
   ['p_pvp','p_cos'].forEach(function(id){document.getElementById(id).addEventListener('input',calcM);});
   document.getElementById('vsearch').addEventListener('input',function(){_ventasPagina=1;renderVentas();});
-  document.addEventListener('input',function(e){if(e.target.id==='rect_buscar')renderRectificativas();if(e.target.id==='tienda_buscar')renderStockTienda();});
+  document.addEventListener('input',function(e){if(e.target.id==='rect_buscar')renderRectificativas();if(e.target.id==='tienda_buscar')renderStockTienda();if(e.target.id==='fe_buscar')renderFacturasEmitidas();});
   document.addEventListener('click',function(e){if(e.target.id==='btnNPtienda')abrirFormTienda();});
-  document.addEventListener('change',function(e){if(e.target.id==='rect_mes')renderRectificativas();});
+  document.addEventListener('change',function(e){if(e.target.id==='rect_mes')renderRectificativas();if(e.target.id==='fe_mes')renderFacturasEmitidas();});
   document.getElementById('catsearch').addEventListener('input',renderCatalogo);
   document.getElementById('tienda_buscar').addEventListener('input',renderStockTienda);
   document.getElementById('catfilt').addEventListener('change',renderCatalogo);
