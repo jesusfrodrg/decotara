@@ -2325,12 +2325,22 @@ async function renderFacturasEmitidas(){
         (esRect
           ?('<td><div style="display:flex;gap:4px"><button class="btn btn-sm" style="background:#C8372D;color:#fff;font-size:11px" data-rkey="'+escHtml(r.key)+'" onclick="var rd=window._rectData&&window._rectData[this.dataset.rkey];if(rd)regenerarRectificativa(rd)">📄 Ver</button>'
             +'<button class="btn btn-sm" style="background:#f3f4f6;color:#333;font-size:11px" data-rkey="'+escHtml(r.key)+'" onclick="eliminarRectificativa(this.dataset.rkey)">🗑️</button></div></td>')
-          :('<td><button class="btn btn-sm" style="background:#7c3aed;color:#fff;font-size:11px" data-vkey="'+escHtml(r.key)+'" onclick="verFacturaDesdeKey(this.dataset.vkey)">📄 Ver</button></td>'))+
+          :('<td><div style="display:flex;gap:4px"><button class="btn btn-sm" style="background:#7c3aed;color:#fff;font-size:11px" data-vkey="'+escHtml(r.key)+'" onclick="verFacturaDesdeKey(this.dataset.vkey)">📄 Ver</button>'
+            +'<button class="btn btn-sm" style="background:#f3f4f6;color:#333;font-size:11px" data-vkey="'+escHtml(r.key)+'" data-num="'+escHtml(r.numero||'')+'" onclick="eliminarFacturaLegal(this.dataset.vkey,this.dataset.num)">🗑️</button></div></td>'))+
         '</tr>';
     });
     html+='</tbody></table>';
     tabla.innerHTML=html;
   }catch(e){tabla.innerHTML='<div style="color:var(--red);padding:16px">Error: '+e.message+'</div>';}
+}
+
+async function eliminarFacturaLegal(key,numero){
+  if(!confirm('¿Eliminar el número de factura '+(numero||key)+'?\n\nEsto libera el número para que la próxima factura que generes pueda usarlo, y mantiene el contador en orden. No afecta a la venta ni a su stock.\n\nEsta acción no se puede deshacer.'))return;
+  try{
+    await DEL('/documentos_fiscales?id=eq.'+encodeURIComponent(key));
+    toast('Número de factura eliminado');
+    renderFacturasEmitidas();
+  }catch(e){toast('Error: '+e.message);}
 }
 
 async function verFacturaDesdeKey(key){
