@@ -674,20 +674,6 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   </div>
 
   <!-- PRODUCTOS -->
-  <div class="page" id="page-rectificativas">
-    <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">Facturas Rectificativas</div></div>
-    <div class="panel" style="padding:14px 16px">
-      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-        <input type="text" id="rect_buscar" placeholder="🔍 Buscar por cliente, número..." style="flex:1;min-width:160px">
-        <select id="rect_mes" style="padding:8px 10px;border:1.5px solid var(--lgray);border-radius:8px;font-size:13px">
-          <option value="">Todos los meses</option>
-        </select>
-      </div>
-      <div id="rect_resumen" style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap"></div>
-      <div id="rect_tabla" style="overflow-x:auto"></div>
-    </div>
-  </div>
-
   <div class="page" id="page-facturas-emitidas">
     <div class="sec-hd"><div class="sec-hd-line"></div><div class="sec-hd-title">Facturas Emitidas</div></div>
     <div class="panel" style="padding:14px 16px">
@@ -853,7 +839,6 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <button class="bn" data-page="clientes" style="min-height:60px;background:var(--white)"><span class="bi">👥</span>Clientes</button>
     <button class="bn" data-page="reportes" style="min-height:60px;background:var(--white)"><span class="bi">📈</span>Reportes</button>
     <button class="bn" data-page="stock-tienda" style="min-height:60px;background:var(--white)"><span class="bi">🏪</span>Stock Tienda</button>
-    <button class="bn" data-page="rectificativas" style="min-height:60px;background:var(--white)"><span class="bi">↩️</span>Rectificativas</button>
     <button class="bn" data-page="facturas-emitidas" style="min-height:60px;background:var(--white)"><span class="bi">🧾</span>Facturas</button>
     <button class="bn" data-page="config" style="min-height:60px;background:var(--white)"><span class="bi">⚙️</span>Configuración</button>
   </div>
@@ -1586,7 +1571,6 @@ function navTo(page){
   else if(page==='productos')renderProductos();
   else if(page==='caja')renderCaja();
   else if(page==='agenda')renderAgenda();
-  else if(page==='rectificativas')renderRectificativas();
   else if(page==='facturas-emitidas')renderFacturasEmitidas();
   else if(page==='stock-tienda')renderStockTienda();
   else if(page==='config'){if(!checkCfgPass()){document.getElementById('page-config').classList.remove('active');var prev=document.querySelector('.bn.active');if(prev)prev.classList.remove('active');document.querySelector('.bn[data-page="dashboard"]').classList.add('active');document.getElementById('page-dashboard').classList.add('active');curPage='dashboard';return;}renderConfig();}
@@ -2274,72 +2258,8 @@ async function eliminarRectificativa(id){
   try{
     await DEL('/rectificativas?id=eq.'+id);
     toast('Rectificativa eliminada');
-    renderRectificativas();
+    renderFacturasEmitidas();
   }catch(e){toast('Error: '+e.message);}
-}
-
-async function renderRectificativas(){
-  var buscar=(document.getElementById('rect_buscar')?document.getElementById('rect_buscar').value||'':'').toLowerCase();
-  var mesVal=document.getElementById('rect_mes')?document.getElementById('rect_mes').value:'';
-  var tabla=document.getElementById('rect_tabla');
-  if(!tabla)return;
-  tabla.innerHTML='<div class="ldr"><span class="spin"></span></div>';
-  try{
-    var url='/rectificativas?select=*&order=created_at.desc&limit=200';
-    var rows=await GET(url);
-    // Llenar selector de meses
-    var sel=document.getElementById('rect_mes');
-    if(sel&&sel.options.length<=1){
-      var meses={};
-      rows.forEach(function(r){var m=r.fecha?r.fecha.slice(0,7):'';if(m)meses[m]=true;});
-      Object.keys(meses).sort().reverse().forEach(function(m){
-        var d=new Date(m+'-01T12:00');
-        var label=d.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
-        sel.innerHTML+='<option value="'+m+'">'+label.charAt(0).toUpperCase()+label.slice(1)+'</option>';
-      });
-    }
-    // Filtrar
-    if(buscar)rows=rows.filter(function(r){return (r.cliente_nombre||'').toLowerCase().includes(buscar)||(r.numero||'').toLowerCase().includes(buscar)||(r.motivo||'').toLowerCase().includes(buscar);});
-    if(mesVal)rows=rows.filter(function(r){return r.fecha&&r.fecha.startsWith(mesVal);});
-    // Resumen
-    var totalImporte=rows.reduce(function(s,r){return s+Math.abs(Number(r.importe||0));},0);
-    document.getElementById('rect_resumen').innerHTML=
-      '<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:8px;padding:10px 14px;font-size:13px"><b style="color:#C8372D">'+rows.length+'</b> rectificativas</div>'+
-      '<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:8px;padding:10px 14px;font-size:13px">Total rectificado: <b style="color:#C8372D">'+fe(totalImporte)+'</b></div>';
-    if(!rows.length){tabla.innerHTML='<div style="text-align:center;color:var(--gray);padding:32px;font-size:14px">No hay facturas rectificativas</div>';return;}
-    var html='<table><thead><tr>'+
-      '<th>Número</th><th>Fecha</th><th>Cliente</th><th>Rectifica</th><th>Motivo</th><th class="right">Importe</th><th></th>'+
-      '</tr></thead><tbody>';
-    window._rectData={};
-    rows.forEach(function(r){
-      window._rectData[r.id]=r;
-      var arts=r.articulos||[];
-      html+='<tr>'+
-        '<td><b style="color:#C8372D">'+escHtml(r.numero||'')+'</b></td>'+
-        '<td>'+fD(r.fecha)+'</td>'+
-        '<td>'+escHtml(r.cliente_nombre||'—')+'</td>'+
-        '<td><span style="color:var(--blue);font-size:11px">'+escHtml(r.factura_origen||'—')+'</span></td>'+
-        '<td style="font-size:12px">'+escHtml(r.motivo||'')+'</td>'+
-        '<td class="right" style="color:#C8372D;font-weight:700">'+fe(-Math.abs(Number(r.importe||0)))+'</td>'+
-        '<td><div style="display:flex;gap:4px"><button class="btn btn-sm" style="background:#C8372D;color:#fff;font-size:11px" data-rectid="'+r.id+'" onclick="var rd=window._rectData&&window._rectData[this.dataset.rectid];if(rd)regenerarRectificativa(rd)">📄 PDF</button>'
-        +'<button class="btn btn-sm" style="background:#f3f4f6;color:#333;font-size:11px" data-rectid="'+r.id+'" onclick="eliminarRectificativa(this.dataset.rectid)" title="Eliminar esta rectificativa">🗑️</button></div></td>'+
-        '</tr>';
-      if(arts.length){
-        html+='<tr><td colspan="7" style="padding:6px 12px 12px;background:#fffbf7">'
-          +'<div style="font-size:10px;color:#c2872f;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">Artículos rectificados</div>'
-          +'<div style="border:1px solid #fed7aa;border-radius:8px;overflow:hidden;background:#fff">'
-          +arts.map(function(a,ai){
-            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 12px;font-size:12px;'+(ai<arts.length-1?'border-bottom:1px solid #fbe3c8;':'')+'">'
-              +'<span>'+escHtml(a.nombre||'')+(a.cantidad>1?' <span style="color:#aaa;font-weight:700">×'+a.cantidad+'</span>':'')+'</span>'
-              +'<span style="font-weight:700;color:#C8372D;white-space:nowrap">'+fe(-Math.abs(Number(a.total||0)))+'</span>'
-            +'</div>';
-          }).join('')
-          +'</div></td></tr>';
-      }
-    });
-    html+='</tbody></table>';
-    tabla.innerHTML=html;
-  }catch(e){tabla.innerHTML='<div style="color:var(--red);padding:16px">Error: '+e.message+'</div>';}
 }
 
 async function renderFacturasEmitidas(){
@@ -2351,47 +2271,61 @@ async function renderFacturasEmitidas(){
   try{
     var docs=await GET('/documentos_fiscales?select=*&order=created_at.desc&limit=300');
     docs=docs.filter(function(d){return (d.id||'').indexOf('rect_')!==0;});
-    var enriched=await Promise.all(docs.map(async function(d){
+    var facturas=await Promise.all(docs.map(async function(d){
       try{
         var vrows=await GET('/ventas?select=id,albaran_num,fecha,total,vendedor,clientes(nombre,apellidos)&or=(albaran_num.eq.'+encodeURIComponent(d.id)+',id.eq.'+encodeURIComponent(d.id)+')&order=created_at.asc');
         if(vrows.length){
           var totalGrupo=vrows.reduce(function(s,v){return s+Number(v.total||0);},0);
           var v0=vrows[0];
           var cli=v0.clientes||{};
-          return {numero:d.numero,fecha_doc:d.created_at?d.created_at.slice(0,10):'',fecha_venta:v0.fecha,cliente:(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:''),total:totalGrupo,ventaKey:d.id,vendedor:v0.vendedor||''};
+          return {tipo:'legal',numero:d.numero,fecha:v0.fecha||(d.created_at?d.created_at.slice(0,10):''),cliente:(cli.nombre||'')+(cli.apellidos?' '+cli.apellidos:''),total:totalGrupo,key:d.id};
         }
       }catch(e){}
-      return {numero:d.numero,fecha_doc:d.created_at?d.created_at.slice(0,10):'',fecha_venta:'',cliente:'(venta no encontrada)',total:0,ventaKey:d.id,vendedor:''};
+      return {tipo:'legal',numero:d.numero,fecha:d.created_at?d.created_at.slice(0,10):'',cliente:'(venta no encontrada)',total:0,key:d.id};
     }));
+    var rectRows=await GET('/rectificativas?select=*&order=created_at.desc&limit=300');
+    window._rectData={};
+    var rectificativas=rectRows.map(function(r){
+      window._rectData[r.id]=r;
+      return {tipo:'rect',numero:r.numero,fecha:r.fecha,cliente:r.cliente_nombre||'—',total:-Math.abs(Number(r.importe||0)),key:r.id,origen:r.factura_origen||''};
+    });
+    var todas=facturas.concat(rectificativas).sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');});
     var sel=document.getElementById('fe_mes');
     if(sel&&sel.options.length<=1){
       var meses={};
-      enriched.forEach(function(r){var m=r.fecha_doc?r.fecha_doc.slice(0,7):'';if(m)meses[m]=true;});
+      todas.forEach(function(r){var m=r.fecha?r.fecha.slice(0,7):'';if(m)meses[m]=true;});
       Object.keys(meses).sort().reverse().forEach(function(m){
         var d=new Date(m+'-01T12:00');
         var label=d.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
         sel.innerHTML+='<option value="'+m+'">'+label.charAt(0).toUpperCase()+label.slice(1)+'</option>';
       });
     }
-    var rows=enriched;
+    var rows=todas;
     if(buscar)rows=rows.filter(function(r){return (r.cliente||'').toLowerCase().indexOf(buscar)>-1||(r.numero||'').toLowerCase().indexOf(buscar)>-1;});
-    if(mesVal)rows=rows.filter(function(r){return r.fecha_doc&&r.fecha_doc.indexOf(mesVal)===0;});
+    if(mesVal)rows=rows.filter(function(r){return r.fecha&&r.fecha.indexOf(mesVal)===0;});
     var totalImporte=rows.reduce(function(s,r){return s+Number(r.total||0);},0);
+    var nLegal=rows.filter(function(r){return r.tipo==='legal';}).length;
+    var nRect=rows.filter(function(r){return r.tipo==='rect';}).length;
     document.getElementById('fe_resumen').innerHTML=
-      '<div style="background:#f4f6ff;border:1.5px solid var(--blue);border-radius:8px;padding:10px 14px;font-size:13px"><b style="color:var(--blue)">'+rows.length+'</b> facturas</div>'+
-      '<div style="background:#f4f6ff;border:1.5px solid var(--blue);border-radius:8px;padding:10px 14px;font-size:13px">Total facturado: <b style="color:var(--blue)">'+fe(totalImporte)+'</b></div>';
+      '<div style="background:#f4f6ff;border:1.5px solid var(--blue);border-radius:8px;padding:10px 14px;font-size:13px"><b style="color:var(--blue)">'+nLegal+'</b> facturas · <b style="color:#C8372D">'+nRect+'</b> rectificativas</div>'+
+      '<div style="background:#f4f6ff;border:1.5px solid var(--blue);border-radius:8px;padding:10px 14px;font-size:13px">Total: <b style="color:var(--blue)">'+fe(totalImporte)+'</b></div>';
     if(!rows.length){tabla.innerHTML='<div style="text-align:center;color:var(--gray);padding:32px;font-size:14px">No hay facturas emitidas aún</div>';return;}
     var html='<table><thead><tr>'+
-      '<th>Número</th><th>Fecha</th><th>Cliente</th><th>Vendedor</th><th class="right">Importe</th><th></th>'+
+      '<th>Tipo</th><th>Número</th><th>Fecha</th><th>Cliente</th><th class="right">Importe</th><th></th>'+
       '</tr></thead><tbody>';
     rows.forEach(function(r){
+      var esRect=r.tipo==='rect';
+      var tipoBadge=esRect?'<span style="background:#fee2e2;color:#C8372D;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700">Rectificativa</span>':'<span style="background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700">Factura Legal</span>';
       html+='<tr>'+
-        '<td><b style="color:var(--blue)">'+escHtml(r.numero||'')+'</b></td>'+
-        '<td>'+(r.fecha_venta?fD(r.fecha_venta):(r.fecha_doc?fD(r.fecha_doc):'—'))+'</td>'+
+        '<td>'+tipoBadge+'</td>'+
+        '<td><b style="color:'+(esRect?'#C8372D':'var(--blue)')+'">'+escHtml(r.numero||'')+'</b></td>'+
+        '<td>'+(r.fecha?fD(r.fecha):'—')+'</td>'+
         '<td>'+escHtml(r.cliente||'—')+'</td>'+
-        '<td style="font-size:12px">'+escHtml(r.vendedor||'—')+'</td>'+
-        '<td class="right" style="font-weight:700">'+fe(r.total)+'</td>'+
-        '<td><button class="btn btn-sm" style="background:#7c3aed;color:#fff;font-size:11px" data-vkey="'+escHtml(r.ventaKey)+'" onclick="verFacturaDesdeKey(this.dataset.vkey)">📄 Ver</button></td>'+
+        '<td class="right" style="font-weight:700;color:'+(esRect?'#C8372D':'var(--dark)')+'">'+fe(r.total)+'</td>'+
+        (esRect
+          ?('<td><div style="display:flex;gap:4px"><button class="btn btn-sm" style="background:#C8372D;color:#fff;font-size:11px" data-rkey="'+escHtml(r.key)+'" onclick="var rd=window._rectData&&window._rectData[this.dataset.rkey];if(rd)regenerarRectificativa(rd)">📄 Ver</button>'
+            +'<button class="btn btn-sm" style="background:#f3f4f6;color:#333;font-size:11px" data-rkey="'+escHtml(r.key)+'" onclick="eliminarRectificativa(this.dataset.rkey)">🗑️</button></div></td>')
+          :('<td><button class="btn btn-sm" style="background:#7c3aed;color:#fff;font-size:11px" data-vkey="'+escHtml(r.key)+'" onclick="verFacturaDesdeKey(this.dataset.vkey)">📄 Ver</button></td>'))+
         '</tr>';
     });
     html+='</tbody></table>';
@@ -5964,9 +5898,9 @@ document.addEventListener('DOMContentLoaded',function(){
   ['v_cant','v_pvp'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('input',calcT);});
   ['p_pvp','p_cos'].forEach(function(id){document.getElementById(id).addEventListener('input',calcM);});
   document.getElementById('vsearch').addEventListener('input',function(){_ventasPagina=1;renderVentas();});
-  document.addEventListener('input',function(e){if(e.target.id==='rect_buscar')renderRectificativas();if(e.target.id==='tienda_buscar')renderStockTienda();if(e.target.id==='fe_buscar')renderFacturasEmitidas();});
+  document.addEventListener('input',function(e){if(e.target.id==='tienda_buscar')renderStockTienda();if(e.target.id==='fe_buscar')renderFacturasEmitidas();});
   document.addEventListener('click',function(e){if(e.target.id==='btnNPtienda')abrirFormTienda();});
-  document.addEventListener('change',function(e){if(e.target.id==='rect_mes')renderRectificativas();if(e.target.id==='fe_mes')renderFacturasEmitidas();});
+  document.addEventListener('change',function(e){if(e.target.id==='fe_mes')renderFacturasEmitidas();});
   document.getElementById('catsearch').addEventListener('input',renderCatalogo);
   document.getElementById('tienda_buscar').addEventListener('input',renderStockTienda);
   document.getElementById('catfilt').addEventListener('change',renderCatalogo);
