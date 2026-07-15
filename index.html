@@ -319,6 +319,17 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   .pb table{width:100%;}
 }
 
+/* TABLA DE VENTAS: en pantallas estrechas se convierte en tarjetas, sin scroll horizontal */
+@media(max-width:640px){
+  .pb-cards{overflow-x:visible;}
+  #ventas-tabla{min-width:0;width:100%;}
+  #ventas-tabla>thead{position:absolute;left:-9999px;top:-9999px;}
+  #vtbody>tr:not(.no-card-tr){display:block;border:1px solid var(--xlgray,#eee);border-radius:10px;margin-bottom:10px;padding:8px 10px;background:#fff}
+  #vtbody>tr:not(.no-card-tr)>td{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 2px;border-bottom:1px solid #f3f3f3;text-align:right;}
+  #vtbody>tr:not(.no-card-tr)>td:last-child{border-bottom:none;}
+  #vtbody>tr:not(.no-card-tr)>td[data-label]:before{content:attr(data-label);font-weight:700;color:var(--gray,#888);font-size:11px;text-align:left;flex:0 0 auto;text-transform:uppercase;letter-spacing:.3px;}
+}
+
 /* FORMULARIOS: 2 cols en móvil, 3 en desktop, 4 en pantallas anchas */
 .fg{grid-template-columns:1fr 1fr;}
 @media(min-width:640px){
@@ -659,7 +670,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
         <div class="sw"><span class="si">🔍</span><input type="text" placeholder="Buscar por cliente, producto, DNI..." id="vsearch"></div>
       </div>
       <div id="ventas-pag"></div>
-      <div class="pb"><table><thead><tr><th>Albarán</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Compra</th><th></th></tr></thead><tbody id="vtbody"><tr><td colspan="7" class="ldr"><span class="spin"></span></td></tr></tbody></table></div>
+      <div class="pb pb-cards"><table id="ventas-tabla"><thead><tr><th>Albarán</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Compra</th><th></th></tr></thead><tbody id="vtbody"><tr><td colspan="7" class="ldr"><span class="spin"></span></td></tr></tbody></table></div>
     </div>
   </div>
 
@@ -3574,7 +3585,7 @@ async function renderVentas(pagina){
       var albNum=v0.albaran_num||(function(){var m=(v0.id||'').match(/VEN-(\d+)/);return m?(pfxAlb()+'-'+m[1]):pfxAlb()+'-'+v0.id;})();
       var expandId='exp_'+key.replace(/[^a-z0-9]/gi,'_');
       // Fila expandible con artículos del grupo
-      var expandRow='<tr id="'+expandId+'" style="display:none"><td colspan="7" style="padding:0;background:#f8f9ff;border-bottom:2px solid var(--blue)">'+
+      var expandRow='<tr id="'+expandId+'" class="no-card-tr" style="display:none"><td colspan="7" style="padding:0;background:#f8f9ff;border-bottom:2px solid var(--blue)">'+
         '<div style="padding:10px 14px">'+
         '<div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📦 Artículos de la compra · '+albNum+'</div>'+
         '<table style="width:100%;border-collapse:collapse;font-size:12px">'+
@@ -3597,17 +3608,17 @@ async function renderVentas(pagina){
         '</div>'+
       '</td></tr>';
       return '<tr style="cursor:pointer" data-expand="'+expandId+'">'+
-        '<td><b style="color:var(--blue)">'+albNum+'</b>'+
+        '<td data-label="Albarán"><b style="color:var(--blue)">'+albNum+'</b>'+
           '<div style="font-size:9px;color:var(--gray);margin-top:1px">'+primeraId+'</div>'+
         '</td>'+
-        '<td>'+fD(v0.fecha)+'</td>'+
-        '<td><div>'+(v0.clientes?v0.clientes.nombre+' '+v0.clientes.apellidos:'—')+'</div>'+
+        '<td data-label="Fecha">'+fD(v0.fecha)+'</td>'+
+        '<td data-label="Cliente"><div>'+(v0.clientes?v0.clientes.nombre+' '+v0.clientes.apellidos:'—')+'</div>'+
           (window._dniOk&&v0.clientes&&v0.clientes.dni?'<div style="font-size:10px;color:var(--gray)">DNI: '+v0.clientes.dni+'</div>':'')+
         '</td>'+
-        '<td><div style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+productosNombres+'">'+productosNombres+'</div></td>'+
-        '<td class="price">'+fe(totalCompra)+'</td>'+
-        '<td>'+(grupo.length>1?'<span style="background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px">'+grupo.length+' prods</span>':'<span style="font-size:10px;color:var(--gray)">'+numArts+' ud.</span>')+'</td>'+
-        '<td><div style="display:flex;gap:3px">'+
+        '<td data-label="Producto"><div style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+productosNombres+'">'+productosNombres+'</div></td>'+
+        '<td class="price" data-label="Total">'+fe(totalCompra)+'</td>'+
+        '<td data-label="Compra">'+(grupo.length>1?'<span style="background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px">'+grupo.length+' prods</span>':'<span style="font-size:10px;color:var(--gray)">'+numArts+' ud.</span>')+'</td>'+
+        '<td data-label="Acciones"><div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end">'+
           '<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff;width:30px;height:30px;padding:0" title="Ver artículos de la compra" data-action="vergrupo" data-expand="'+expandId+'">👁</button>'+
           (grupo.length>1
             ?'<button class="btn btn-sm bic" style="background:var(--blue);color:#fff" title="Albarán PDF" data-action="pdfgrupo" data-key="'+key+'">📄</button>'+'<button class="btn btn-sm bic" style="background:#7c3aed;color:#fff" title="Factura Legal" data-action="factura-legal" data-id="'+v0.id+'">🧾</button>'+'<button class="btn btn-sm bic" style="background:#C8372D;color:#fff" title="Factura Rectificativa" data-action="factura-rect" data-id="'+v0.id+'">↩️</button>'
