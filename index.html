@@ -2641,6 +2641,13 @@ async function generarFacturaLegal(ventaId){
     // ── Número de factura propio (Supabase, compartido entre dispositivos) ──
     // Usar albaran_num o ventaId como key para reutilizar el mismo número si se reimprime
     var factKey=v.albaran_num||v.id;
+    var numFactExistente=await getDocNumero(factKey);
+    if(!numFactExistente){
+      if(!confirm('¿Generar la factura legal de esta venta?\n\nEsto le asignará un número de factura oficial permanente (no se puede reutilizar ni saltar), así que solo hazlo si de verdad la necesitas.')){
+        toast('Cancelado');
+        return;
+      }
+    }
     var numFact=await getOrCreateDocNumero(factKey,pfxFac(),facStartNum(),facWidth());
     var fecha=fD(v.fecha);
     var filas=ventas.map(function(x){
