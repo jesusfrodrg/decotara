@@ -3252,10 +3252,10 @@ function addVMOtrosYOtro(){
 // ── OPCIÓN OTROS EN MODAL DE VENTA ────────────────────────────────
 function toggleOtrosVM(){} // legacy no-op
 
-function filtrarClienteSelect(selectId,searchId){
+async function filtrarClienteSelect(selectId,searchId){
   var q=(document.getElementById(searchId).value||'').toLowerCase().trim();
   var sel=document.getElementById(selectId);
-  var full=window._clientesFullVM||[];
+  var full=await getCachedClientes(false);
   var filtered=q?full.filter(function(c){
     var nomCompleto=((c.nombre||'')+' '+(c.apellidos||'')).toLowerCase();
     var dni=(c.dni||'').toLowerCase();
@@ -5334,7 +5334,6 @@ async function openVM(id){
   document.getElementById('vm-t').textContent=id?'Editar venta':'Nueva venta';
   var [cl,pr,tienda]=await Promise.all([getCachedClientes(false),getCachedProductos(false),GET('/stock_tienda?select=*&order=nombre.asc').catch(function(){return [];})]);
   // Populate cliente selector
-  window._clientesFullVM=cl;
   var _vclsr=document.getElementById('v_cli_search');if(_vclsr)_vclsr.value='';
   document.getElementById('v_cli').innerHTML='<option value="">Seleccionar...</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.nombre+' '+c.apellidos+'</option>';}).join('');
   // Guardar mapa de tienda por producto_id para mostrar badge y preguntar origen
