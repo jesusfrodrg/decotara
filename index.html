@@ -954,6 +954,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
     <!-- Cliente + fecha -->
     <div class="fi full">
       <label>Cliente</label>
+      <input type="text" id="v_cli_search" placeholder="🔍 Buscar por nombre o DNI..." style="margin-bottom:6px" oninput="filtrarClienteSelect('v_cli','v_cli_search')" autocomplete="off">
       <div style="display:flex;gap:6px;align-items:center">
         <select id="v_cli" style="flex:1"></select>
         <button type="button" onclick="toggleNuevoCliInline('vm')" id="btn_nc_vm" class="btn bp" style="white-space:nowrap;padding:0 12px;height:36px;font-size:12px;flex-shrink:0">+ Nuevo</button>
@@ -3251,6 +3252,21 @@ function addVMOtrosYOtro(){
 // ── OPCIÓN OTROS EN MODAL DE VENTA ────────────────────────────────
 function toggleOtrosVM(){} // legacy no-op
 
+function filtrarClienteSelect(selectId,searchId){
+  var q=(document.getElementById(searchId).value||'').toLowerCase().trim();
+  var sel=document.getElementById(selectId);
+  var full=window._clientesFullVM||[];
+  var filtered=q?full.filter(function(c){
+    var nomCompleto=((c.nombre||'')+' '+(c.apellidos||'')).toLowerCase();
+    var dni=(c.dni||'').toLowerCase();
+    return nomCompleto.indexOf(q)>-1||dni.indexOf(q)>-1;
+  }):full;
+  var current=sel.value;
+  sel.innerHTML='<option value="">Seleccionar...</option>'+filtered.map(function(c){return '<option value="'+c.id+'">'+c.nombre+' '+c.apellidos+(c.dni?' — '+c.dni:'')+'</option>';}).join('');
+  if(filtered.some(function(c){return c.id===current;})){sel.value=current;}
+  else if(filtered.length===1&&q){sel.value=filtered[0].id;}
+}
+
 function toggleNuevoCliInline(ctx){
   var panel=document.getElementById('nc_inline_'+ctx);
   var isOpen=panel.style.display!=='none';
@@ -5318,6 +5334,8 @@ async function openVM(id){
   document.getElementById('vm-t').textContent=id?'Editar venta':'Nueva venta';
   var [cl,pr,tienda]=await Promise.all([getCachedClientes(false),getCachedProductos(false),GET('/stock_tienda?select=*&order=nombre.asc').catch(function(){return [];})]);
   // Populate cliente selector
+  window._clientesFullVM=cl;
+  var _vclsr=document.getElementById('v_cli_search');if(_vclsr)_vclsr.value='';
   document.getElementById('v_cli').innerHTML='<option value="">Seleccionar...</option>'+cl.map(function(c){return '<option value="'+c.id+'">'+c.nombre+' '+c.apellidos+'</option>';}).join('');
   // Guardar mapa de tienda por producto_id para mostrar badge y preguntar origen
   window._vmTiendaMap={};
