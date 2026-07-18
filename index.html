@@ -6206,8 +6206,7 @@ document.addEventListener('DOMContentLoaded',function(){
     var c=document.querySelector('.content');
     if(!c)return;
     if(w>=1000){
-      var target=Math.min(w*0.98,2400);
-      c.setAttribute('style',(c.getAttribute('style')||'')+';width:'+target+'px !important;max-width:'+target+'px !important;margin-left:auto !important;margin-right:auto !important;');
+      c.setAttribute('style','width:100% !important;max-width:100% !important;margin-left:0 !important;margin-right:0 !important;box-sizing:border-box !important;');
     }
   }
   forzarAncho();
