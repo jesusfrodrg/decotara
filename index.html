@@ -6199,5 +6199,23 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="mf"><button class="btn bs2" onclick="document.getElementById('rectM').style.display='none'">Cancelar</button><button class="btn bp" style="background:#C8372D" id="rectBtnConfirmar" onclick="confirmarRectificativa()">↩️ Generar Rectificativa</button></div>
 </div></div>
 
+<script>
+(function(){
+  function forzarAncho(){
+    var w=window.innerWidth;
+    var c=document.querySelector('.content');
+    if(!c)return;
+    if(w>=1000){
+      var target=Math.min(w*0.98,2400);
+      c.setAttribute('style',(c.getAttribute('style')||'')+';width:'+target+'px !important;max-width:'+target+'px !important;margin-left:auto !important;margin-right:auto !important;');
+    }
+  }
+  forzarAncho();
+  window.addEventListener('resize',forzarAncho);
+  document.addEventListener('DOMContentLoaded',forzarAncho);
+  setTimeout(forzarAncho,500);
+  setTimeout(forzarAncho,1500);
+})();
+</script>
 </body>
 </html>
