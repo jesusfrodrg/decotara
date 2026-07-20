@@ -1151,7 +1151,7 @@ var stockCache={};
 var stockAlerts=[];
 async function loadStockCache(){
   try{
-    var prods=await GET('/productos?select=id,nombre,categoria,stock');
+    var prods=await getCachedProductos();
     prods.forEach(function(p){stockCache[p.id]=p.stock||0;});
     stockAlerts=prods.filter(function(p){return (p.stock||0)<=(getCfg().stock_min||3);});
     actualizarCampana();
@@ -3233,8 +3233,7 @@ async function initApp(){
       GET('/clientes?select=dni&limit=1').then(function(){window._dniOk=true;}).catch(function(){window._dniOk=false;}),
       GET('/ventas?select=forma_pago&limit=1').then(function(){window._pagoOk=true;}).catch(function(){window._pagoOk=false;}),
       loadStockCache().catch(function(){}),
-      getCachedClientes().catch(function(){}),
-      getCachedProductos().catch(function(){})
+      getCachedClientes().catch(function(){})
     ]);
     navTo('dashboard');
     setTimeout(function(){if(dbg)dbg.style.display='none';},2000);
