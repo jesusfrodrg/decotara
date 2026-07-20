@@ -287,6 +287,76 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
 .agenda-search input:focus{border-color:var(--red)}
 .agenda-search-icon{font-size:15px;color:var(--gray)}
 .ag-section-title{padding:10px 16px 6px;font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;background:var(--xlgray);border-bottom:1px solid var(--lgray)}
+
+.vm-cat-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
+.vm-cat-tab{
+  border:1.5px solid var(--lgray);
+  background:var(--white);
+  color:var(--black);
+  font-size:13px;
+  font-weight:600;
+  padding:8px 14px;
+  border-radius:20px;
+  cursor:pointer;
+  white-space:nowrap;
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.vm-cat-tab.active{background:var(--red);border-color:var(--red);color:#fff;}
+
+/* CATÁLOGO PRODUCTOS (Nueva Venta) */
+#vm_prod_grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+  margin-top:10px;
+}
+@media(min-width:480px){
+  #vm_prod_grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+}
+.vm-card{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  background:var(--white);
+  border:1.5px solid var(--lgray);
+  border-radius:12px;
+  padding:12px;
+  cursor:pointer;
+  transition:border-color .15s,background .15s;
+}
+.vm-card:active{background:#fafafa;}
+.vm-card.in-order{border-color:var(--blue);background:var(--blue-soft,#eef2ff);}
+.vm-card.no-stock{opacity:.55;}
+.vmc-icon{font-size:22px;line-height:1;}
+.vmc-info{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.vmc-nom{font-size:13px;font-weight:700;color:var(--black);word-break:break-word;}
+.vmc-cat{font-size:11px;color:var(--gray);display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.vmc-footer{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:2px;}
+.vmc-pvp{font-size:15px;font-weight:800;color:var(--red);}
+.vmc-stk{font-size:10px;color:var(--gray);white-space:nowrap;}
+.vmc-stk.stock-low{color:#C47B0A;font-weight:700;}
+.vmc-add,.btn-vmc-add{
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  border:none;
+  background:var(--blue);
+  color:#fff;
+  font-size:16px;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+.vm-card.in-order .vmc-add,.vm-card.in-order .btn-vmc-add{background:#1E8A4C;}
 </style>
 </head>
 <body>
