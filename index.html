@@ -5600,6 +5600,7 @@ async function saveP(){
         }
       }
       if(!creado)throw new Error('No se pudo generar un ID único para el producto, inténtalo de nuevo');
+      invalidarCacheProductos();
       toast('Creado: '+payload.id+' ✓');
     }
     await loadStockCache();
