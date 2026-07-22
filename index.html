@@ -818,7 +818,7 @@ input[readonly]{background:var(--xlgray);color:var(--gray)}
   <div class="modal-header"><div class="modal-stripe"></div><div class="mt" id="pm-t">Nuevo producto</div></div>
   <div class="fg">
     <div class="fi full"><label>Nombre</label><input type="text" id="p_nom"></div>
-    <div class="fi"><label>Categoría</label><select id="p_cat"><option>Sofa</option></select></div>
+    <div class="fi"><label>Categoría *</label><select id="p_cat"><option value="">Selecciona categoría...</option></select></div>
     <div class="fi"><label>Stock</label><input type="number" id="p_sto" min="0" value="0"></div>
     <div class="fi"><label>Referencia propia</label>
         <div style="display:flex;gap:6px">
@@ -1948,7 +1948,7 @@ async function abrirFormTienda(){try{
     document.getElementById('tf_prov').value='';
   // Llenar categorías
   var cats=getCfg().categorias||[];
-  document.getElementById('tf_cat').innerHTML=cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
+  document.getElementById('tf_cat').innerHTML='<option value="">Selecciona categoría...</option>'+cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
   // Llenar productos almacén para vincular
   var prods=await GET('/productos?select=id,nombre,ref_propia&order=nombre.asc');
   document.getElementById('tf_prod_id').innerHTML='<option value="">— Sin vincular —</option>'+prods.map(function(p){return '<option value="'+p.id+'">'+escHtml(p.nombre)+(p.ref_propia?' ('+p.ref_propia+')':'')+'</option>';}).join('');
@@ -5518,10 +5518,10 @@ async function openPM(id){
   // Rellenar categorías desde configuración
   var _cats=getCfg().categorias||['Sofa','Canape','Colchon','Sillon','Comedor','Dormitorio','Auxiliar','Otros'];
   var _pcatSel=document.getElementById('p_cat');
-  if(_pcatSel)_pcatSel.innerHTML=_cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
+  if(_pcatSel)_pcatSel.innerHTML='<option value="">Selecciona categoría...</option>'+_cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
   document.getElementById('pm-t').textContent=id?'Editar producto':'Nuevo producto';
-  if(id){var rows=await GET('/productos?select=*&id=eq.'+id);var p=rows[0];if(p){document.getElementById('p_nom').value=p.nombre||'';document.getElementById('p_cat').value=p.categoria||_cats[0]||'Sofa';document.getElementById('p_des').value=p.descripcion||'';document.getElementById('p_pvp').value=p.pvp||'';document.getElementById('p_cos').value=p.coste||'';document.getElementById('p_sto').value=p.stock||0;document.getElementById('p_ref').value=p.ref_propia||'';document.getElementById('p_prov').value=p.proveedor||'';document.getElementById('p_ref_prov').value=p.ref_proveedor||'';calcM();}}
-  else{['p_nom','p_des','p_pvp','p_cos','p_mar','p_ref','p_ref_prov'].forEach(function(f){document.getElementById(f).value='';});document.getElementById('p_prov').value='';var _firstCat=(getCfg().categorias||['Sofa'])[0];document.getElementById('p_cat').value=_firstCat;document.getElementById('p_sto').value=0;}
+  if(id){var rows=await GET('/productos?select=*&id=eq.'+id);var p=rows[0];if(p){document.getElementById('p_nom').value=p.nombre||'';document.getElementById('p_cat').value=p.categoria||'';document.getElementById('p_des').value=p.descripcion||'';document.getElementById('p_pvp').value=p.pvp||'';document.getElementById('p_cos').value=p.coste||'';document.getElementById('p_sto').value=p.stock||0;document.getElementById('p_ref').value=p.ref_propia||'';document.getElementById('p_prov').value=p.proveedor||'';document.getElementById('p_ref_prov').value=p.ref_proveedor||'';calcM();}}
+  else{['p_nom','p_des','p_pvp','p_cos','p_mar','p_ref','p_ref_prov'].forEach(function(f){document.getElementById(f).value='';});document.getElementById('p_prov').value='';document.getElementById('p_cat').value='';document.getElementById('p_sto').value=0;}
   openM('pm');
 }
 function calcM(){var p=parseFloat(document.getElementById('p_pvp').value)||0,c=parseFloat(document.getElementById('p_cos').value)||0;document.getElementById('p_mar').value=mg(p,c);}
@@ -5564,6 +5564,7 @@ async function autoGenRef(){
 async function saveP(){
   var nombre=document.getElementById('p_nom').value.trim(),cat=document.getElementById('p_cat').value,pvp=parseFloat(document.getElementById('p_pvp').value)||0;
   if(!nombre||!pvp){toast('Nombre y PVP requeridos');return;}
+  if(!cat){toast('⚠️ Elige una categoría (si no, el producto no aparecerá bien en el catálogo)');return;}
   var payload={nombre:nombre,categoria:cat,descripcion:document.getElementById('p_des').value,pvp:pvp,coste:parseFloat(document.getElementById('p_cos').value)||0,stock:parseInt(document.getElementById('p_sto').value)||0,ref_propia:document.getElementById('p_ref').value.trim(),proveedor:document.getElementById('p_prov').value,ref_proveedor:document.getElementById('p_ref_prov').value.trim()};
   // Comprobar que la referencia no esté ya usada por el mismo proveedor
   if(payload.ref_propia&&payload.proveedor){
