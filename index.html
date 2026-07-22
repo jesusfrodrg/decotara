@@ -2679,13 +2679,15 @@ function renderVMLineas(){
     var ofertaBadge=(l._ofertaLinks&&l._ofertaLinks.length)?('<div style="font-size:10px;color:var(--blue);font-weight:700;margin-top:3px">🎁 Descuenta stock de: '+l._ofertaLinks.map(function(ol){return escHtml(ol.nombre)+(ol.qty>1?' x'+ol.qty:'');}).join(', ')+'</div>'):'';
     var _provs=(getCfg().proveedores||[]);
     var provOpts='<option value="">Proveedor...</option>'+_provs.map(function(p){return '<option value="'+escHtml(p.label)+'"'+(p.label===l.proveedor?' selected':'')+'>'+escHtml(p.label)+'</option>';}).join('');
-    return '<div class="vm-linea" style="flex-wrap:wrap;gap:4px">'
-      +'<div style="flex:1;min-width:0"><div class="vl-nom">'+escHtml(l.nombre)+refBadge+'</div>'+ofertaBadge
-      +'<div style="display:flex;gap:6px;margin-top:4px;align-items:center">'
-      +'<select data-li="'+i+'" class="vm-prov-sel" style="font-size:11px;padding:3px 6px;border:1.5px solid var(--lgray);border-radius:6px;max-width:130px">'+provOpts+'</select>'
-      +'</div></div>'
-      +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
-      +'<label style="font-size:9px;color:var(--gray);text-transform:uppercase;font-weight:700">Uds.</label>'
+    return '<div class="vm-linea" style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid var(--lgray);border-radius:10px;margin-bottom:8px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+      +'<div style="flex:1;min-width:0"><div class="vl-nom">'+escHtml(l.nombre)+refBadge+'</div>'+ofertaBadge+'</div>'
+      +'<button class="vl-del" data-di="'+i+'">✕</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+      +'<select data-li="'+i+'" class="vm-prov-sel" style="flex:1;min-width:100px;font-size:11px;padding:5px 6px;border:1.5px solid var(--lgray);border-radius:6px">'+provOpts+'</select>'
+      +'<div style="display:flex;align-items:center;gap:4px">'
+      +'<label style="font-size:10px;color:var(--gray);font-weight:700">Uds.</label>'
       +(function(){
         // Calcular max según tipo de artículo
         var _maxS=99;
@@ -2704,15 +2706,15 @@ function renderVMLineas(){
           if(l._ventaId){_almStkM+=(l._qtyAlmacen||0);_tndStkM+=(l._qtyTienda||0);} // editando: sumar lo ya reservado
           _maxS=_almStkM+_tndStkM||99;
         }
-        return '<input type="number" min="1" max="'+_maxS+'" value="'+l.qty+'" style="width:48px;text-align:center" data-qi="'+i+'" data-max="'+_maxS+'" class="vm-qty-inp">';
+        return '<input type="number" min="1" max="'+_maxS+'" value="'+l.qty+'" style="width:44px;text-align:center" data-qi="'+i+'" data-max="'+_maxS+'" class="vm-qty-inp">';
       })()
       +'</div>'
-      +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
-      +'<label style="font-size:9px;color:var(--gray);text-transform:uppercase;font-weight:700">Precio €</label>'
-      +'<input type="number" min="0" step="0.01" value="'+l.pvp+'" style="width:72px;text-align:right;color:var(--red);font-weight:700" data-pi="'+i+'" class="vm-pvp-inp">'
+      +'<div style="display:flex;align-items:center;gap:4px">'
+      +'<label style="font-size:10px;color:var(--gray);font-weight:700">€</label>'
+      +'<input type="number" min="0" step="0.01" value="'+l.pvp+'" style="width:60px;text-align:right;color:var(--red);font-weight:700" data-pi="'+i+'" class="vm-pvp-inp">'
       +'</div>'
-      +'<div class="vl-sub" style="min-width:70px;text-align:right">'+fe(l.pvp*l.qty)+'</div>'
-      +'<button class="vl-del" data-di="'+i+'">✕</button>'
+      +'<div class="vl-sub" style="flex:1;text-align:right;font-weight:700">'+fe(l.pvp*l.qty)+'</div>'
+      +'</div>'
       +'</div>';
   }).join('');
 
